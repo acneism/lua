@@ -1,0 +1,2830 @@
+[
+  {
+    "src": "return tostring(0.1), tostring(1/3), tostring(1e15), tostring(1e16), tostring(2^53), tostring(100), tostring(1e100), tostring(123456789012)",
+    "want": "0.1,0.33333333333333,1e+15,1e+16,9.007199254741e+15,100,1e+100,123456789012"
+  },
+  {
+    "src": "return tostring(1/0), tostring(-1/0), tostring(math.huge)",
+    "want": "inf,-inf,inf"
+  },
+  {
+    "src": "return string.format('%5.2f', 3.14159), string.format('%d', 3.7), string.format('%x', 255), string.format('%g', 0.1), string.format('%s', 1.5)",
+    "want": " 3.14,3,ff,0.1,1.5"
+  },
+  {
+    "src": "return string.format('%10.3s|', 'abcdef'), string.format('%c', 65), string.format('%e', 12345.678), string.format('%i', -2.5)",
+    "want": "       abc|,A,1.234568e+04,-2"
+  },
+  {
+    "src": "return string.format('%q', 'a\\nb\\0c\"')",
+    "want": "\"a\\\nb\\000c\\\"\""
+  },
+  {
+    "src": "return string.format('%q', 1/3)",
+    "want": "\"0.33333333333333\""
+  },
+  {
+    "src": "return string.format('%-5d|%+d|% d|%05.1f|%#x|%o', 42, 7, 3, 2.5, 255, 8)",
+    "want": "42   |+7| 3|002.5|0xff|10"
+  },
+  {
+    "src": "return string.format('%5s|%-5s|%.2s', 'ab', 'cd', 'xyz')",
+    "want": "   ab|cd   |xy"
+  },
+  {
+    "src": "return string.format('%z', 1)",
+    "want": "user_script:1: invalid option '%z' to 'format'"
+  },
+  {
+    "src": "return string.format('%d')",
+    "want": "user_script:1: bad argument #2 to 'format' (no value)"
+  },
+  {
+    "src": "return string.format('%10.20f', 1)",
+    "want": "1.00000000000000000000"
+  },
+  {
+    "src": "return 1 + nil",
+    "want": "user_script:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "return 1 < 'x'",
+    "want": "user_script:1: attempt to compare number with string"
+  },
+  {
+    "src": "return {} < {}",
+    "want": "user_script:1: attempt to compare two table values"
+  },
+  {
+    "src": "local x x()",
+    "want": "user_script:1: attempt to call local 'x' (a nil value)"
+  },
+  {
+    "src": "local x return x.y",
+    "want": "user_script:1: attempt to index local 'x' (a nil value)"
+  },
+  {
+    "src": "local t = {} t.method()",
+    "want": "user_script:1: attempt to call field 'method' (a nil value)"
+  },
+  {
+    "src": "local u local function f() return u.x end return f()",
+    "want": "user_script:1: attempt to index upvalue 'u' (a nil value)"
+  },
+  {
+    "src": "local t = {} return t.foo.bar",
+    "want": "user_script:1: attempt to index field 'foo' (a nil value)"
+  },
+  {
+    "src": "local t = {} return t:nomethod()",
+    "want": "user_script:1: attempt to call method 'nomethod' (a nil value)"
+  },
+  {
+    "src": "local t = {} return t.x + 1",
+    "want": "user_script:1: attempt to perform arithmetic on field 'x' (a nil value)"
+  },
+  {
+    "src": "local s return 'a' .. s",
+    "want": "user_script:1: attempt to concatenate local 's' (a nil value)"
+  },
+  {
+    "src": "return 'abc' + 1",
+    "want": "user_script:1: attempt to perform arithmetic on a string value"
+  },
+  {
+    "src": "local n = 5 return n()",
+    "want": "user_script:1: attempt to call local 'n' (a number value)"
+  },
+  {
+    "src": "local n = 5 return n.x",
+    "want": "user_script:1: attempt to index local 'n' (a number value)"
+  },
+  {
+    "src": "return string.rep()",
+    "want": "user_script:1: bad argument #1 to 'rep' (string expected, got no value)"
+  },
+  {
+    "src": "return string.rep('x', 'y')",
+    "want": "user_script:1: bad argument #2 to 'rep' (number expected, got string)"
+  },
+  {
+    "src": "return ('x'):rep()",
+    "want": "user_script:1: bad argument #1 to 'rep' (number expected, got no value)"
+  },
+  {
+    "src": "return 'a' .. true",
+    "want": "user_script:1: attempt to concatenate a boolean value"
+  },
+  {
+    "src": "local t = {} t[nil] = 1",
+    "want": "user_script:1: table index is nil"
+  },
+  {
+    "src": "local t = {} t[0/0] = 1",
+    "want": "user_script:1: table index is NaN"
+  },
+  {
+    "src": "return next({a=1}, 'zz')",
+    "want": "invalid key to 'next'"
+  },
+  {
+    "src": "assert(false, 'assert msg')",
+    "want": "user_script:1: assert msg"
+  },
+  {
+    "src": "assert(nil)",
+    "want": "user_script:1: assertion failed!"
+  },
+  {
+    "src": "return unpack({}, 1, 10000)",
+    "want": "user_script:1: too many results to unpack"
+  },
+  {
+    "src": "table.setn({}, 5)",
+    "want": "user_script:1: 'setn' is obsolete"
+  },
+  {
+    "src": "return string.gsub('abc', '%w', {a='1', b=true})",
+    "want": "user_script:1: invalid replacement value (a boolean)"
+  },
+  {
+    "src": "return string.find('x', '[a')",
+    "want": "user_script:1: malformed pattern (missing ']')"
+  },
+  {
+    "src": "return string.find('x', '%')",
+    "want": "user_script:1: malformed pattern (ends with '%')"
+  },
+  {
+    "src": "return string.match('x', '(()')",
+    "want": "user_script:1: unfinished capture"
+  },
+  {
+    "src": "return string.gsub('abc', '(a)', '%2')",
+    "want": "user_script:1: invalid capture index"
+  },
+  {
+    "src": "return loadstring('return +')",
+    "want": "nil,[string \"return +\"]:1: unexpected symbol near '+'"
+  },
+  {
+    "src": "local f = loadstring('error(1)') return pcall(f)",
+    "want": "false,[string \"error(1)\"]:1: 1"
+  },
+  {
+    "src": "local f = loadstring('local x = 1 error(\"boom\") -- this is a rather long first line that keeps going and going') return pcall(f)",
+    "want": "false,[string \"local x = 1 error(\"boom\") -- this is a rath...\"]:1: boom"
+  },
+  {
+    "src": "return loadstring(string.dump(function() return 1 end))",
+    "want": "nil,[string \"\u001bLuaQ\"]:1: unexpected symbol near 'char(27)'"
+  },
+  {
+    "src": "local function f(n) return f(n+1) + 1 end return f(1)",
+    "want": "user_script:1: stack overflow"
+  },
+  {
+    "src": "x = 1",
+    "want": "user_script:1: Attempt to modify a readonly table"
+  },
+  {
+    "src": "return undefined_name",
+    "want": "user_script:1: Script attempted to access nonexistent global variable 'undefined_name'"
+  },
+  {
+    "src": "setmetatable(_G, nil)",
+    "want": "Attempt to modify a readonly table"
+  },
+  {
+    "src": "rawset(_G, 'x', 1)",
+    "want": "Attempt to modify a readonly table"
+  },
+  {
+    "src": "getmetatable('').__index = nil",
+    "want": "user_script:1: Attempt to modify a readonly table"
+  },
+  {
+    "src": "string.foo = 1",
+    "want": "user_script:1: Attempt to modify a readonly table"
+  },
+  {
+    "src": "return type(getmetatable(''))",
+    "want": "table"
+  },
+  {
+    "src": "local function f() error('lvl', 2) end f()",
+    "want": "user_script:1: lvl"
+  },
+  {
+    "src": "error('nolevel', 0)",
+    "want": "nolevel"
+  },
+  {
+    "src": "error(42)",
+    "want": "user_script:1: 42"
+  },
+  {
+    "src": "error()",
+    "want": "nil"
+  },
+  {
+    "src": "local ok, e = pcall(function() error('x', 2) end) return e",
+    "want": "x"
+  },
+  {
+    "src": "local ok, e = pcall(error) return ok, e",
+    "want": "false,nil"
+  },
+  {
+    "src": "local ok, e = pcall(error, 'msg', 0) return ok, e",
+    "want": "false,msg"
+  },
+  {
+    "src": "local r = {pcall(error, {code=1})} return select('#', pcall(error, {code=1})), r[1], type(r[2]), r[2].code, r[3]",
+    "want": "3,false,table,1,nil"
+  },
+  {
+    "src": "return pcall(error, {err='E'})",
+    "want": "false,E"
+  },
+  {
+    "src": "return xpcall(function() error('x') end, function(m) return 'handled: ' .. m end)",
+    "want": "false,handled: user_script:1: x"
+  },
+  {
+    "src": "local co = coroutine.create(function(a) local b = coroutine.yield(a+1) return b*2 end) local _, x = coroutine.resume(co, 1) local _, y = coroutine.resume(co, 10) return x, y, coroutine.status(co)",
+    "want": "2,20,dead"
+  },
+  {
+    "src": "local co = coroutine.create(function() end) coroutine.resume(co) return coroutine.resume(co)",
+    "want": "false,cannot resume dead coroutine"
+  },
+  {
+    "src": "return coroutine.yield(1)",
+    "want": "attempt to yield across metamethod/C-call boundary"
+  },
+  {
+    "src": "local co = coroutine.wrap(function() error('in co') end) return co()",
+    "want": "user_script:1: user_script:1: in co"
+  },
+  {
+    "src": "local n = 0 for i, v in ipairs({1, 2, nil, 4}) do n = n + 1 end return n",
+    "want": "2"
+  },
+  {
+    "src": "return select('#'), select(-1, 'a', 'b'), select(2, 'a', 'b', 'c')",
+    "want": "0,b,b,c"
+  },
+  {
+    "src": "return select(0, 'a')",
+    "want": "user_script:1: bad argument #1 to 'select' (index out of range)"
+  },
+  {
+    "src": "return tonumber('10'), tonumber('0x1F'), tonumber('1e2'), tonumber('z', 36), tonumber('  12  '), tonumber('12a'), tonumber('')",
+    "want": "10,31,100,35,12,nil,nil"
+  },
+  {
+    "src": "return tonumber('inf'), tonumber('nan'), tonumber('0x'), tonumber(' 0x10 '), tonumber('1e'), tonumber('-0x10')",
+    "want": "inf,nan,nil,16,nil,-16"
+  },
+  {
+    "src": "return tonumber('10', 1)",
+    "want": "user_script:1: bad argument #2 to 'tonumber' (base out of range)"
+  },
+  {
+    "src": "return tonumber('-ff', 16), tonumber('7fffffff', 16), tonumber('ffffffffffffffff', 16)",
+    "want": "1.844674407371e+19,2147483647,1.844674407371e+19"
+  },
+  {
+    "src": "return '10' + 1, '0x10' + 0, ' 5 ' * 2, '3' * '4'",
+    "want": "11,16,10,12"
+  },
+  {
+    "src": "return 5 % 3, -5 % 3, 5.5 % 2, 2^10, 2^0.5, 5 % 0, -5 % math.huge",
+    "want": "2,1,1.5,1024,1.4142135623731,-nan,-nan"
+  },
+  {
+    "src": "return math.modf(3.7), math.modf(-3.7)",
+    "want": "3,-3,-0.7"
+  },
+  {
+    "src": "return math.fmod(7, 3), math.fmod(-7, 3), math.mod(7, 3)",
+    "want": "1,-1,1"
+  },
+  {
+    "src": "return math.frexp(8), math.ldexp(0.5, 4)",
+    "want": "0.5,8"
+  },
+  {
+    "src": "return math.floor(-3.5), math.ceil(-3.5), math.abs(-0.0)",
+    "want": "-4,-3,0"
+  },
+  {
+    "src": "return math.max(1, 5, 3), math.min(4, 2, 8)",
+    "want": "5,2"
+  },
+  {
+    "src": "return math.max()",
+    "want": "user_script:1: bad argument #1 to 'max' (number expected, got no value)"
+  },
+  {
+    "src": "math.randomseed(42) return math.random(100), math.random(100), math.random(1, 10), math.random()",
+    "want": "75,35,2,0.42233895809499"
+  },
+  {
+    "src": "return math.random(0)",
+    "want": "user_script:1: bad argument #1 to 'random' (interval is empty)"
+  },
+  {
+    "src": "return math.random(1, 2, 3)",
+    "want": "user_script:1: wrong number of arguments"
+  },
+  {
+    "src": "return string.gsub('hello world', '(%w+)', '<%1>')",
+    "want": "<hello> <world>,2"
+  },
+  {
+    "src": "return string.gsub('THE (quick) fox', '%f[%a]%a+', 'W')",
+    "want": "W (W) W,3"
+  },
+  {
+    "src": "return string.match('x(a(b)c)y', '%b()')",
+    "want": "(a(b)c)"
+  },
+  {
+    "src": "return string.gsub('abc', '.', function(c) return c:upper() .. '-' end)",
+    "want": "A-B-C-,3"
+  },
+  {
+    "src": "return string.gsub('aaaa', 'a', 'b', 2)",
+    "want": "bbaa,2"
+  },
+  {
+    "src": "return string.match('key:123:x', '(%a+):(%d+)')",
+    "want": "key,123"
+  },
+  {
+    "src": "return string.find('a.b', '.', 1, true)",
+    "want": "2,2"
+  },
+  {
+    "src": "return string.match('  trim  ', '^%s*(.-)%s*$')",
+    "want": "trim"
+  },
+  {
+    "src": "return string.find('abc', 'b', -10), string.find('abc', '', 10), string.find('abc', '', 4)",
+    "want": "2,4,4,3"
+  },
+  {
+    "src": "local t = {} for a, b in string.gmatch('k1=v1, k2=v2', '(%w+)=(%w+)') do t[#t+1] = a .. b end return table.concat(t, ';')",
+    "want": "k1v1;k2v2"
+  },
+  {
+    "src": "return string.gsub('hello', '', '-')",
+    "want": "-h-e-l-l-o-,6"
+  },
+  {
+    "src": "return string.byte('ABC', 1, -1)",
+    "want": "65,66,67"
+  },
+  {
+    "src": "return ('hello'):sub(-3), ('hello'):sub(2, 100), ('hello'):sub(0), ('hello'):sub(4, 2)",
+    "want": "llo,ello,hello,"
+  },
+  {
+    "src": "return string.rep('ab', 3, ','), string.rep('x', 0), string.rep('x', -1)",
+    "want": "ababab,,"
+  },
+  {
+    "src": "return string.char(72, 105), string.char()",
+    "want": "Hi,"
+  },
+  {
+    "src": "return string.char(256)",
+    "want": "user_script:1: bad argument #1 to 'char' (invalid value)"
+  },
+  {
+    "src": "return string.reverse('abc'), string.upper('aBc'), string.lower('AbC'), string.len('\\0a')",
+    "want": "cba,ABC,abc,2"
+  },
+  {
+    "src": "local t = {3,1,2} table.sort(t, function(a,b) return true end) return table.concat(t, ',')",
+    "want": "1,2,3"
+  },
+  {
+    "src": "local t = {5,2,8,1} table.sort(t, function(a,b) return a > b end) return table.concat(t, ',')",
+    "want": "8,5,2,1"
+  },
+  {
+    "src": "local t = {'b', 'a', 'c'} table.sort(t) return table.concat(t, ',')",
+    "want": "a,b,c"
+  },
+  {
+    "src": "local t = {1, 'a'} table.sort(t)",
+    "want": "attempt to compare string with number"
+  },
+  {
+    "src": "return table.concat({1, 2, 3}, ', ', 2, 3), table.concat({}), table.concat({1, {}})",
+    "want": "user_script:1: invalid value (table) at index 2 in table for 'concat'"
+  },
+  {
+    "src": "local t = {1, 2} table.insert(t, 3) table.insert(t, 1, 0) return table.concat(t, ',')",
+    "want": "0,1,2,3"
+  },
+  {
+    "src": "local t = {} table.insert(t, 1, 2, 3)",
+    "want": "user_script:1: wrong number of arguments to 'insert'"
+  },
+  {
+    "src": "local t = {1, 2, 3} return table.remove(t), table.remove(t, 1), table.concat(t, ',')",
+    "want": "3,1,2"
+  },
+  {
+    "src": "return table.maxn({1, 2, [10] = 3}), table.getn({1, 2, 3})",
+    "want": "10,3"
+  },
+  {
+    "src": "local t = {} table.foreach({a=1}, function(k, v) t[#t+1] = k .. v end) return t[1]",
+    "want": "a1"
+  },
+  {
+    "src": "return #{1, 2, nil, 4}",
+    "want": "4"
+  },
+  {
+    "src": "local t = {} t[1]=1 t[2]=2 t[4]=4 return #t",
+    "want": "4"
+  },
+  {
+    "src": "return 1 .. 2, 1.5 .. '', -0.0 .. ''",
+    "want": "12,1.5,-0"
+  },
+  {
+    "src": "return 'a' < 'b', 'B' < 'a', '' < 'a', 'a\\0b' < 'a\\0c'",
+    "want": "true,true,true,true"
+  },
+  {
+    "src": "local t = setmetatable({}, {__index = function(t, k) return k .. '!' end}) return t.x, t[1]",
+    "want": "x!,1!"
+  },
+  {
+    "src": "local t = setmetatable({}, {__call = function(self, a) return a * 2 end}) return t(21)",
+    "want": "42"
+  },
+  {
+    "src": "local mt = {__add = function(a, b) return 'added' end, __concat = function(a, b) return 'cat' end, __unm = function() return 'neg' end} local t = setmetatable({}, mt) return t + 1, 1 + t, t .. 'x', 'x' .. t, -t",
+    "want": "added,added,cat,cat,neg"
+  },
+  {
+    "src": "local mt = {__eq = function() return true end} local a = setmetatable({}, mt) local b = setmetatable({}, mt) return a == b, a ~= b",
+    "want": "true,false"
+  },
+  {
+    "src": "local mt = {__lt = function() return true end} local a = setmetatable({}, mt) local b = setmetatable({}, mt) return a < b, a <= b, a > b",
+    "want": "true,false,true"
+  },
+  {
+    "src": "local t = setmetatable({}, {__metatable = 'locked'}) return getmetatable(t)",
+    "want": "locked"
+  },
+  {
+    "src": "local t = setmetatable({}, {__metatable = 'locked'}) setmetatable(t, {})",
+    "want": "user_script:1: cannot change a protected metatable"
+  },
+  {
+    "src": "local t = setmetatable({}, {__tostring = function() return 'custom' end}) return tostring(t)",
+    "want": "custom"
+  },
+  {
+    "src": "local t = setmetatable({}, {__newindex = function(t, k, v) rawset(t, k, v * 2) end}) t.a = 5 return t.a",
+    "want": "10"
+  },
+  {
+    "src": "return rawequal('a', 'a'), rawequal({}, {}), rawget({a=1}, 'a'), type(rawset({}, 'k', 'v'))",
+    "want": "true,false,1,table"
+  },
+  {
+    "src": "local a = {} for i = 1, 3 do a[i] = function() return i end end return a[1](), a[2](), a[3]()",
+    "want": "1,2,3"
+  },
+  {
+    "src": "local function f(...) return select('#', ...), ... end return f(1, nil, 3)",
+    "want": "3,1,nil,3"
+  },
+  {
+    "src": "local function f(...) return arg end return type(f(1, 2))",
+    "want": "table"
+  },
+  {
+    "src": "local function f(...) local a = arg return a and a.n end return f(1, 2)",
+    "want": "2"
+  },
+  {
+    "src": "local a, b, c = (function() return 1, 2, 3 end)() return a, b, c",
+    "want": "1,2,3"
+  },
+  {
+    "src": "local a, b = ((function() return 1, 2 end)()) return a, b",
+    "want": "1,nil"
+  },
+  {
+    "src": "return (function(...) return ... end)(1, 2, 3)",
+    "want": "1,2,3"
+  },
+  {
+    "src": "local t = {(function() return 1, 2 end)(), (function() return 3, 4 end)()} return #t",
+    "want": "3"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'done' end return f(n - 1) end return f(100000)",
+    "want": "done"
+  },
+  {
+    "src": "local s = 0 for i = 10, 1, -3 do s = s + i end return s",
+    "want": "22"
+  },
+  {
+    "src": "for i = 1, 2, 0 do end return 'ok'",
+    "want": "ok"
+  },
+  {
+    "src": "local s = 0 for i = 1, 3 do local i = i * 2 s = s + i end return s",
+    "want": "12"
+  },
+  {
+    "src": "local i = 1 repeat local j = i i = i + 1 until j >= 3 return i",
+    "want": "4"
+  },
+  {
+    "src": "local t = {} for i = 1.5, 3.5 do t[#t+1] = i end return table.concat(t, ',')",
+    "want": "1.5,2.5,3.5"
+  },
+  {
+    "src": "return 0x10, 0xff, 1e2, .5, 3., 0X1A",
+    "want": "16,255,100,0.5,3,26"
+  },
+  {
+    "src": "return [[a\nb]], [==[x]]y]==]",
+    "want": "a\nb,x]]y"
+  },
+  {
+    "src": "return '\\65\\066\\0670'",
+    "want": "ABC0"
+  },
+  {
+    "src": "return 'a\\\nb'",
+    "want": "a\nb"
+  },
+  {
+    "src": "return 2^-1, -2^-2, 2^3^2, -3^2",
+    "want": "0.5,-0.25,512,-9"
+  },
+  {
+    "src": "return 1 and 2, nil and 1, false or 'x', nil or false, not nil, not 0",
+    "want": "2,nil,x,false,true,false"
+  },
+  {
+    "src": "return #'abc', #{1, 2, 3}, -(-2), - - 2",
+    "want": "3,3,2,2"
+  },
+  {
+    "src": "local t = {} t[1.0] = 'a' return t[1], next(t)",
+    "want": "a,1,a"
+  },
+  {
+    "src": "local t = {10, 20, 30, x = 1} local n = 0 for k, v in pairs(t) do n = n + 1 end return n",
+    "want": "4"
+  },
+  {
+    "src": "local t = {} for i = 1, 5 do t[i] = i end for i = 1, 5 do t[i] = nil end return next(t)",
+    "want": "nil"
+  },
+  {
+    "src": "return type(nil), type(1), type('a'), type({}), type(print or type), type(coroutine.create(function() end))",
+    "want": "user_script:1: Script attempted to access nonexistent global variable 'print'"
+  },
+  {
+    "src": "return tostring(nil), tostring(true), tostring(false)",
+    "want": "nil,true,false"
+  },
+  {
+    "src": "return gcinfo() > 0, type(collectgarbage('count')), collectgarbage()",
+    "want": "true,number,0"
+  },
+  {
+    "src": "return _VERSION, type(_G), _G._G == _G",
+    "want": "Lua 5.1,table,true"
+  },
+  {
+    "src": "local f = load(function() return nil end) return type(f)",
+    "want": "function"
+  },
+  {
+    "src": "local parts = {'return ', '1 + ', '1'} local i = 0 local f = load(function() i = i + 1 return parts[i] end) return f()",
+    "want": "2"
+  },
+  {
+    "src": "return loadstring('return ...', 'chunk')(5)",
+    "want": "5"
+  },
+  {
+    "src": "local f, e = loadstring('x =', '=mychunk') return e",
+    "want": "mychunk:1: unexpected symbol near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('x =', '@file.lua') return e",
+    "want": "file.lua:1: unexpected symbol near '<eof>'"
+  },
+  {
+    "src": "return string.format('%s %s', 1, nil)",
+    "want": "user_script:1: bad argument #3 to 'format' (string expected, got nil)"
+  },
+  {
+    "src": "return string.format('%5.1s|', true)",
+    "want": "user_script:1: bad argument #2 to 'format' (string expected, got boolean)"
+  },
+  {
+    "src": "return tostring(1e300 * 1e10), tostring(-(0/0))",
+    "want": "inf,nan"
+  },
+  {
+    "src": "local t = {} for i = 1, 2000 do t['k' .. i] = i end local n = 0 for k, v in pairs(t) do n = n + v end return n",
+    "want": "2001000"
+  },
+  {
+    "src": "local t = {} for i = 1, 100 do t[i] = i end for i = 1, 100, 2 do t[i] = nil end local n = 0 for k in pairs(t) do n = n + 1 end return n",
+    "want": "50"
+  },
+  {
+    "src": "local co co = coroutine.create(function() return coroutine.resume(co) end) return coroutine.resume(co)",
+    "want": "true,false,cannot resume running coroutine"
+  },
+  {
+    "src": "local a, b a = coroutine.create(function() return coroutine.resume(b) end) b = coroutine.create(function() return coroutine.resume(a) end) return coroutine.resume(a)",
+    "want": "true,true,false,cannot resume normal coroutine"
+  },
+  {
+    "src": "local a a = coroutine.create(function() local b = coroutine.create(function() return coroutine.status(a) end) return coroutine.resume(b) end) return coroutine.resume(a)",
+    "want": "true,true,normal"
+  },
+  {
+    "src": "return coroutine.create(1)",
+    "want": "user_script:1: bad argument #1 to 'create' (Lua function expected)"
+  },
+  {
+    "src": "return coroutine.create(tostring)",
+    "want": "user_script:1: bad argument #1 to 'create' (Lua function expected)"
+  },
+  {
+    "src": "return coroutine.wrap(1)",
+    "want": "user_script:1: bad argument #1 to 'wrap' (Lua function expected)"
+  },
+  {
+    "src": "return coroutine.resume(1)",
+    "want": "user_script:1: bad argument #1 to 'resume' (coroutine expected)"
+  },
+  {
+    "src": "return coroutine.resume()",
+    "want": "user_script:1: bad argument #1 to 'resume' (coroutine expected)"
+  },
+  {
+    "src": "return coroutine.status(1)",
+    "want": "user_script:1: bad argument #1 to 'status' (coroutine expected)"
+  },
+  {
+    "src": "local co = coroutine.create(function() return pcall(coroutine.yield, 1) end) return coroutine.resume(co)",
+    "want": "true,false,attempt to yield across metamethod/C-call boundary"
+  },
+  {
+    "src": "local t = setmetatable({}, {__index = function() return coroutine.yield(1) end}) local co = coroutine.create(function() return t.x end) return coroutine.resume(co)",
+    "want": "false,attempt to yield across metamethod/C-call boundary"
+  },
+  {
+    "src": "local co = coroutine.create(function() local t = {3, 1, 2} table.sort(t, function(a, b) coroutine.yield() return a < b end) end) return coroutine.resume(co)",
+    "want": "false,attempt to yield across metamethod/C-call boundary"
+  },
+  {
+    "src": "local co = coroutine.wrap(function() for x in function() return coroutine.yield('it') end do return x end end) return co(), co('v')",
+    "want": "user_script:1: attempt to yield across metamethod/C-call boundary"
+  },
+  {
+    "src": "local co = coroutine.wrap(function(...) local a, b = coroutine.yield(...) return a + b end) return co(1, 2), co(3, 4)",
+    "want": "1,7"
+  },
+  {
+    "src": "return coroutine.running()",
+    "want": "nil"
+  },
+  {
+    "src": "local co co = coroutine.create(function() return coroutine.status(co), coroutine.running() == co end) return coroutine.resume(co)",
+    "want": "true,running,true"
+  },
+  {
+    "src": "return coroutine.resume(coroutine.create(function() error('E') end))",
+    "want": "false,user_script:1: E"
+  },
+  {
+    "src": "return pcall(coroutine.yield, 1)",
+    "want": "false,attempt to yield across metamethod/C-call boundary"
+  },
+  {
+    "src": "local co = coroutine.wrap(function() end) co() co()",
+    "want": "user_script:1: cannot resume dead coroutine"
+  },
+  {
+    "src": "local co = coroutine.wrap(function() end) co() return pcall(co)",
+    "want": "false,cannot resume dead coroutine"
+  },
+  {
+    "src": "local co = coroutine.wrap(function() error({}) end) local ok, e = pcall(co) return ok, type(e)",
+    "want": "false,table"
+  },
+  {
+    "src": "local function f()\n  error('deep', 2)\nend\nlocal function g()\n  f()\nend\ng()",
+    "want": "user_script:5: deep"
+  },
+  {
+    "src": "local function f()\n  error('deep', 3)\nend\nlocal function g()\n  f()\nend\ng()",
+    "want": "user_script:7: deep"
+  },
+  {
+    "src": "local a = 1\nlocal b = nil\nreturn a + b",
+    "want": "user_script:3: attempt to perform arithmetic on local 'b' (a nil value)"
+  },
+  {
+    "src": "local t = {}\n\nreturn #t.x",
+    "want": "user_script:3: attempt to get length of field 'x' (a nil value)"
+  },
+  {
+    "src": "local ok, e = pcall(error, 'm', 2) return e",
+    "want": "user_script:1: m"
+  },
+  {
+    "src": "local ok, e = pcall(error, 'm') return e",
+    "want": "m"
+  },
+  {
+    "src": "local n = 0 for i = 2, 1, 0 do n = n + 1 if n == 5 then break end end return n",
+    "want": "5"
+  },
+  {
+    "src": "local n = 0 for i = 1, 1, 0 do n = n + 1 if n == 5 then break end end return n",
+    "want": "5"
+  },
+  {
+    "src": "local n = 0 for i = 1, 2, 0 do n = n + 1 if n == 5 then break end end return n",
+    "want": "0"
+  },
+  {
+    "src": "for i = 1, 3, 'x' do end",
+    "want": "user_script:1: 'for' step must be a number"
+  },
+  {
+    "src": "for i = 'a', 3 do end",
+    "want": "user_script:1: 'for' initial value must be a number"
+  },
+  {
+    "src": "for i = 1, {} do end",
+    "want": "user_script:1: 'for' limit must be a number"
+  },
+  {
+    "src": "local s = 0 for i = '1', '3' do s = s + i end return s",
+    "want": "6"
+  },
+  {
+    "src": "local n = 0 for i = 0, 1, 0.1 do n = n + 1 end return n",
+    "want": "11"
+  },
+  {
+    "src": "local t = {} for i = 1, 3 do t[#t + 1] = i i = 10 end return table.concat(t, ',')",
+    "want": "1,2,3"
+  },
+  {
+    "src": "local x = 1 local x = x + 1 return x",
+    "want": "2"
+  },
+  {
+    "src": "local i = 5 do local i = i * 2 return i end",
+    "want": "10"
+  },
+  {
+    "src": "local function f() return 1 end local f = function() return f() + 1 end return f()",
+    "want": "2"
+  },
+  {
+    "src": "local a, b = 1, a return b",
+    "want": "user_script:1: Script attempted to access nonexistent global variable 'a'"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 0 end return n + f(n - 1) end return f(10)",
+    "want": "55"
+  },
+  {
+    "src": "local f = function(n) if n == 0 then return 0 end return f(n - 1) end return f(1)",
+    "want": "user_script:1: Script attempted to access nonexistent global variable 'f'"
+  },
+  {
+    "src": "local x = 1 local function g() return x end x = 2 return g()",
+    "want": "2"
+  },
+  {
+    "src": "local fs = {} for i = 1, 2 do local j = i fs[i] = function() j = j + 10 return j end end return fs[1](), fs[1](), fs[2]()",
+    "want": "11,21,12"
+  },
+  {
+    "src": "local i = 1 while i < 3 do local i = i + 10 if i > 5 then break end end return i",
+    "want": "1"
+  },
+  {
+    "src": "local a = {} local x = 1 a[x], x = 10, 2 return a[1], a[2], x",
+    "want": "10,nil,2"
+  },
+  {
+    "src": "local base = {x = 1} local t = setmetatable({}, {__index = base}) return t.x, rawget(t, 'x')",
+    "want": "1,nil"
+  },
+  {
+    "src": "local t = setmetatable({1, 2}, {__len = function() return 99 end}) return #t",
+    "want": "2"
+  },
+  {
+    "src": "local mt = {__lt = function(a, b) return a.v < b.v end} local a = setmetatable({v = 1}, mt) local b = setmetatable({v = 2}, mt) return a <= b, b <= a",
+    "want": "true,false"
+  },
+  {
+    "src": "local a = setmetatable({}, {__eq = function() return true end}) local b = setmetatable({}, {__eq = function() return true end}) return a == b",
+    "want": "false"
+  },
+  {
+    "src": "local f = function() return true end local a = setmetatable({}, {__eq = f}) local b = setmetatable({}, {__eq = f}) return a == b, a == 1",
+    "want": "true,false"
+  },
+  {
+    "src": "local t = setmetatable({}, {__concat = function(a, b) return type(a) .. type(b) end}) return 1 .. t, t .. 2",
+    "want": "numbertable,tablenumber"
+  },
+  {
+    "src": "local store = {} local t = setmetatable({}, {__newindex = store}) t.a = 1 return rawget(t, 'a'), store.a",
+    "want": "nil,1"
+  },
+  {
+    "src": "return getmetatable('').__index == string, ('abc'):upper(), ('x'):rep(3)",
+    "want": "true,ABC,xxx"
+  },
+  {
+    "src": "local t = setmetatable({}, {__index = function(t, k) return k * 2 end}) return t[21], rawget(t, 21)",
+    "want": "42,nil"
+  },
+  {
+    "src": "local mt = {} mt.__index = mt mt.hello = function(self) return 'hi ' .. self.name end local o = setmetatable({name = 'bob'}, mt) return o:hello()",
+    "want": "hi bob"
+  },
+  {
+    "src": "local mt = {__sub = function() return 'sub' end, __mul = function() return 'mul' end, __div = function() return 'div' end, __mod = function() return 'mod' end, __pow = function() return 'pow' end} local t = setmetatable({}, mt) return t - 1, 2 * t, t / 3, t % 4, t ^ 5",
+    "want": "sub,mul,div,mod,pow"
+  },
+  {
+    "src": "local t = setmetatable({}, {__add = function(a, b) return 1 end}) return '10' + t",
+    "want": "1"
+  },
+  {
+    "src": "local t = setmetatable({}, {__index = 5}) return t.x",
+    "want": "user_script:1: attempt to index a number value"
+  },
+  {
+    "src": "local t = setmetatable({}, {__call = 5}) return t()",
+    "want": "user_script:1: attempt to call local 't' (a table value)"
+  },
+  {
+    "src": "local t = setmetatable({}, {__tostring = function() return 42 end}) return tostring(t)",
+    "want": "42"
+  },
+  {
+    "src": "local t = setmetatable({}, {__metatable = false}) return getmetatable(t)",
+    "want": "false"
+  },
+  {
+    "src": "return string.format('%s', setmetatable({}, {__tostring = function() return 'T' end}))",
+    "want": "user_script:1: bad argument #2 to 'format' (string expected, got table)"
+  },
+  {
+    "src": "local mt = {__newindex = function(t, k, v) rawset(t, k, v) end} local t = setmetatable({}, mt) t.x = 1 t.x = 2 return t.x",
+    "want": "2"
+  },
+  {
+    "src": "return setmetatable(1, {})",
+    "want": "user_script:1: bad argument #1 to 'setmetatable' (table expected, got number)"
+  },
+  {
+    "src": "return setmetatable({}, 1)",
+    "want": "user_script:1: bad argument #2 to 'setmetatable' (nil or table expected)"
+  },
+  {
+    "src": "return getmetatable(1), getmetatable({})",
+    "want": "nil,nil"
+  },
+  {
+    "src": "return rawget(1, 1)",
+    "want": "user_script:1: bad argument #1 to 'rawget' (table expected, got number)"
+  },
+  {
+    "src": "return rawequal(1)",
+    "want": "user_script:1: bad argument #2 to 'rawequal' (value expected)"
+  },
+  {
+    "src": "return rawset({}, nil, 1)",
+    "want": "table index is nil"
+  },
+  {
+    "src": "return next()",
+    "want": "user_script:1: bad argument #1 to 'next' (table expected, got no value)"
+  },
+  {
+    "src": "return next({}, nil)",
+    "want": "nil"
+  },
+  {
+    "src": "return next({}, 1)",
+    "want": "invalid key to 'next'"
+  },
+  {
+    "src": "return ipairs()",
+    "want": "user_script:1: bad argument #1 to 'ipairs' (table expected, got no value)"
+  },
+  {
+    "src": "return pairs(1)",
+    "want": "user_script:1: bad argument #1 to 'pairs' (table expected, got number)"
+  },
+  {
+    "src": "return unpack(1)",
+    "want": "user_script:1: bad argument #1 to 'unpack' (table expected, got number)"
+  },
+  {
+    "src": "return assert(1, 2, 3)",
+    "want": "1,2,3"
+  },
+  {
+    "src": "return assert()",
+    "want": "user_script:1: bad argument #1 to 'assert' (value expected)"
+  },
+  {
+    "src": "return pcall()",
+    "want": "false,attempt to call a boolean value"
+  },
+  {
+    "src": "return collectgarbage('bogus')",
+    "want": "user_script:1: bad argument #1 to 'collectgarbage' (invalid option 'bogus')"
+  },
+  {
+    "src": "local t = {a = 1, b = 2, c = 3} for k in pairs(t) do t[k] = nil end return next(t)",
+    "want": "nil"
+  },
+  {
+    "src": "local t = {a = 1, b = 2} for k, v in pairs(t) do t[k] = v * 10 end return t.a + t.b",
+    "want": "30"
+  },
+  {
+    "src": "local t = {} for i = 1, 10 do t[i] = i end local s = 0 for k, v in pairs(t) do s = s + k * v end return s",
+    "want": "385"
+  },
+  {
+    "src": "local n = 0 for _ in ipairs({1, 2, nil, 4}) do n = n + 1 end for _ in ipairs({[2] = 1}) do n = n + 100 end return n",
+    "want": "2"
+  },
+  {
+    "src": "return string.find('a', '%f')",
+    "want": "user_script:1: missing '[' after '%f' in pattern"
+  },
+  {
+    "src": "return string.match('abc', '%bx')",
+    "want": "user_script:1: unbalanced pattern"
+  },
+  {
+    "src": "return #string.gsub('abc', '%w', '%'), (string.gsub('abc', '%w', '%')):byte(1)",
+    "want": "3,0"
+  },
+  {
+    "src": "return string.gsub('abc', '%w', '%x')",
+    "want": "xxx,3"
+  },
+  {
+    "src": "return string.find('abc', '[a-')",
+    "want": "user_script:1: malformed pattern (missing ']')"
+  },
+  {
+    "src": "return string.match('hello', '()ll()')",
+    "want": "3,5"
+  },
+  {
+    "src": "return string.gsub('abc', 'b*', '-')",
+    "want": "-a--c-,4"
+  },
+  {
+    "src": "return string.match('2024-01-02', '(%d+)-(%d+)-(%d+)')",
+    "want": "2024,01,02"
+  },
+  {
+    "src": "return string.find('a+b', '+', 1, true), string.find('a+b', '%+')",
+    "want": "2,2,2"
+  },
+  {
+    "src": "return string.gsub('hello world', 'o', {o = '0'})",
+    "want": "hell0 w0rld,2"
+  },
+  {
+    "src": "return string.gsub('abc', '%w', function() return nil end)",
+    "want": "abc,3"
+  },
+  {
+    "src": "return string.gsub('abc', '%w', function() return false end)",
+    "want": "abc,3"
+  },
+  {
+    "src": "return string.rep('ab', 3):gsub('b', '%%')",
+    "want": "a%a%a%,3"
+  },
+  {
+    "src": "return string.match('x', string.rep('(', 33) .. 'x' .. string.rep(')', 33))",
+    "want": "user_script:1: too many captures"
+  },
+  {
+    "src": "return ('%d'):format(5), ('abc'):find('b'), ('a,b'):gsub(',', ';')",
+    "want": "5,2,a;b,1"
+  },
+  {
+    "src": "return string.upper(123), string.len(123), string.rep(1, 3)",
+    "want": "123,3,111"
+  },
+  {
+    "src": "return ('x'):len(), #'\\0\\0', ('\\0'):byte()",
+    "want": "1,2,0"
+  },
+  {
+    "src": "return string.find('abc', 'c', 10), string.find('', ''), string.find('abc', '', -1)",
+    "want": "nil,1,3,2"
+  },
+  {
+    "src": "return string.match('abc', '.-'), string.match('abc', 'a(.*)'), string.match('abc', '(x?)')",
+    "want": ",bc,"
+  },
+  {
+    "src": "return string.gsub('abc def', '(%w+) (%w+)', '%2 %1')",
+    "want": "def abc,1"
+  },
+  {
+    "src": "return string.gsub('abc', '', '')",
+    "want": "abc,4"
+  },
+  {
+    "src": "return string.find('ab', 'b', 0)",
+    "want": "2,2"
+  },
+  {
+    "src": "local it = string.gmatch('abc', '()') local a, b, c, d = it(), it(), it(), it() return a, b, c, d",
+    "want": "1,2,3,4"
+  },
+  {
+    "src": "return string.gsub('abc', '%f[%w]', '^')",
+    "want": "^abc,1"
+  },
+  {
+    "src": "return string.find('a\\0b', '\\0', 1, true), string.find('a\\0b', '%z')",
+    "want": "2,2,2"
+  },
+  {
+    "src": "return string.match('  x', '^%s*()')",
+    "want": "3"
+  },
+  {
+    "src": "return string.format('[%s]', 'a\\0b'):len()",
+    "want": "3"
+  },
+  {
+    "src": "return string.format('%123d', 1)",
+    "want": "user_script:1: invalid format (width or precision too long)"
+  },
+  {
+    "src": "return string.format('%5.1f|%-8.3e|%G', 3.14159, 0.000123, 1e20)",
+    "want": "  3.1|1.230e-04|1E+20"
+  },
+  {
+    "src": "return string.format('%q', '\\r\\0\\1')",
+    "want": "\"\\r\\000\u0001\""
+  },
+  {
+    "src": "return string.format('%d', '10'), string.format('%x', 255.9), string.format('%5.2s|', 'abc')",
+    "want": "10,ff,   ab|"
+  },
+  {
+    "src": "return string.format('%d', 'x')",
+    "want": "user_script:1: bad argument #2 to 'format' (number expected, got string)"
+  },
+  {
+    "src": "return string.format('%%'), string.format('a%%b')",
+    "want": "%,a%b"
+  },
+  {
+    "src": "return string.format('%c%c', 0, 65):byte(1, -1)",
+    "want": "65"
+  },
+  {
+    "src": "return string.format('%.3f', 2.0005), string.format('%.0f', 0.5), string.format('%.0f', 1.5), string.format('%.0f', 2.5)",
+    "want": "2.001,0,2,2"
+  },
+  {
+    "src": "return '\\x41'",
+    "want": "x41"
+  },
+  {
+    "src": "return '\\z  abc'",
+    "want": "z  abc"
+  },
+  {
+    "src": "return '\\300'",
+    "want": "user_script:1: escape sequence too large near '''"
+  },
+  {
+    "src": "return 'abc",
+    "want": "user_script:1: unfinished string near '<eof>'"
+  },
+  {
+    "src": "return [[abc",
+    "want": "user_script:1: unfinished long string near '<eof>'"
+  },
+  {
+    "src": "--[==[ x ]==] return 2",
+    "want": "2"
+  },
+  {
+    "src": "return 1 --[[ c ]] + 2",
+    "want": "3"
+  },
+  {
+    "src": "goto x",
+    "want": "user_script:1: '=' expected near 'x'"
+  },
+  {
+    "src": "local a <const> = 1",
+    "want": "user_script:1: unexpected symbol near '<'"
+  },
+  {
+    "src": "return 1 // 2",
+    "want": "user_script:1: unexpected symbol near '/'"
+  },
+  {
+    "src": "return 1 & 2",
+    "want": "user_script:1: '<eof>' expected near '&'"
+  },
+  {
+    "src": "local t = {[1] = 1, [2] = 2, 3} return t[1], t[2]",
+    "want": "3,2"
+  },
+  {
+    "src": "local t = {1, 2, [2] = 'x'} return t[2]",
+    "want": "2"
+  },
+  {
+    "src": "return [[\nabc]]",
+    "want": "abc"
+  },
+  {
+    "src": "return #'a\\\r\nb'",
+    "want": "3"
+  },
+  {
+    "src": "return 3 ~= 2, not (1 == 2), 2 <= 2, 'a' >= 'b'",
+    "want": "true,true,true,false"
+  },
+  {
+    "src": "return 0x1p4",
+    "want": "16"
+  },
+  {
+    "src": "return 3e2x",
+    "want": "user_script:1: malformed number near '3e2x'"
+  },
+  {
+    "src": "return 1..2",
+    "want": "user_script:1: malformed number near '1..2'"
+  },
+  {
+    "src": "return 0xffffffffffffffff, 0x7fffffffffffffff",
+    "want": "1.844674407371e+19,9.2233720368548e+18"
+  },
+  {
+    "src": "return 1e309, -1e309, 5e-324 > 0",
+    "want": "inf,-inf,true"
+  },
+  {
+    "src": "return 08, 010",
+    "want": "8,10"
+  },
+  {
+    "src": "local function f(s) return type(s) end return f'x', f[[y]], f{}",
+    "want": "string,string,table"
+  },
+  {
+    "src": "local x = 1 ; ; return x",
+    "want": "user_script:1: unexpected symbol near ';'"
+  },
+  {
+    "src": "return (1)(2)",
+    "want": "user_script:1: attempt to call a number value"
+  },
+  {
+    "src": "local a = type\n('x')",
+    "want": "user_script:2: ambiguous syntax (function call x new statement) near '('"
+  },
+  {
+    "src": "return function() end end",
+    "want": "user_script:1: '<eof>' expected near 'end'"
+  },
+  {
+    "src": "if true then return 1 else return 2 end",
+    "want": "1"
+  },
+  {
+    "src": "local function f() return end return select('#', f())",
+    "want": "0"
+  },
+  {
+    "src": "return select('#', ...)",
+    "want": "0"
+  },
+  {
+    "src": "local t = {1, 2, 3} table.insert(t, 5, 'x') return #t, t[5]",
+    "want": "3,x"
+  },
+  {
+    "src": "local t = {1, 2} table.insert(t, 0, 'x') return t[0], t[1], t[2], t[3]",
+    "want": "x,nil,1,2"
+  },
+  {
+    "src": "return select('#', table.remove({}))",
+    "want": "0"
+  },
+  {
+    "src": "return select('#', table.remove({1, 2, 3}, 7))",
+    "want": "0"
+  },
+  {
+    "src": "return table.concat({1, 2, 3}, ', ', 3, 2), table.concat({'a', 'b'}, nil), table.concat({1.5, 2})",
+    "want": ",ab,1.52"
+  },
+  {
+    "src": "local t = {} for i = 1, 10 do t[i] = 5 end table.sort(t, function(a, b) return a <= b end) return 'ok'",
+    "want": "user_script:1: attempt to compare nil with number"
+  },
+  {
+    "src": "return table.maxn({}), table.maxn({[1.5] = 1, [-1] = 2})",
+    "want": "0,1.5"
+  },
+  {
+    "src": "local s = '' table.foreachi({10, 20}, function(i, v) s = s .. i .. '=' .. v .. ';' end) return s",
+    "want": "1=10;2=20;"
+  },
+  {
+    "src": "return table.foreach({1}, function(k, v) return 'stop' end)",
+    "want": "stop"
+  },
+  {
+    "src": "return unpack({1, 2, 3}, 2), unpack({1, 2, 3}, -1, 1)",
+    "want": "2,nil,nil,1"
+  },
+  {
+    "src": "return select(-3, 'a', 'b')",
+    "want": "user_script:1: bad argument #1 to 'select' (index out of range)"
+  },
+  {
+    "src": "return select(-2, 'a', 'b')",
+    "want": "a,b"
+  },
+  {
+    "src": "return select('#', select(5, 'a'))",
+    "want": "0"
+  },
+  {
+    "src": "return select('x')",
+    "want": "user_script:1: bad argument #1 to 'select' (number expected, got string)"
+  },
+  {
+    "src": "return string.sub('abcdef', 2.7, 4.9), string.rep('x', 2.9), string.byte('abc', 1.9)",
+    "want": "bcd,xx,97"
+  },
+  {
+    "src": "return tonumber('0x10', 16), tonumber(' 10 ', 16), tonumber('8', 8), tonumber('zz', 36), tonumber('', 16), tonumber('-', 16)",
+    "want": "16,16,nil,1295,nil,nil"
+  },
+  {
+    "src": "return tonumber(10, 16), tonumber(nil)",
+    "want": "16,nil"
+  },
+  {
+    "src": "return tonumber()",
+    "want": "user_script:1: bad argument #1 to 'tonumber' (value expected)"
+  },
+  {
+    "src": "return type()",
+    "want": "user_script:1: bad argument #1 to 'type' (value expected)"
+  },
+  {
+    "src": "return tostring()",
+    "want": "user_script:1: bad argument #1 to 'tostring' (value expected)"
+  },
+  {
+    "src": "return tostring(0/0), tostring(math.huge - math.huge), tostring(math.sqrt(-1)), tostring(-(0/0))",
+    "want": "-nan,-nan,-nan,nan"
+  },
+  {
+    "src": "return 10 == '10', '10' + 0 == 10",
+    "want": "false,true"
+  },
+  {
+    "src": "local t = {} t['1'] = 'a' t[1] = 'b' return t['1'], t[1]",
+    "want": "a,b"
+  },
+  {
+    "src": "return #nil",
+    "want": "user_script:1: attempt to get length of a nil value"
+  },
+  {
+    "src": "local t return #t",
+    "want": "user_script:1: attempt to get length of local 't' (a nil value)"
+  },
+  {
+    "src": "return -{}",
+    "want": "user_script:1: attempt to perform arithmetic on a table value"
+  },
+  {
+    "src": "return {} .. 'x'",
+    "want": "user_script:1: attempt to concatenate a table value"
+  },
+  {
+    "src": "return math.floor('3.7'), ('5'):rep(2) + 1",
+    "want": "3,56"
+  },
+  {
+    "src": "return math.floor('x')",
+    "want": "user_script:1: bad argument #1 to 'floor' (number expected, got string)"
+  },
+  {
+    "src": "return select('#', string.byte('')), select('#', string.byte('abc', 10))",
+    "want": "0,0"
+  },
+  {
+    "src": "return (5):type()",
+    "want": "user_script:1: attempt to index a number value"
+  },
+  {
+    "src": "local function f(...) local n = select('#', ...) return arg end return f(1)",
+    "want": "nil"
+  },
+  {
+    "src": "local function f(a, ...) return arg.n, arg[1], a end return f(1, 2, 3)",
+    "want": "2,2,1"
+  },
+  {
+    "src": "return string.len(nil)",
+    "want": "user_script:1: bad argument #1 to 'len' (string expected, got nil)"
+  },
+  {
+    "src": "return math.max(1, 'x')",
+    "want": "user_script:1: bad argument #2 to 'max' (number expected, got string)"
+  },
+  {
+    "src": "return math.floor(2^31 + 0.5), math.floor(-2^31 - 0.5), 2^63, 2^53 + 1",
+    "want": "2147483648,-2147483649,9.2233720368548e+18,9.007199254741e+15"
+  },
+  {
+    "src": "return 0.1 + 0.2, 100 / 3, -1/3, 1e15 + 0.3, 123456789012345678",
+    "want": "0.3,33.333333333333,-0.33333333333333,1e+15,1.2345678901235e+17"
+  },
+  {
+    "src": "return 1e14 + 0.5, -0.000001, 2^-1074, 1e100 / 3",
+    "want": "1e+14,-1e-06,4.9406564584125e-324,3.3333333333333e+99"
+  },
+  {
+    "src": "return 3 % -2, -3 % 2, 3.5 % -2, -3.5 % 2",
+    "want": "-1,1,-0.5,0.5"
+  },
+  {
+    "src": "return math.fmod(5.5, 2), math.fmod(-6, 4), math.fmod(1, 0)",
+    "want": "1.5,-2,-nan"
+  },
+  {
+    "src": "return math.pow(2, 0.5), math.sqrt(16), math.exp(0), math.log(1), math.log10(100), math.log(8, 2)",
+    "want": "1.4142135623731,4,1,0,2,2.0794415416798"
+  },
+  {
+    "src": "return math.abs(-3), math.abs('-3'), math.ceil(3.2), math.deg(math.pi), math.rad(180)",
+    "want": "3,3,4,180,3.1415926535898"
+  },
+  {
+    "src": "return math.sin(0), math.cos(0), math.tan(0), math.asin(1), math.atan2(1, 1), math.sinh(0), math.cosh(0), math.tanh(0)",
+    "want": "0,1,0,1.5707963267949,0.78539816339745,0,1,0"
+  },
+  {
+    "src": "math.randomseed(7) local t = {} for i = 1, 5 do t[i] = math.random(1000) end return table.concat(t, ',')",
+    "want": "267,683,266,130,495"
+  },
+  {
+    "src": "math.randomseed(1.9) local a = math.random(1000) math.randomseed(1) return a == math.random(1000)",
+    "want": "true"
+  },
+  {
+    "src": "return load('return 1')",
+    "want": "user_script:1: bad argument #1 to 'load' (function expected, got string)"
+  },
+  {
+    "src": "return load(function() return {} end)",
+    "want": "nil,user_script:1: reader function must return a string"
+  },
+  {
+    "src": "return loadstring(nil)",
+    "want": "user_script:1: bad argument #1 to 'loadstring' (string expected, got nil)"
+  },
+  {
+    "src": "return pcall(loadstring('x = '))",
+    "want": "false,attempt to call a nil value"
+  },
+  {
+    "src": "return xpcall(function() return 1, 2 end, tostring)",
+    "want": "true,1,2"
+  },
+  {
+    "src": "return xpcall(function() error({}) end, function(e) return type(e) end)",
+    "want": "false,table"
+  },
+  {
+    "src": "return xpcall(function() error('x') end)",
+    "want": "user_script:1: bad argument #2 to 'xpcall' (value expected)"
+  },
+  {
+    "src": "return xpcall(function() error('x') end, function(e) error('y') end)",
+    "want": "false,error in error handling"
+  },
+  {
+    "src": "return 1+2*3",
+    "want": "7"
+  },
+  {
+    "src": "return (1+2)*3",
+    "want": "9"
+  },
+  {
+    "src": "return 2^3^2",
+    "want": "512"
+  },
+  {
+    "src": "return -2^2",
+    "want": "-4"
+  },
+  {
+    "src": "return not 0",
+    "want": "false"
+  },
+  {
+    "src": "return not ''",
+    "want": "false"
+  },
+  {
+    "src": "return 'a'..'b'..'c'",
+    "want": "abc"
+  },
+  {
+    "src": "return 1 .. ''",
+    "want": "1"
+  },
+  {
+    "src": "return '10'+1",
+    "want": "11"
+  },
+  {
+    "src": "return '10'+'1'",
+    "want": "11"
+  },
+  {
+    "src": "return '1e2'+0",
+    "want": "100"
+  },
+  {
+    "src": "return '0x10'+0",
+    "want": "16"
+  },
+  {
+    "src": "return '0x1p4'+0",
+    "want": "16"
+  },
+  {
+    "src": "return ' 12 '+0",
+    "want": "12"
+  },
+  {
+    "src": "return tostring(pcall(function() return '1e'+0 end))",
+    "want": "false"
+  },
+  {
+    "src": "return 10 % 3",
+    "want": "1"
+  },
+  {
+    "src": "return -10 % 3",
+    "want": "2"
+  },
+  {
+    "src": "return 2^-1",
+    "want": "0.5"
+  },
+  {
+    "src": "return 0/0 ~= 0/0",
+    "want": "true"
+  },
+  {
+    "src": "return 1 == 1.0",
+    "want": "true"
+  },
+  {
+    "src": "return '1' == 1",
+    "want": "false"
+  },
+  {
+    "src": "return nil == nil",
+    "want": "true"
+  },
+  {
+    "src": "return 1 < 2 and 'y' or 'n'",
+    "want": "y"
+  },
+  {
+    "src": "return nil and 1 or 2",
+    "want": "2"
+  },
+  {
+    "src": "return false or nil",
+    "want": "nil"
+  },
+  {
+    "src": "return #'hello'",
+    "want": "5"
+  },
+  {
+    "src": "return #''",
+    "want": "0"
+  },
+  {
+    "src": "return -(-5)",
+    "want": "5"
+  },
+  {
+    "src": "return 1 .. 2 + 3",
+    "want": "15"
+  },
+  {
+    "src": "return tostring(1)",
+    "want": "1"
+  },
+  {
+    "src": "return tostring(-1)",
+    "want": "-1"
+  },
+  {
+    "src": "return tostring(0.5)",
+    "want": "0.5"
+  },
+  {
+    "src": "return tostring(-0.5)",
+    "want": "-0.5"
+  },
+  {
+    "src": "return tostring(100000000000000)",
+    "want": "1e+14"
+  },
+  {
+    "src": "return tostring(2^63)",
+    "want": "9.2233720368548e+18"
+  },
+  {
+    "src": "return tostring(1/0)",
+    "want": "inf"
+  },
+  {
+    "src": "return tostring(-1/0)",
+    "want": "-inf"
+  },
+  {
+    "src": "return math.floor(-0.5)",
+    "want": "-1"
+  },
+  {
+    "src": "return math.ceil(-0.5)",
+    "want": "-0"
+  },
+  {
+    "src": "return tonumber('10')",
+    "want": "10"
+  },
+  {
+    "src": "return tonumber('10', 2)",
+    "want": "2"
+  },
+  {
+    "src": "return tonumber('ff', 16)",
+    "want": "255"
+  },
+  {
+    "src": "return tonumber('z', 36)",
+    "want": "35"
+  },
+  {
+    "src": "return tostring(tonumber('x'))",
+    "want": "nil"
+  },
+  {
+    "src": "return tostring(tonumber('1e'))",
+    "want": "nil"
+  },
+  {
+    "src": "return tostring(tonumber(' 0x10 '))",
+    "want": "16"
+  },
+  {
+    "src": "return tostring(tonumber('nan'))",
+    "want": "nan"
+  },
+  {
+    "src": "return tostring(tonumber('inf'))",
+    "want": "inf"
+  },
+  {
+    "src": "return tostring(tonumber('  '))",
+    "want": "nil"
+  },
+  {
+    "src": "return tostring(tonumber(nil))",
+    "want": "nil"
+  },
+  {
+    "src": "return tostring(tonumber({}))",
+    "want": "nil"
+  },
+  {
+    "src": "return 'a\\tb'",
+    "want": "a\tb"
+  },
+  {
+    "src": "return 'a\\65b'",
+    "want": "aAb"
+  },
+  {
+    "src": "return '\\104i'",
+    "want": "hi"
+  },
+  {
+    "src": "return [[long]]",
+    "want": "long"
+  },
+  {
+    "src": "return [==[a]]b]==]",
+    "want": "a]]b"
+  },
+  {
+    "src": "return #[[abc]]",
+    "want": "3"
+  },
+  {
+    "src": "return ('abc'):sub(2)",
+    "want": "bc"
+  },
+  {
+    "src": "return ('abc'):upper()",
+    "want": "ABC"
+  },
+  {
+    "src": "return ('  x  '):match('^%s*(.-)%s*$')",
+    "want": "x"
+  },
+  {
+    "src": "return string.format('%d %s', 1, 'a')",
+    "want": "1 a"
+  },
+  {
+    "src": "return string.format('%5d|', 42)",
+    "want": "   42|"
+  },
+  {
+    "src": "return string.format('%-5d|', 42)",
+    "want": "42   |"
+  },
+  {
+    "src": "return string.format('%.2f', 3.14159)",
+    "want": "3.14"
+  },
+  {
+    "src": "return string.format('%g', 0.00001)",
+    "want": "1e-05"
+  },
+  {
+    "src": "return string.format('%e', 1234.5)",
+    "want": "1.234500e+03"
+  },
+  {
+    "src": "return string.format('%q', 'tab\\there')",
+    "want": "\"tab\there\""
+  },
+  {
+    "src": "local x = 1 if x == 1 then return 'a' elseif x == 2 then return 'b' else return 'c' end",
+    "want": "a"
+  },
+  {
+    "src": "local x = 2 if x == 1 then return 'a' elseif x == 2 then return 'b' else return 'c' end",
+    "want": "b"
+  },
+  {
+    "src": "local x = 3 if x == 1 then return 'a' elseif x == 2 then return 'b' else return 'c' end",
+    "want": "c"
+  },
+  {
+    "src": "local s = 0 for i = 1, 10 do s = s + i end return s",
+    "want": "55"
+  },
+  {
+    "src": "local s = 0 for i = 10, 1, -2 do s = s + i end return s",
+    "want": "30"
+  },
+  {
+    "src": "local s = 0 for i = 1, 0 do s = s + 1 end return s",
+    "want": "0"
+  },
+  {
+    "src": "local s = 0 for i = 1, 3 do for j = 1, 3 do s = s + 1 end end return s",
+    "want": "9"
+  },
+  {
+    "src": "local i = 0 while i < 5 do i = i + 1 end return i",
+    "want": "5"
+  },
+  {
+    "src": "local i = 0 repeat i = i + 1 until i >= 3 return i",
+    "want": "3"
+  },
+  {
+    "src": "local s = '' for i = 1, 5 do if i == 3 then break end s = s .. i end return s",
+    "want": "12"
+  },
+  {
+    "src": "local s = 0 for i = 1, 5 do if i % 2 == 0 then s = s + i end end return s",
+    "want": "6"
+  },
+  {
+    "src": "return tostring(pcall(function() do local x = 1 end return x end))",
+    "want": "false"
+  },
+  {
+    "src": "local a, b = 1, 2 return a + b",
+    "want": "3"
+  },
+  {
+    "src": "local a, b = 1 return tostring(a) .. tostring(b)",
+    "want": "1nil"
+  },
+  {
+    "src": "local a, b, c = 1, 2, 3 return a, b, c",
+    "want": "1,2,3"
+  },
+  {
+    "src": "local t = {1, 2, 3} local a, b = t[1], t[2] return a + b",
+    "want": "3"
+  },
+  {
+    "src": "local a = 1 a = a + 1 return a",
+    "want": "2"
+  },
+  {
+    "src": "local a, b = 1, 2 a, b = b, a return a .. b",
+    "want": "21"
+  },
+  {
+    "src": "local t = {} t.x = 1 t['y'] = 2 return t.x + t.y",
+    "want": "3"
+  },
+  {
+    "src": "local t = {x = 1, y = 2} return t.x + t.y",
+    "want": "3"
+  },
+  {
+    "src": "local t = {[1] = 'a', [2] = 'b'} return t[1] .. t[2]",
+    "want": "ab"
+  },
+  {
+    "src": "local t = {1, 2, 3, x = 4} return #t",
+    "want": "3"
+  },
+  {
+    "src": "local t = {} for i = 1, 3 do t[i] = i * i end return t[1] + t[2] + t[3]",
+    "want": "14"
+  },
+  {
+    "src": "local function f(x) return x * 2 end return f(21)",
+    "want": "42"
+  },
+  {
+    "src": "local f = function(x) return x + 1 end return f(1)",
+    "want": "2"
+  },
+  {
+    "src": "local function f(a, b) return tostring(b) end return f(1)",
+    "want": "nil"
+  },
+  {
+    "src": "local function f() return 1, 2, 3 end return f()",
+    "want": "1,2,3"
+  },
+  {
+    "src": "local function f() return 1, 2 end return (f())",
+    "want": "1"
+  },
+  {
+    "src": "local function f(...) return select('#', ...) end return f(1, nil, 3)",
+    "want": "3"
+  },
+  {
+    "src": "local function f(...) return ... end return f(1, 2)",
+    "want": "1,2"
+  },
+  {
+    "src": "local function f(...) local a, b = ... return a + b end return f(1, 2)",
+    "want": "3"
+  },
+  {
+    "src": "local function f(...) return {...} end return #f(1, 2, 3)",
+    "want": "3"
+  },
+  {
+    "src": "local function f(a, ...) return a .. select('#', ...) end return f('x', 1, 2)",
+    "want": "x2"
+  },
+  {
+    "src": "local function f(...) return select(2, ...) end return f('a', 'b', 'c')",
+    "want": "b,c"
+  },
+  {
+    "src": "local function f(...) return select(-1, ...) end return f('a', 'b', 'c')",
+    "want": "c"
+  },
+  {
+    "src": "local function f(...) return select(-2, ...) end return f('a', 'b', 'c')",
+    "want": "b,c"
+  },
+  {
+    "src": "local x = 10 local function f() return x end x = 20 return f()",
+    "want": "20"
+  },
+  {
+    "src": "local function counter() local n = 0 return function() n = n + 1 return n end end local c = counter() c() c() return c()",
+    "want": "3"
+  },
+  {
+    "src": "local function fact(n) if n <= 1 then return 1 end return n * fact(n - 1) end return fact(5)",
+    "want": "120"
+  },
+  {
+    "src": "local function fib(n) if n < 2 then return n end return fib(n-1) + fib(n-2) end return fib(10)",
+    "want": "55"
+  },
+  {
+    "src": "local function f() return function() return 7 end end return f()()",
+    "want": "7"
+  },
+  {
+    "src": "local t = {f = function(self, x) return x * 2 end} return t:f(4)",
+    "want": "8"
+  },
+  {
+    "src": "local t = {} function t.f(x) return x + 1 end return t.f(1)",
+    "want": "2"
+  },
+  {
+    "src": "local t = {} function t:f(x) return x + 1 end return t:f(1)",
+    "want": "2"
+  },
+  {
+    "src": "local t = {} return #t",
+    "want": "0"
+  },
+  {
+    "src": "local t = {1, 2, 3} return #t",
+    "want": "3"
+  },
+  {
+    "src": "local t = {} t[1] = 1 t[2] = 2 return #t",
+    "want": "2"
+  },
+  {
+    "src": "local t = {} t[2] = 2 return #t",
+    "want": "0"
+  },
+  {
+    "src": "local t = {nil, nil, 3} return #t",
+    "want": "3"
+  },
+  {
+    "src": "return table.concat({1, 2, 3}, '-')",
+    "want": "1-2-3"
+  },
+  {
+    "src": "return table.concat({'a', 'b'}, ',', 1, 1)",
+    "want": "a"
+  },
+  {
+    "src": "local t = {3, 2, 1} table.sort(t) return t[1] .. t[2] .. t[3]",
+    "want": "123"
+  },
+  {
+    "src": "local t = {'b', 'c', 'a'} table.sort(t) return table.concat(t)",
+    "want": "abc"
+  },
+  {
+    "src": "local t = {5, 2, 8, 1} table.sort(t) return table.concat(t, ',')",
+    "want": "1,2,5,8"
+  },
+  {
+    "src": "local t = {} table.insert(t, 1) table.insert(t, 2) table.insert(t, 1, 0) return table.concat(t, ',')",
+    "want": "0,1,2"
+  },
+  {
+    "src": "local t = {1, 2, 3} table.remove(t, 2) return table.concat(t, ',')",
+    "want": "1,3"
+  },
+  {
+    "src": "local t = {1, 2, 3} return table.remove(t, 3)",
+    "want": "3"
+  },
+  {
+    "src": "local t = {[5] = 1} return table.maxn(t)",
+    "want": "5"
+  },
+  {
+    "src": "local t = {1, nil, 3} return table.getn(t)",
+    "want": "3"
+  },
+  {
+    "src": "local n = 0 for k, v in pairs({a = 1, b = 2}) do n = n + v end return n",
+    "want": "3"
+  },
+  {
+    "src": "local n = 0 for i, v in ipairs({1, 2, 3}) do n = n + v end return n",
+    "want": "6"
+  },
+  {
+    "src": "local n = 0 for i, v in ipairs({1, 2, nil, 4}) do n = n + v end return n",
+    "want": "3"
+  },
+  {
+    "src": "local t = {a = 1} local k, v = next(t) return k .. v",
+    "want": "a1"
+  },
+  {
+    "src": "local t = {} return tostring(next(t))",
+    "want": "nil"
+  },
+  {
+    "src": "local t = {} t.x = 1 return next(t, 'x') == nil",
+    "want": "true"
+  },
+  {
+    "src": "local t = setmetatable({}, {__index = function(_, k) return k .. '!' end}) return t.a",
+    "want": "a!"
+  },
+  {
+    "src": "local base = {x = 1} local t = setmetatable({}, {__index = base}) return t.x",
+    "want": "1"
+  },
+  {
+    "src": "local t = setmetatable({}, {__add = function(a, b) return 42 end}) return t + 1",
+    "want": "42"
+  },
+  {
+    "src": "local t = setmetatable({}, {__concat = function(a, b) return 'cat' end}) return t .. 'x'",
+    "want": "cat"
+  },
+  {
+    "src": "local t = setmetatable({}, {__call = function(self, x) return x + 1 end}) return t(1)",
+    "want": "2"
+  },
+  {
+    "src": "local t = setmetatable({}, {__tostring = function() return 'OBJ' end}) return tostring(t)",
+    "want": "OBJ"
+  },
+  {
+    "src": "local t = setmetatable({}, {__eq = function() return true end}) return t == setmetatable({}, getmetatable(t))",
+    "want": "true"
+  },
+  {
+    "src": "local t = setmetatable({}, {__lt = function() return true end}) return t < t",
+    "want": "true"
+  },
+  {
+    "src": "local t = setmetatable({}, {}) return tostring(setmetatable(t, nil) == t)",
+    "want": "true"
+  },
+  {
+    "src": "local t = setmetatable({}, {__index = function() return 1 end}) return rawget(t, 'x')",
+    "want": "nil"
+  },
+  {
+    "src": "local t = setmetatable({}, {__newindex = function() error('no') end}) local ok = pcall(function() t.x = 1 end) return tostring(ok)",
+    "want": "false"
+  },
+  {
+    "src": "local ok, e = pcall(function() error('x') end) return tostring(ok) .. ':' .. e",
+    "want": "false:user_script:1: x"
+  },
+  {
+    "src": "local ok, e = pcall(function() error('x', 0) end) return e",
+    "want": "x"
+  },
+  {
+    "src": "local ok = pcall(function() return 1 + nil end) return tostring(ok)",
+    "want": "false"
+  },
+  {
+    "src": "local ok, a, b = pcall(function() return 1, 2 end) return tostring(ok) .. a .. b",
+    "want": "true12"
+  },
+  {
+    "src": "local ok, e = pcall(error) return tostring(ok) .. tostring(e)",
+    "want": "falsenil"
+  },
+  {
+    "src": "local ok, e = pcall(error, {}) return tostring(ok) .. type(e)",
+    "want": "falsetable"
+  },
+  {
+    "src": "return select('#', pcall(function() end))",
+    "want": "1"
+  },
+  {
+    "src": "local ok, e = xpcall(function() error('y') end, function(err) return 'H:' .. err end) return tostring(ok) .. ' ' .. e",
+    "want": "false H:user_script:1: y"
+  },
+  {
+    "src": "local ok, e = xpcall(function() error('y', 0) end, function(err) return 'H:' .. err end) return e",
+    "want": "H:y"
+  },
+  {
+    "src": "return tostring(pcall(function() return nil end))",
+    "want": "true"
+  },
+  {
+    "src": "local ok, e = pcall(function() local t = nil return t.x end) return tostring(ok)",
+    "want": "false"
+  },
+  {
+    "src": "return assert(1, 'msg')",
+    "want": "1,msg"
+  },
+  {
+    "src": "local ok, e = pcall(assert, false, 'bad') return e",
+    "want": "bad"
+  },
+  {
+    "src": "local ok, e = pcall(assert, nil) return e",
+    "want": "assertion failed!"
+  },
+  {
+    "src": "return tostring(1):sub(1, 1)",
+    "want": "1"
+  },
+  {
+    "src": "return type(nil)",
+    "want": "nil"
+  },
+  {
+    "src": "return type(1)",
+    "want": "number"
+  },
+  {
+    "src": "return type('x')",
+    "want": "string"
+  },
+  {
+    "src": "return type({})",
+    "want": "table"
+  },
+  {
+    "src": "return type(coroutine.create(function() end))",
+    "want": "thread"
+  },
+  {
+    "src": "return type(type)",
+    "want": "function"
+  },
+  {
+    "src": "return tostring(nil)",
+    "want": "nil"
+  },
+  {
+    "src": "return tostring(false)",
+    "want": "false"
+  },
+  {
+    "src": "return rawequal(1, 1)",
+    "want": "true"
+  },
+  {
+    "src": "return rawequal({}, {})",
+    "want": "false"
+  },
+  {
+    "src": "return select('#', 1, 2, 3)",
+    "want": "3"
+  },
+  {
+    "src": "return select('#')",
+    "want": "0"
+  },
+  {
+    "src": "local t = {1, 2} return unpack(t)",
+    "want": "1,2"
+  },
+  {
+    "src": "local t = {1, 2, 3} return unpack(t, 2)",
+    "want": "2,3"
+  },
+  {
+    "src": "local t = {1, 2, 3} return unpack(t, 2, 2)",
+    "want": "2"
+  },
+  {
+    "src": "return tostring(collectgarbage('count')) ~= nil",
+    "want": "true"
+  },
+  {
+    "src": "return loadstring('return 1')()",
+    "want": "1"
+  },
+  {
+    "src": "local f, e = loadstring('return +') return tostring(f) .. ':' .. tostring(e)",
+    "want": "nil:[string \"return +\"]:1: unexpected symbol near '+'"
+  },
+  {
+    "src": "return loadstring('return ...')(1, 2)",
+    "want": "1,2"
+  },
+  {
+    "src": "local f = loadstring('return x') return tostring(pcall(f))",
+    "want": "false"
+  },
+  {
+    "src": "local f = loadstring('return 1') return type(f)",
+    "want": "function"
+  },
+  {
+    "src": "return tostring(rawget({a = 1}, 'a'))",
+    "want": "1"
+  },
+  {
+    "src": "local t = {} rawset(t, 'a', 2) return t.a",
+    "want": "2"
+  },
+  {
+    "src": "local co = coroutine.create(function() return 1 end) local ok, v = coroutine.resume(co) return tostring(ok) .. v",
+    "want": "true1"
+  },
+  {
+    "src": "local co = coroutine.create(function() coroutine.yield() end) coroutine.resume(co) return coroutine.status(co)",
+    "want": "suspended"
+  },
+  {
+    "src": "local co = coroutine.create(function() end) coroutine.resume(co) return coroutine.status(co)",
+    "want": "dead"
+  },
+  {
+    "src": "local co = coroutine.create(function() return coroutine.status(coroutine.running()) end) local _, s = coroutine.resume(co) return s",
+    "want": "running"
+  },
+  {
+    "src": "return tostring(coroutine.running())",
+    "want": "nil"
+  },
+  {
+    "src": "local f = coroutine.wrap(function(a) coroutine.yield(a) return a * 2 end) return f(5) + f(5)",
+    "want": "15"
+  },
+  {
+    "src": "local co = coroutine.create(function() error('boom') end) local ok, e = coroutine.resume(co) return tostring(ok) .. ':' .. e",
+    "want": "false:user_script:1: boom"
+  },
+  {
+    "src": "local co = coroutine.create(function() end) coroutine.resume(co) local ok = coroutine.resume(co) return tostring(ok)",
+    "want": "false"
+  },
+  {
+    "src": "local co = coroutine.create(function(a, b) return a + b end) local _, s = coroutine.resume(co, 1, 2) return s",
+    "want": "3"
+  },
+  {
+    "src": "local co = coroutine.create(function() coroutine.yield(1, 2) end) local _, a, b = coroutine.resume(co) return a .. b",
+    "want": "12"
+  },
+  {
+    "src": "return string.rep('ab', 2)",
+    "want": "abab"
+  },
+  {
+    "src": "return string.find('hello', 'l')",
+    "want": "3,3"
+  },
+  {
+    "src": "return string.find('hello', 'l', 4)",
+    "want": "4,4"
+  },
+  {
+    "src": "return string.find('hello', 'xyz')",
+    "want": "nil"
+  },
+  {
+    "src": "return string.find('a+b', '+', 1, true)",
+    "want": "2,2"
+  },
+  {
+    "src": "return string.find('abc', '^b')",
+    "want": "nil"
+  },
+  {
+    "src": "return string.find('abc', '^a')",
+    "want": "1,1"
+  },
+  {
+    "src": "return string.match('abc', '^a')",
+    "want": "a"
+  },
+  {
+    "src": "return string.match('abc', 'c$')",
+    "want": "c"
+  },
+  {
+    "src": "return tostring(string.match('abc', 'd$'))",
+    "want": "nil"
+  },
+  {
+    "src": "return select(2, string.gsub('abc', 'b', 'X', 0))",
+    "want": "0"
+  },
+  {
+    "src": "return (string.gsub('aaa', 'a', 'b'))",
+    "want": "bbb"
+  },
+  {
+    "src": "return (string.gsub('abc', '.', function(c) return c end))",
+    "want": "abc"
+  },
+  {
+    "src": "return (string.gsub('a1b2', '(%a)(%d)', '%2%1'))",
+    "want": "1a2b"
+  },
+  {
+    "src": "return string.match('  x', '^%s*(.*)')",
+    "want": "x"
+  },
+  {
+    "src": "return string.match('x  ', '(.*)%s*$')",
+    "want": "x  "
+  },
+  {
+    "src": "return string.match('abc123def', '%a+(%d+)%a+')",
+    "want": "123"
+  },
+  {
+    "src": "return tostring(string.match('abc', '%d'))",
+    "want": "nil"
+  },
+  {
+    "src": "return (string.gsub('one two', '(%w+)', '<%1>'))",
+    "want": "<one> <two>"
+  },
+  {
+    "src": "return string.byte('hello', 1, -1)",
+    "want": "104,101,108,108,111"
+  },
+  {
+    "src": "return select('#', string.byte('hello', 10))",
+    "want": "0"
+  },
+  {
+    "src": "return string.char(0):len()",
+    "want": "1"
+  },
+  {
+    "src": "return ('abc'):rep(0)",
+    "want": ""
+  },
+  {
+    "src": "return math.floor(3.7)",
+    "want": "3"
+  },
+  {
+    "src": "return math.ceil(3.2)",
+    "want": "4"
+  },
+  {
+    "src": "return math.sqrt(2) > 1.41",
+    "want": "true"
+  },
+  {
+    "src": "return math.abs(-0.5)",
+    "want": "0.5"
+  },
+  {
+    "src": "return math.min(-1, -2)",
+    "want": "-2"
+  },
+  {
+    "src": "return math.max(1)",
+    "want": "1"
+  },
+  {
+    "src": "return tostring(math.mod(5.5, 2))",
+    "want": "1.5"
+  },
+  {
+    "src": "return tostring(math.fmod(5.5, 2))",
+    "want": "1.5"
+  },
+  {
+    "src": "return math.floor(math.huge)",
+    "want": "inf"
+  },
+  {
+    "src": "return tostring(-math.huge)",
+    "want": "-inf"
+  },
+  {
+    "src": "return math.pow(2, -1)",
+    "want": "0.5"
+  },
+  {
+    "src": "return tostring(math.sqrt(-1))",
+    "want": "-nan"
+  },
+  {
+    "src": "return math.modf(3.7)",
+    "want": "3,0.7"
+  },
+  {
+    "src": "return math.modf(-3.7)",
+    "want": "-3,-0.7"
+  },
+  {
+    "src": "return tostring(math.atan2(0, 1))",
+    "want": "0"
+  },
+  {
+    "src": "return math.atan2(1, 1) == math.pi / 4",
+    "want": "true"
+  },
+  {
+    "src": "return tostring(math.cos(0))",
+    "want": "1"
+  },
+  {
+    "src": "return string.format('%.3f', math.sin(0))",
+    "want": "0.000"
+  },
+  {
+    "src": "local d = string.dump(function() end) return d:sub(1, 4)",
+    "want": "\u001bLua"
+  },
+  {
+    "src": "local d = string.dump(function() end) local f, e = loadstring(d) return tostring(f) .. '|' .. tostring(e)",
+    "want": "nil|[string \"\u001bLuaQ\"]:1: unexpected symbol near 'char(27)'"
+  },
+  {
+    "src": "local parts = {'return ', '42'} local i = 0 local f = load(function() i = i + 1 return parts[i] end) return f()",
+    "want": "42"
+  },
+  {
+    "src": "local i = 0 local f = load(function() i = i + 1 if i > 1 then return nil end return 'return 7' end) return f()",
+    "want": "7"
+  },
+  {
+    "src": "--[[ block\ncomment ]] return 1",
+    "want": "1"
+  },
+  {
+    "src": "-- line comment\nreturn 2",
+    "want": "2"
+  },
+  {
+    "src": "return [[a\nb]]",
+    "want": "a\nb"
+  },
+  {
+    "src": "return [==[\n]]\n]==]",
+    "want": "]]\n"
+  },
+  {
+    "src": "return #[[\n\n]]",
+    "want": "1"
+  },
+  {
+    "src": "return #'\\a\\b\\f\\v\\r'",
+    "want": "5"
+  },
+  {
+    "src": "return '\\97\\98'",
+    "want": "ab"
+  },
+  {
+    "src": "return '\\097'",
+    "want": "a"
+  },
+  {
+    "src": "return #'a\\\nb'",
+    "want": "3"
+  },
+  {
+    "src": "return '\\''",
+    "want": "'"
+  },
+  {
+    "src": "return '\\\"'",
+    "want": "\""
+  },
+  {
+    "src": "return #'\\\\'",
+    "want": "1"
+  },
+  {
+    "src": "return string.match('a\\tb', '%c')",
+    "want": "\t"
+  },
+  {
+    "src": "return string.match('a.b', '%p')",
+    "want": "."
+  },
+  {
+    "src": "return string.match('0123456789abcdef', '%x+')",
+    "want": "0123456789abcdef"
+  },
+  {
+    "src": "return string.match('ab1', '%C+')",
+    "want": "ab1"
+  },
+  {
+    "src": "return string.match('ab1', '%P+')",
+    "want": "ab1"
+  },
+  {
+    "src": "return tostring(string.match('abc', '%X'))",
+    "want": "nil"
+  },
+  {
+    "src": "return string.match('a\\0b', '%z')",
+    "want": "\u0000"
+  },
+  {
+    "src": "return string.match('abc', '%A+')",
+    "want": "nil"
+  },
+  {
+    "src": "return string.match('the cat', '%f[%a]%a+')",
+    "want": "the"
+  },
+  {
+    "src": "return string.match('(a(b)c)', '%b()')",
+    "want": "(a(b)c)"
+  },
+  {
+    "src": "return string.match('a(b', '%b()') == nil",
+    "want": "true"
+  },
+  {
+    "src": "return string.format('%o', 8)",
+    "want": "10"
+  },
+  {
+    "src": "return string.format('%u', 42)",
+    "want": "42"
+  },
+  {
+    "src": "return string.format('%c%c', 104, 105)",
+    "want": "hi"
+  },
+  {
+    "src": "return string.format('%10s|', 'x')",
+    "want": "         x|"
+  },
+  {
+    "src": "return string.format('%-10s|', 'x')",
+    "want": "x         |"
+  },
+  {
+    "src": "return string.format('%.3s', 'abcdef')",
+    "want": "abc"
+  },
+  {
+    "src": "return string.format('%+d', 5)",
+    "want": "+5"
+  },
+  {
+    "src": "return string.format('%#x', 255)",
+    "want": "0xff"
+  },
+  {
+    "src": "return string.format('%#o', 8)",
+    "want": "010"
+  },
+  {
+    "src": "return string.format('%q', 42)",
+    "want": "\"42\""
+  },
+  {
+    "src": "return string.format('%q', 3.7)",
+    "want": "\"3.7\""
+  },
+  {
+    "src": "return string.format('% d', 5)",
+    "want": " 5"
+  },
+  {
+    "src": "return string.format('%q', 'a\\rb')",
+    "want": "\"a\\rb\""
+  },
+  {
+    "src": "return string.format('%q', 'a\\0b')",
+    "want": "\"a\\000b\""
+  },
+  {
+    "src": "return string.format('%%d', 1)",
+    "want": "%d"
+  },
+  {
+    "src": "return (string.gsub('abc', 'b', function() return nil end))",
+    "want": "abc"
+  },
+  {
+    "src": "return (string.gsub('abc', 'b', function() return 42 end))",
+    "want": "a42c"
+  },
+  {
+    "src": "return (string.gsub('abc', 'b', {b = 7}))",
+    "want": "a7c"
+  },
+  {
+    "src": "return (string.gsub('abc', 'b', {b = false}))",
+    "want": "abc"
+  },
+  {
+    "src": "return select(2, string.gsub('aaa', 'a', 'b', 2))",
+    "want": "2"
+  },
+  {
+    "src": "return (string.gsub('a.b', '%.', '%%'))",
+    "want": "a%b"
+  },
+  {
+    "src": "local t = {1, 2, 3} table.insert(t, 1, 0) table.insert(t, 5) return table.concat(t, ',')",
+    "want": "0,1,2,3,5"
+  },
+  {
+    "src": "local t = {1, 2} table.remove(t, 0) return table.concat(t, ',')",
+    "want": "1,2"
+  },
+  {
+    "src": "local t = {} table.remove(t) return #t",
+    "want": "0"
+  },
+  {
+    "src": "local t = {1, 2, 3} table.remove(t, 2) return #t",
+    "want": "2"
+  },
+  {
+    "src": "return table.concat({}, ',')",
+    "want": ""
+  },
+  {
+    "src": "local t = {1, 2, 3} return table.concat(t, ',', 2)",
+    "want": "2,3"
+  },
+  {
+    "src": "local s = '' for i = 1, 2, 0.5 do s = s .. i .. ';' end return s",
+    "want": "1;1.5;2;"
+  },
+  {
+    "src": "local s = 0 for i = 3, 1 do s = s + 1 end return s",
+    "want": "0"
+  },
+  {
+    "src": "local s = '' for i = 3, 1, -1 do s = s .. i end return s",
+    "want": "321"
+  },
+  {
+    "src": "local t = {} for i = 1, 3 do t[#t+1] = function() return i end end return t[1]() .. t[3]()",
+    "want": "13"
+  },
+  {
+    "src": "return tostring(1 < 2 and 2 < 3)",
+    "want": "true"
+  },
+  {
+    "src": "return tostring('a' < 'b')",
+    "want": "true"
+  },
+  {
+    "src": "return tostring('A' < 'a')",
+    "want": "true"
+  },
+  {
+    "src": "return tostring('abc' < 'abd')",
+    "want": "true"
+  },
+  {
+    "src": "return tostring('ab' < 'abc')",
+    "want": "true"
+  },
+  {
+    "src": "local t = setmetatable({}, {__le = function() return true end}) return tostring(t <= t)",
+    "want": "true"
+  },
+  {
+    "src": "local t = setmetatable({}, {__lt = function() return true end}) return tostring(t <= t)",
+    "want": "false"
+  },
+  {
+    "src": "local a, b, c = (function() return 1, 2 end)() return tostring(a) .. tostring(b) .. tostring(c)",
+    "want": "12nil"
+  },
+  {
+    "src": "local t = {} t.a, t.b = 1, 2 return t.a + t.b",
+    "want": "3"
+  },
+  {
+    "src": "local a = 1 local t = {a, a + 1, a + 2} return t[3]",
+    "want": "3"
+  },
+  {
+    "src": "local function f() local x = 1 return function() x = x + 1 return x end end local g = f() g() return g()",
+    "want": "3"
+  },
+  {
+    "src": "local fs = {} for i = 1, 3 do fs[i] = function() return i * 2 end end return fs[1]() + fs[2]() + fs[3]()",
+    "want": "12"
+  },
+  {
+    "src": "local x = 1 local function f() return x end x = 2 return f()",
+    "want": "2"
+  },
+  {
+    "src": "local function f() local a = 1 do local a = 2 end return a end return f()",
+    "want": "1"
+  },
+  {
+    "src": "local fs = {} local i = 0 repeat i = i + 1 local x = i fs[i] = function() return x end until i >= 3 return fs[1]() .. fs[2]() .. fs[3]()",
+    "want": "123"
+  },
+  {
+    "src": "local i = 0 local r = {} repeat local x = i i = i + 1 r[#r+1] = tostring(x) until x == 2 return table.concat(r, ',')",
+    "want": "0,1,2"
+  },
+  {
+    "src": "math.pi = 3",
+    "want": "user_script:1: Attempt to modify a readonly table"
+  },
+  {
+    "src": "string.len = nil",
+    "want": "user_script:1: Attempt to modify a readonly table"
+  },
+  {
+    "src": "table.sort = 1",
+    "want": "user_script:1: Attempt to modify a readonly table"
+  },
+  {
+    "src": "coroutine.create = 1",
+    "want": "user_script:1: Attempt to modify a readonly table"
+  },
+  {
+    "src": "getmetatable('').__index = 1",
+    "want": "user_script:1: Attempt to modify a readonly table"
+  },
+  {
+    "src": "getmetatable('').x = 1",
+    "want": "user_script:1: Attempt to modify a readonly table"
+  },
+  {
+    "src": "local x = nil return x.y",
+    "want": "user_script:1: attempt to index local 'x' (a nil value)"
+  },
+  {
+    "src": "local x = 1 return x.y",
+    "want": "user_script:1: attempt to index local 'x' (a number value)"
+  },
+  {
+    "src": "local t = {} return t.a.b",
+    "want": "user_script:1: attempt to index field 'a' (a nil value)"
+  },
+  {
+    "src": "return 1 .. {}",
+    "want": "user_script:1: attempt to concatenate a table value"
+  },
+  {
+    "src": "local t = {} return t + 1",
+    "want": "user_script:1: attempt to perform arithmetic on local 't' (a table value)"
+  },
+  {
+    "src": "local t = {} return #t.x",
+    "want": "user_script:1: attempt to get length of field 'x' (a nil value)"
+  },
+  {
+    "src": "return unknown_global",
+    "want": "user_script:1: Script attempted to access nonexistent global variable 'unknown_global'"
+  },
+  {
+    "src": "return string.format('%100d', 1)",
+    "want": "user_script:1: invalid format (width or precision too long)"
+  },
+  {
+    "src": "return string.format('%0000001d', 1)",
+    "want": "user_script:1: invalid format (repeated flags)"
+  },
+  {
+    "src": "local f = 1 f()",
+    "want": "user_script:1: attempt to call local 'f' (a number value)"
+  },
+  {
+    "src": "return ('x'):bad()",
+    "want": "user_script:1: attempt to call method 'bad' (a nil value)"
+  },
+  {
+    "src": "local t = {} for i = 1, 20 do t['key' .. i] = i end t.alpha = 1 t.beta = 2 t[3.5] = 'x' t[true] = 'y' t[100] = 'z' t[-7] = 1 local o = {} for k in pairs(t) do o[#o + 1] = tostring(k) end return table.concat(o, ',')",
+    "want": "key16,beta,key9,key5,key1,-7,key7,key3,key20,key8,key12,true,key11,key2,alpha,key10,key19,key17,100,3.5,key13,key6,key18,key15,key4,key14"
+  },
+  {
+    "src": "local t = {} for i = 1, 10 do t[i * 1.5] = i end local o = {} for k in pairs(t) do o[#o + 1] = k end return table.concat(o, ',')",
+    "want": "13.5,7.5,15,4.5,9,1.5,3,6,12,10.5"
+  },
+  {
+    "src": "local t = {x = 1, y = 2, z = 3} t.y = nil t.w = 4 local o = {} for k in pairs(t) do o[#o + 1] = k end return table.concat(o, ',')",
+    "want": "x,w,z"
+  },
+  {
+    "src": "local t = {} for i = 1, 40 do t['k' .. i] = i end for i = 1, 40, 3 do t['k' .. i] = nil end t.extra = 1 local o = {} for k in pairs(t) do o[#o + 1] = k end return table.concat(o, ',')",
+    "want": "k12,k32,k39,k11,k30,k38,k14,k3,k27,k18,k5,k26,k21,k29,k23,k35,k36,k20,k8,extra,k9,k2,k15,k24,k33,k6,k17"
+  },
+  {
+    "src": "local t = {1, 2, 3, nil, 5, x = 'a', [10] = 10, [-1] = -1, [0] = 0} local o = {} for k in pairs(t) do o[#o + 1] = tostring(k) end return table.concat(o, ',')",
+    "want": "1,2,3,5,0,x,-1,10"
+  },
+  {
+    "src": "local t = {} for i = 100, 1, -1 do t[i] = i end local o = {} for k in pairs(t) do o[#o + 1] = k end return table.concat(o, ',', 1, 20)",
+    "want": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"
+  },
+  {
+    "src": "return #({1, 2, 3, nil, 5}), #({nil, nil, 3}), #({1, nil, 3, nil}), #({[1] = 1, [2] = 2, [4] = 4})",
+    "want": "5,3,1,4"
+  },
+  {
+    "src": "local t = {} t[1] = 1 t[2] = 2 t[3] = 3 t[5] = 5 t[6] = 6 return #t",
+    "want": "3"
+  },
+  {
+    "src": "local t = {} for i = 1, 8 do t[i] = i end t[4] = nil return #t",
+    "want": "8"
+  },
+  {
+    "src": "local t = {} for i = 1, 8 do t[i] = i end t[8] = nil t[7] = nil return #t, next(t, 6)",
+    "want": "6,nil"
+  },
+  {
+    "src": "local t = {a = 1} local k = next(t) t.a = nil t.b = 2 return k, tostring(next(t))",
+    "want": "a,b"
+  },
+  {
+    "src": "local t = {} t[2^53] = 1 t[-0.0] = 2 t[0] = 3 t[1e300] = 4 local o = {} for k, v in pairs(t) do o[#o + 1] = tostring(k) .. '=' .. v end return table.concat(o, ',')",
+    "want": "-0=3,1e+300=4,9.007199254741e+15=1"
+  },
+  {
+    "src": "return tonumber('0xA.8p1'), tonumber('0x1p4'), tonumber('infinity'), tonumber('-INF'), tonumber('1e309'), tonumber('0x1P-2')",
+    "want": "21,16,inf,-inf,inf,0.25"
+  },
+  {
+    "src": "return tonumber('nan(123)'), tonumber(' nan '), tonumber('+5'), tonumber('5.'), tonumber('.5'), tonumber('5e+2')",
+    "want": "nan,nan,5,5,0.5,500"
+  },
+  {
+    "src": "return 1e309, 2^1024, -2^1024, 5e-324 > 0",
+    "want": "inf,inf,-inf,true"
+  },
+  {
+    "src": "return 0x.8",
+    "want": "user_script:1: malformed number near '0x'"
+  },
+  {
+    "src": "return tonumber('1e5', 10), tonumber('11', 2), tonumber('1.5', 10), tonumber('z', 37)",
+    "want": "user_script:1: bad argument #2 to 'tonumber' (base out of range)"
+  },
+  {
+    "src": "return '0x1p4' + 0, '1e309' + 0, ' inf ' * 1",
+    "want": "16,inf,inf"
+  }
+]

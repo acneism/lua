@@ -1,0 +1,16 @@
+lua
+Copyright 2026 acneism
+
+This project is licensed under the Apache License, Version 2.0.
+
+The reference corpus and capture wrapper originate in the project specification
+and capture tool supplied by acneism on 2026-10-24. Recorded answers were obtained
+from Redis 7.2.16. The corpus is copied without editing its answers.
+
+No upstream interpreter or Redis implementation code has been ported in A0.
+Redis is an external test service and is not distributed in this repository.
+
+Future ports must include the license and copyright notices from the exact source
+files in Redis 7.2.16. These include Lua 5.1.5 (MIT), Redis (BSD-3-Clause),
+lua-cjson (MIT), lua-cmsgpack (BSD-2-Clause), lua_struct (MIT), LuaBitOp (MIT),
+and LZF (BSD-2-Clause), as each component is introduced.

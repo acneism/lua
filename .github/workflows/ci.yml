@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - run: go test ./...
+      - run: go vet ./...
+
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Check formatting and dependencies
+        shell: bash
+        run: |
+          test -z "$(gofmt -l .)"
+          test "$(go list -m all | wc -l)" -eq 1
+      - uses: golangci/golangci-lint-action@v9.3.0
+        with:
+          version: v2.15.0
+
+  race:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - run: mkdir -p work
+      - run: go test -race -coverprofile=work/coverage.out ./...
+      - name: Enforce coverage for implemented interpreter and engine packages
+        shell: bash
+        run: |
+          go tool cover -func=work/coverage.out
+          awk '
+            /^github.com\/acneism\/lua\/[^/]+\.go:/ { package = "lua" }
+            /^github.com\/acneism\/lua\/redis\/[^/]+\.go:/ { package = "redis" }
+            /^github.com\/acneism\/lua\// {
+              if (package != "") {
+                statements[package] += $2
+                if ($3 > 0) covered[package] += $2
+              }
+              package = ""
+            }
+            END {
+              for (p in statements) {
+                percent = 100 * covered[p] / statements[p]
+                printf "%s coverage: %.1f%%\n", p, percent
+                if (percent < 85) failed = 1
+              }
+              exit failed
+            }
+          ' work/coverage.out
+
+  reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      redis:
+        image: redis:7.2.16
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Verify every recorded answer
+        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -verify testdata/snippets.json
