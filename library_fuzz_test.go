@@ -91,6 +91,8 @@ func FuzzPattern(f *testing.F) {
 }
 
 func FuzzFormat(f *testing.F) {
+	f.Add("%+.0d", 0.0, "", byte(0))
+	f.Add("%#08x", 255.0, "", byte(0))
 	for _, format := range []string{"%s", "%q", "%99.99f", "%#.0o", "%08x", "%", "%000000d", "%z", "%c%c", "%g\x00%s"} {
 		f.Add(format, 3.7, "a\x00b\n", byte(0))
 	}

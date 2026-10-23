@@ -11746,5 +11746,677 @@
   {
     "src": "local t={} for x in string.gfind(\"abc\",\".\") do t[#t+1]=x end return table.concat(t,\",\")",
     "want": "a,b,c"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08d', 0))",
+    "want": "3030303030303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08d', -1))",
+    "want": "2d30303030303031"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08d', 255))",
+    "want": "3030303030323535"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08d', 1e20))",
+    "want": "2d39323233333732303336383534373735383038"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3d', 0))",
+    "want": "2020202020303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3d', -1))",
+    "want": "202020202d303031"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3d', 255))",
+    "want": "2020202020323535"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3d', 1e20))",
+    "want": "2d39323233333732303336383534373735383038"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0d', 0))",
+    "want": "2b"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0d', -1))",
+    "want": "2d31"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0d', 255))",
+    "want": "2b323535"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0d', 1e20))",
+    "want": "2d39323233333732303336383534373735383038"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0d', 0))",
+    "want": "20"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0d', -1))",
+    "want": "2d31"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0d', 255))",
+    "want": "20323535"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0d', 1e20))",
+    "want": "2d39323233333732303336383534373735383038"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0d', 0))",
+    "want": "2b20202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0d', -1))",
+    "want": "2d31202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0d', 255))",
+    "want": "2b32353520202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0d', 1e20))",
+    "want": "2d39323233333732303336383534373735383038"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3d', 0))",
+    "want": "303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3d', -1))",
+    "want": "2d303031"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3d', 255))",
+    "want": "323535"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3d', 1e20))",
+    "want": "2d39323233333732303336383534373735383038"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08d', 0))",
+    "want": "3020202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08d', -1))",
+    "want": "2d31202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08d', 255))",
+    "want": "3235352020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08d', 1e20))",
+    "want": "2d39323233333732303336383534373735383038"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08i', 0))",
+    "want": "3030303030303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08i', -1))",
+    "want": "2d30303030303031"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08i', 255))",
+    "want": "3030303030323535"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08i', 1e20))",
+    "want": "2d39323233333732303336383534373735383038"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3i', 0))",
+    "want": "2020202020303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3i', -1))",
+    "want": "202020202d303031"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3i', 255))",
+    "want": "2020202020323535"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3i', 1e20))",
+    "want": "2d39323233333732303336383534373735383038"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0i', 0))",
+    "want": "2b"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0i', -1))",
+    "want": "2d31"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0i', 255))",
+    "want": "2b323535"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0i', 1e20))",
+    "want": "2d39323233333732303336383534373735383038"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0i', 0))",
+    "want": "20"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0i', -1))",
+    "want": "2d31"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0i', 255))",
+    "want": "20323535"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0i', 1e20))",
+    "want": "2d39323233333732303336383534373735383038"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0i', 0))",
+    "want": "2b20202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0i', -1))",
+    "want": "2d31202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0i', 255))",
+    "want": "2b32353520202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0i', 1e20))",
+    "want": "2d39323233333732303336383534373735383038"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3i', 0))",
+    "want": "303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3i', -1))",
+    "want": "2d303031"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3i', 255))",
+    "want": "323535"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3i', 1e20))",
+    "want": "2d39323233333732303336383534373735383038"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08i', 0))",
+    "want": "3020202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08i', -1))",
+    "want": "2d31202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08i', 255))",
+    "want": "3235352020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08i', 1e20))",
+    "want": "2d39323233333732303336383534373735383038"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08u', 0))",
+    "want": "3030303030303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08u', -1))",
+    "want": "3138343436373434303733373039353531363135"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08u', 255))",
+    "want": "3030303030323535"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08u', 1e20))",
+    "want": "3030303030303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3u', 0))",
+    "want": "2020202020303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3u', -1))",
+    "want": "3138343436373434303733373039353531363135"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3u', 255))",
+    "want": "2020202020323535"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3u', 1e20))",
+    "want": "2020202020303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0u', 0))",
+    "want": ""
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0u', -1))",
+    "want": "3138343436373434303733373039353531363135"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0u', 255))",
+    "want": "323535"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0u', 1e20))",
+    "want": ""
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0u', 0))",
+    "want": ""
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0u', -1))",
+    "want": "3138343436373434303733373039353531363135"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0u', 255))",
+    "want": "323535"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0u', 1e20))",
+    "want": ""
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0u', 0))",
+    "want": "2020202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0u', -1))",
+    "want": "3138343436373434303733373039353531363135"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0u', 255))",
+    "want": "3235352020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0u', 1e20))",
+    "want": "2020202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3u', 0))",
+    "want": "303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3u', -1))",
+    "want": "3138343436373434303733373039353531363135"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3u', 255))",
+    "want": "323535"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3u', 1e20))",
+    "want": "303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08u', 0))",
+    "want": "3020202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08u', -1))",
+    "want": "3138343436373434303733373039353531363135"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08u', 255))",
+    "want": "3235352020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08u', 1e20))",
+    "want": "3020202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08o', 0))",
+    "want": "3030303030303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08o', -1))",
+    "want": "3031373737373737373737373737373737373737373737"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08o', 255))",
+    "want": "3030303030333737"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08o', 1e20))",
+    "want": "3030303030303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3o', 0))",
+    "want": "2020202020303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3o', -1))",
+    "want": "3031373737373737373737373737373737373737373737"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3o', 255))",
+    "want": "2020202030333737"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3o', 1e20))",
+    "want": "2020202020303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0o', 0))",
+    "want": ""
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0o', -1))",
+    "want": "31373737373737373737373737373737373737373737"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0o', 255))",
+    "want": "333737"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0o', 1e20))",
+    "want": ""
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0o', 0))",
+    "want": ""
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0o', -1))",
+    "want": "31373737373737373737373737373737373737373737"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0o', 255))",
+    "want": "333737"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0o', 1e20))",
+    "want": ""
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0o', 0))",
+    "want": "2020202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0o', -1))",
+    "want": "31373737373737373737373737373737373737373737"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0o', 255))",
+    "want": "3337372020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0o', 1e20))",
+    "want": "2020202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3o', 0))",
+    "want": "303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3o', -1))",
+    "want": "3031373737373737373737373737373737373737373737"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3o', 255))",
+    "want": "30333737"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3o', 1e20))",
+    "want": "303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08o', 0))",
+    "want": "3020202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08o', -1))",
+    "want": "3031373737373737373737373737373737373737373737"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08o', 255))",
+    "want": "3033373720202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08o', 1e20))",
+    "want": "3020202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08x', 0))",
+    "want": "3030303030303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08x', -1))",
+    "want": "307866666666666666666666666666666666"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08x', 255))",
+    "want": "3078303030306666"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08x', 1e20))",
+    "want": "3030303030303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3x', 0))",
+    "want": "2020202020303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3x', -1))",
+    "want": "307866666666666666666666666666666666"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3x', 255))",
+    "want": "2020203078306666"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3x', 1e20))",
+    "want": "2020202020303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0x', 0))",
+    "want": ""
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0x', -1))",
+    "want": "66666666666666666666666666666666"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0x', 255))",
+    "want": "6666"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0x', 1e20))",
+    "want": ""
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0x', 0))",
+    "want": ""
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0x', -1))",
+    "want": "66666666666666666666666666666666"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0x', 255))",
+    "want": "6666"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0x', 1e20))",
+    "want": ""
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0x', 0))",
+    "want": "2020202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0x', -1))",
+    "want": "66666666666666666666666666666666"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0x', 255))",
+    "want": "6666202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0x', 1e20))",
+    "want": "2020202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3x', 0))",
+    "want": "303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3x', -1))",
+    "want": "307866666666666666666666666666666666"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3x', 255))",
+    "want": "3078306666"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3x', 1e20))",
+    "want": "303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08x', 0))",
+    "want": "3020202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08x', -1))",
+    "want": "307866666666666666666666666666666666"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08x', 255))",
+    "want": "3078666620202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08x', 1e20))",
+    "want": "3020202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08X', 0))",
+    "want": "3030303030303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08X', -1))",
+    "want": "305846464646464646464646464646464646"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08X', 255))",
+    "want": "3058303030304646"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08X', 1e20))",
+    "want": "3030303030303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3X', 0))",
+    "want": "2020202020303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3X', -1))",
+    "want": "305846464646464646464646464646464646"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3X', 255))",
+    "want": "2020203058304646"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#08.3X', 1e20))",
+    "want": "2020202020303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0X', 0))",
+    "want": ""
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0X', -1))",
+    "want": "46464646464646464646464646464646"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0X', 255))",
+    "want": "4646"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%+.0X', 1e20))",
+    "want": ""
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0X', 0))",
+    "want": ""
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0X', -1))",
+    "want": "46464646464646464646464646464646"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0X', 255))",
+    "want": "4646"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('% .0X', 1e20))",
+    "want": ""
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0X', 0))",
+    "want": "2020202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0X', -1))",
+    "want": "46464646464646464646464646464646"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0X', 255))",
+    "want": "4646202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-+8.0X', 1e20))",
+    "want": "2020202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3X', 0))",
+    "want": "303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3X', -1))",
+    "want": "305846464646464646464646464646464646"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3X', 255))",
+    "want": "3058304646"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%#.3X', 1e20))",
+    "want": "303030"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08X', 0))",
+    "want": "3020202020202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08X', -1))",
+    "want": "305846464646464646464646464646464646"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08X', 255))",
+    "want": "3058464620202020"
+  },
+  {
+    "src": "local function hex(s) local o=\"\" for i=1,#s do o=o..string.format(\"%02x\",string.byte(s,i)) end return o end return hex(string.format('%-#08X', 1e20))",
+    "want": "3020202020202020"
   }
 ]

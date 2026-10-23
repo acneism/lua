@@ -48,6 +48,54 @@ func formatPadding(text string, width int, left bool, zero bool) string {
 	return strings.Repeat(" ", count) + text
 }
 
+func formatInteger(number float64, option byte, flags string, width, precision int) string {
+	signed := option == 'd' || option == 'i'
+	integer := luaInteger(number)
+	value := uint64(integer)
+	prefix := ""
+	if signed {
+		if integer < 0 {
+			prefix = "-"
+			value = 0 - uint64(integer)
+		} else if strings.ContainsRune(flags, '+') {
+			prefix = "+"
+		} else if strings.ContainsRune(flags, ' ') {
+			prefix = " "
+		}
+	} else if number >= 0x1p63 {
+		value = uint64(luaInteger(number-0x1p63)) ^ (uint64(1) << 63)
+	}
+	base := 10
+	if option == 'o' {
+		base = 8
+	} else if option == 'x' || option == 'X' {
+		base = 16
+	}
+	digits := strconv.FormatUint(value, base)
+	if precision == 0 && value == 0 {
+		digits = ""
+	}
+	if precision > len(digits) {
+		digits = strings.Repeat("0", precision-len(digits)) + digits
+	}
+	if strings.ContainsRune(flags, '#') {
+		if option == 'o' && (len(digits) == 0 || digits[0] != '0') {
+			prefix = "0"
+		} else if base == 16 && value != 0 {
+			prefix = "0x"
+		}
+	}
+	if option == 'X' {
+		prefix = strings.ToUpper(prefix)
+		digits = strings.ToUpper(digits)
+	}
+	left := strings.ContainsRune(flags, '-')
+	if strings.ContainsRune(flags, '0') && !left && precision < 0 && width > len(prefix)+len(digits) {
+		digits = strings.Repeat("0", width-len(prefix)-len(digits)) + digits
+	}
+	return formatPadding(prefix+digits, width, left, false)
+}
+
 func stringFormat(s *State, args []Value) ([]Value, error) {
 	format := s.checkText(args, 0)
 	var out strings.Builder
@@ -134,41 +182,7 @@ func stringFormat(s *State, args []Value) ([]Value, error) {
 			add(cString(formatPadding(text, width, left, false)))
 		case 'd', 'i', 'o', 'u', 'x', 'X':
 			number := s.checkNumber(args, argument)
-			var value any = luaInteger(number)
-			verb := option
-			if verb == 'i' {
-				verb = 'd'
-			}
-			if option == 'u' || option == 'o' || option == 'x' || option == 'X' {
-				unsigned := uint64(luaInteger(number))
-				if number >= 0x1p63 {
-					unsigned = uint64(luaInteger(number-0x1p63)) ^ (uint64(1) << 63)
-				}
-				value = unsigned
-				flags = strings.ReplaceAll(strings.ReplaceAll(flags, "+", ""), " ", "")
-				if option == 'u' {
-					verb = 'd'
-				}
-			}
-			zero := number == 0
-			if unsigned, ok := value.(uint64); ok {
-				zero = unsigned == 0
-			}
-			if (verb == 'x' || verb == 'X') && zero || verb == 'd' {
-				flags = strings.ReplaceAll(flags, "#", "")
-			}
-			if verb == 'o' && zero && precision == 0 && strings.ContainsRune(flags, '#') {
-				precision = 1
-			}
-			spec := "%" + flags
-			if width > 0 {
-				spec += strconv.Itoa(width)
-			}
-			if precision >= 0 {
-				spec += "." + strconv.Itoa(precision)
-			}
-			spec += string(verb)
-			add(fmt.Sprintf(spec, value))
+			add(formatInteger(number, option, flags, width, precision))
 		case 'e', 'E', 'f', 'g', 'G':
 			number := s.checkNumber(args, argument)
 			if math.IsInf(number, 0) || math.IsNaN(number) {
