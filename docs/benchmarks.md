@@ -38,6 +38,10 @@ Run the Go workloads with:
 go test . -run '^$' -bench '^Benchmark(Loop|Fib27|LuaCalls|TableInsert|TableHash)$' -benchtime=1x -count=3 -benchmem
 ```
 
+The complete alternating comparison is implemented in scripts/bench-reference.py.
+Run it from the repository root on the benchmark VM with Redis 7.2.16 on port
+6390. It verifies the reference version and performs all three rounds.
+
 A2 will add sort, pattern substitution, and string concatenation. C adds JSON.
 B and E add host workloads and final engine measurements. These interpreter
 figures do not claim performance for the unimplemented engine or libraries.

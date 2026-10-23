@@ -25,3 +25,8 @@ Each scalar slot reserves space for the other representations. This trades
 some table and stack memory for direct numeric access without unsafe code,
 reflection, interface boxing, or a dependency. Host objects should be allocated
 through their State to obtain stable identity numbers.
+
+Modulo explicitly converts its intermediate product to float64 before
+subtraction. This preserves Lua's separate rounding on architectures that
+support FMA. The [Go floating-point rules](https://go.dev/ref/spec#Floating_point_operators)
+require that conversion to prevent fusion from discarding the rounding.

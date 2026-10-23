@@ -30,6 +30,28 @@ type pendingSnippet struct {
 	Reason string `json:"reason"`
 }
 
+type corpusNormalization struct {
+	Src  string `json:"src"`
+	Rule string `json:"rule"`
+}
+
+func equalNaNFields(got, want string) bool {
+	left, right := strings.Split(got, ","), strings.Split(want, ",")
+	if len(left) != len(right) {
+		return false
+	}
+	for index, value := range left {
+		if value == right[index] {
+			continue
+		}
+		if (value == "nan" || value == "-nan") && (right[index] == "nan" || right[index] == "-nan") {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
 func readCorpus(t *testing.T) []referenceSnippet {
 	t.Helper()
 	data, err := os.ReadFile("testdata/snippets.json")
@@ -91,6 +113,21 @@ func captureEnvironment(s *State) *Table {
 }
 
 func TestCorpus(t *testing.T) {
+	normalizationData, err := os.ReadFile("testdata/normalization.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var normalizations []corpusNormalization
+	if err := json.Unmarshal(normalizationData, &normalizations); err != nil {
+		t.Fatal(err)
+	}
+	normalizing := make(map[string]string)
+	for _, item := range normalizations {
+		if _, duplicate := normalizing[item.Src]; duplicate || item.Rule != "nan-sign" {
+			t.Fatalf("invalid normalization: %+v", item)
+		}
+		normalizing[item.Src] = item.Rule
+	}
 	data, err := os.ReadFile("testdata/pending.json")
 	if err != nil {
 		t.Fatal(err)
@@ -113,6 +150,8 @@ func TestCorpus(t *testing.T) {
 			continue
 		}
 		ran++
+		rule := normalizing[snippet.Src]
+		delete(normalizing, snippet.Src)
 		t.Run(fmt.Sprintf("%03d", index+1), func(t *testing.T) {
 			s := NewState(Options{})
 			env := captureEnvironment(s)
@@ -129,12 +168,18 @@ func TestCorpus(t *testing.T) {
 			}
 			got := strings.TrimPrefix(values[0].text, "ERR ")
 			if got != snippet.Want {
+				if rule == "nan-sign" && equalNaNFields(got, snippet.Want) {
+					return
+				}
 				t.Fatalf("want %q\ngot  %q\nsource: %s", snippet.Want, got, snippet.Src)
 			}
 		})
 	}
 	if len(waiting) > 0 {
 		t.Fatalf("%d pending sources are absent from corpus", len(waiting))
+	}
+	if len(normalizing) > 0 {
+		t.Fatalf("%d normalization entries did not execute", len(normalizing))
 	}
 	if ran == 0 {
 		t.Fatal("no corpus entries executed")

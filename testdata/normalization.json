@@ -1,0 +1,6 @@
+[
+  {
+    "src": "return tostring(1e300 * 1e10), tostring(-(0/0))",
+    "rule": "nan-sign"
+  }
+]

@@ -36,7 +36,12 @@ Object tostring values use stable IDs instead of machine addresses. Type
 prefixes such as `table: 0x` match. Pointer-key table order may differ.
 Numeric constants may merge signed zero. The specification also permits
 equivalent fpconv rounding, pooled random-state differences, and
-platform-dependent NaN signs. A1's active corpus needs no normalization.
+platform-dependent NaN signs. One source is explicitly listed for NaN-sign
+normalization in testdata/normalization.json. All other fields still compare
+exactly. A separate test requires formatting to preserve the actual NaN sign.
+
+Lua modulo explicitly rounds its intermediate product to float64. This prevents
+fused multiply/subtract instructions from changing Redis's result on ARM64.
 
 collectgarbage and gcinfo expose plausible Go memory statistics rather than the
 Redis Lua allocator's exact figures. Lua controls do not stop Go's process-wide

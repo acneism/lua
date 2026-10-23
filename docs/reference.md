@@ -15,6 +15,10 @@ varargs, error frames, coroutine boundaries, and parser and call limits.
 732 entries execute in A1. The 243 entries needing A2 are recorded in
 `testdata/pending.json`. Reference verification always checks the complete file.
 
+One source has an explicit nan-sign rule in testdata/normalization.json for
+platform-dependent NaN generation. It changes no recorded answer, and only
+paired nan/-nan fields can compare equal. Modulo results are not normalized.
+
 The command uses the specification's wrapper unchanged:
 
 ```lua
