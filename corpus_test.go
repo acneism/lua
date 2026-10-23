@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -168,7 +169,7 @@ func TestCorpus(t *testing.T) {
 			}
 			got := strings.TrimPrefix(values[0].text, "ERR ")
 			if got != snippet.Want {
-				if rule == "nan-sign" && equalNaNFields(got, snippet.Want) {
+				if rule == "nan-sign" && runtime.GOARCH == "arm64" && equalNaNFields(got, snippet.Want) {
 					return
 				}
 				t.Fatalf("want %q\ngot  %q\nsource: %s", snippet.Want, got, snippet.Src)

@@ -70,6 +70,7 @@ type thread struct {
 	entry        Value
 	started      bool
 	nativeDepth  int
+	cDepth       int
 	boundary     int
 	resumeDest   int
 	resumeWant   int
@@ -175,7 +176,12 @@ func (s *State) Call(fn Value, args ...Value) (values []Value, err error) {
 }
 
 func (s *State) protected(fn Value, args []Value) (values []Value, err error) {
+	return s.protectedCall(fn, args, true)
+}
+
+func (s *State) protectedCall(fn Value, args []Value, enter bool) (values []Value, err error) {
 	t := s.current
+	cDepth := t.cDepth
 	depth, used, top, nativeDepth := len(t.frames), t.used, t.top, t.nativeDepth
 	defer func() {
 		if raised := recover(); raised != nil {
@@ -187,8 +193,12 @@ func (s *State) protected(fn Value, args []Value) (values []Value, err error) {
 			if failure.Line == 0 {
 				failure.Line = s.currentLine()
 			}
+			if failure.cDepth == 0 {
+				failure.cDepth = t.cDepth
+			}
 			err = failure
 		}
+		t.cDepth = cDepth
 		if err != nil {
 			t.close(used)
 			clear(t.stack[used:t.used])
@@ -196,6 +206,15 @@ func (s *State) protected(fn Value, args []Value) (values []Value, err error) {
 			t.used, t.top, t.nativeDepth = used, top, nativeDepth
 		}
 	}()
+	if enter {
+		t.cDepth++
+		if t.cDepth == 200 {
+			s.runtimeError("C stack overflow")
+		}
+		if t.cDepth >= 225 {
+			panic(plainError("error in error handling"))
+		}
+	}
 	if fn.kind != TypeFunction {
 		fn, args = s.callable(fn, args, nameInfo{})
 	}
@@ -226,6 +245,7 @@ func (s *State) cleanup() {
 		t.entry = Nil()
 		t.frames = t.frames[:0]
 		t.used, t.top, t.nativeDepth, t.boundary = 0, 0, 0, 0
+		t.cDepth = 0
 		t.status = "dead"
 		t.parent = nil
 	}
@@ -238,6 +258,7 @@ func (s *State) cleanup() {
 	s.main.tail = s.main.tail[:0]
 	s.main.frames = s.main.frames[:0]
 	s.main.used, s.main.top, s.main.nativeDepth, s.main.boundary = 0, 0, 0, 0
+	s.main.cDepth = 0
 }
 
 func (t *thread) ensure(size int) {

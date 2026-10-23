@@ -11,10 +11,10 @@ A1 implements the interpreter core, base and coroutine libraries, immutable
 prototypes, Lua tables, metatables, closures, varargs, tail calls, error locations,
 read-only tables, and an interruption hook.
 
-The corpus has 992 snippets. The interpreter runs 749 through the original
-capture wrapper. The other 243 are explicitly listed by source and stage in
-`testdata/pending.json`. All 243 currently need the A2 libraries.
-The reference verifier checks all 992 against Redis.
+The corpus has 1499 snippets. The interpreter runs 1257 through the original
+capture wrapper. The other 242 are explicitly listed by source and stage in
+`testdata/pending.json`. All 242 currently need the A2 libraries.
+The reference verifier checks all 1499 against Redis.
 
 String, table, and math libraries belong to A2. The Redis engine, host interface,
 EVAL, and FUNCTION API belong to later stages.

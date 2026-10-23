@@ -1165,11 +1165,6 @@
     "reason": "String, table, or math library"
   },
   {
-    "src": "return ('x'):bad()",
-    "stage": "A2",
-    "reason": "String, table, or math library"
-  },
-  {
     "src": "local t = {} for i = 1, 20 do t['key' .. i] = i end t.alpha = 1 t.beta = 2 t[3.5] = 'x' t[true] = 'y' t[100] = 'z' t[-7] = 1 local o = {} for k in pairs(t) do o[#o + 1] = tostring(k) end return table.concat(o, ',')",
     "stage": "A2",
     "reason": "String, table, or math library"

@@ -4,7 +4,7 @@ The target is Redis 7.2.16 and its Lua 5.1 variant. A1 implements the interprete
 and base and coroutine libraries. EVAL, FUNCTION, host commands, A2 libraries,
 and C extensions are not implemented yet.
 
-Of 992 reference snippets, 749 execute in A1. The other 243 are listed explicitly
+Of 1499 reference snippets, 1257 execute in A1. The other 242 are listed explicitly
 in `testdata/pending.json`. Tests execute the original capture wrapper; its
 helper environment is separate from the snippet environment. Reference CI
 checks all recorded answers against Redis, including pending entries.
@@ -37,7 +37,7 @@ prefixes such as `table: 0x` match. Pointer-key table order may differ.
 Numeric constants may merge signed zero. The specification also permits
 equivalent fpconv rounding, pooled random-state differences, and
 platform-dependent NaN signs. One source is explicitly listed for NaN-sign
-normalization in testdata/normalization.json. All other fields still compare
+normalization on arm64 in testdata/normalization.json. All other fields still compare
 exactly. A separate test requires formatting to preserve the actual NaN sign.
 
 Lua modulo explicitly rounds its intermediate product to float64. This prevents

@@ -307,7 +307,11 @@ func baseXPCall(s *State, args []Value) ([]Value, error) {
 	if err == nil {
 		return append([]Value{Bool(true)}, values...), nil
 	}
-	handled, handlingError := s.protected(handler, []Value{err.(*Error).Value})
+	failure := err.(*Error)
+	depth := s.current.cDepth
+	s.current.cDepth = failure.cDepth
+	handled, handlingError := s.protected(handler, []Value{failure.Value})
+	s.current.cDepth = depth
 	if abortError(handlingError) {
 		return nil, handlingError
 	}

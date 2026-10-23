@@ -8,6 +8,8 @@ import (
 )
 
 func FuzzCompile(f *testing.F) {
+	f.Add("local x=1 return x" + strings.Repeat(" + (x*x)", 300))
+	f.Add("local x=1 return f(" + strings.Repeat("x,", 300) + "x)")
 	for _, seed := range []string{"", "return +", "return '\\300'", "local x=x+1", "while true do end", "return 1..2", "return [[unterminated", "return \x1bLuaQ", strings.Repeat("(", 201), "local t={1,x=2} for k in pairs(t) do t[k]=nil end", "return load(function() return {} end)", "local co=coroutine.create(function() coroutine.yield(1) end) coroutine.resume(co)"} {
 		f.Add(seed)
 	}
@@ -24,7 +26,7 @@ func FuzzCompile(f *testing.F) {
 }
 
 func FuzzRun(f *testing.F) {
-	for _, seed := range [][]byte{{}, {0}, {1, 7, 9}, {2}, {3}, {255, 0, 31}, {4, 3, 2, 1}} {
+	for _, seed := range [][]byte{{}, {0}, {1, 7, 9}, {2}, {3}, {255, 0, 31}, {4, 3, 2, 1}, {5}, {6}, {7}} {
 		f.Add(seed)
 	}
 	f.Fuzz(func(t *testing.T, data []byte) {
@@ -33,7 +35,7 @@ func FuzzRun(f *testing.F) {
 		}
 		var source strings.Builder
 		if len(data) > 0 {
-			switch data[0] % 5 {
+			switch data[0] % 8 {
 			case 1:
 				source.WriteString("do local t={1,2,x=3} for k in pairs(t) do t[k]=nil end end ")
 			case 2:
@@ -42,6 +44,12 @@ func FuzzRun(f *testing.F) {
 				source.WriteString("do local co=coroutine.create(function() coroutine.yield(1) end) coroutine.resume(co) end ")
 			case 4:
 				source.WriteString("do local t={} for i=1,64 do t['k'..i]=i end for k in pairs(t) do t[k]=nil end end ")
+			case 5:
+				source.WriteString("do local t=setmetatable({}, {__index=function(t,k) return t[k] end}) pcall(function() return t.x end) end ")
+			case 6:
+				source.WriteString("do local function f(n) if n==0 then return 1 end return coroutine.wrap(f)(n-1) end pcall(f,200) end ")
+			case 7:
+				source.WriteString("do local function f() return xpcall(f,function(e) return e end) end f() end ")
 			}
 		}
 		source.WriteString("local n=0 local t={} local function f(x) return x*2+1 end ")

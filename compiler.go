@@ -79,6 +79,7 @@ type compiler struct {
 	locals    []localVariable
 	next      int
 	breaks    [][]int
+	position  token
 }
 
 func Compile(source []byte, chunk string) (proto *Proto, err error) {
@@ -111,8 +112,8 @@ func (c *compiler) reserve(next int) {
 	if c.next > c.proto.maxRegisters {
 		c.proto.maxRegisters = c.next
 	}
-	if c.next > 250 {
-		panic(locatedError(c.proto.chunk, 1, "function or expression too complex"))
+	if c.next >= 250 {
+		panic(syntaxError(c.proto.chunk, max(1, c.position.line), "function or expression too complex near '"+c.position.text+"'"))
 	}
 }
 
@@ -142,7 +143,7 @@ func (c *compiler) addLocal(name token) int {
 		if c.proto.line > 0 {
 			where = fmt.Sprintf("function at line %d", c.proto.line)
 		}
-		panic(locatedError(c.proto.chunk, name.line, where+" has more than 200 local variables"))
+		panic(syntaxError(c.proto.chunk, name.line, where+" has more than 200 local variables"))
 	}
 	index := c.temp()
 	c.locals = append(c.locals, localVariable{name: name.text, register: index})
@@ -185,7 +186,7 @@ func (c *compiler) capture(name string) (int, bool) {
 		}
 	}
 	if len(c.proto.upvalues) >= 60 {
-		panic(locatedError(c.proto.chunk, max(1, c.proto.line), fmt.Sprintf("function at line %d has more than 60 upvalues", max(1, c.proto.line))))
+		panic(syntaxError(c.proto.chunk, max(1, c.proto.line), fmt.Sprintf("function at line %d has more than 60 upvalues", max(1, c.proto.line))))
 	}
 	c.proto.upvalues = append(c.proto.upvalues, upvalueDescriptor{local: local, index: index, name: name})
 	return len(c.proto.upvalues) - 1, true
@@ -214,8 +215,12 @@ func (c *compiler) name(e *expression) nameInfo {
 		_, _, info := c.resolve(e.name)
 		return info
 	}
-	if e.kind == "index" && e.right.kind == "literal" && e.right.value.kind == TypeString {
-		return nameInfo{kind: "field", name: e.right.value.text}
+	if e.kind == "index" {
+		name := "?"
+		if e.right.kind == "literal" && e.right.value.kind == TypeString {
+			name = e.right.value.text
+		}
+		return nameInfo{kind: "field", name: name}
 	}
 	if e.kind == "paren" {
 		return c.name(e.left)
@@ -311,6 +316,7 @@ func (c *compiler) values(expressions []*expression, base, count int) {
 }
 
 func (c *compiler) expression(e *expression, dest, want int) {
+	c.position = e.token
 	before := c.next
 	c.reserve(dest + max(1, want))
 	defer func() { c.next = max(before, dest+max(1, want)) }()
@@ -345,7 +351,7 @@ func (c *compiler) expression(e *expression, dest, want int) {
 		c.emit(i)
 	case "vararg":
 		if !c.proto.vararg {
-			panic(locatedError(c.proto.chunk, e.token.line, "cannot use '...' outside a vararg function near '...'"))
+			panic(syntaxError(c.proto.chunk, e.token.line, "cannot use '...' outside a vararg function near '...'"))
 		}
 		c.proto.usesVararg = true
 		i.op = opVararg
@@ -386,7 +392,12 @@ func (c *compiler) expression(e *expression, dest, want int) {
 			i.text = e.name
 			i.left = c.name(e.left)
 			i.right = c.name(e.right)
-			i.b = c.operand(e.left, c.pure(e.right))
+			if c.pure(e.left) && c.pure(e.right) {
+				i.b = c.operand(e.left, true)
+			} else {
+				c.expression(e.left, dest, 1)
+				i.b = dest
+			}
 			i.c = c.operand(e.right, true)
 			c.emit(i)
 		}
@@ -459,7 +470,7 @@ func (c *compiler) call(e *expression, dest, want int, tail bool) {
 	info := c.name(e.left)
 	argCount := len(e.args)
 	if e.method {
-		c.reserve(base + 2 + argCount)
+		c.reserve(base + 2)
 		c.expression(e.left.left, base+1, 1)
 		key := c.temp()
 		c.expression(e.left.right, key, 1)
@@ -467,7 +478,7 @@ func (c *compiler) call(e *expression, dest, want int, tail bool) {
 		info.kind = "method"
 		argCount++
 	} else {
-		c.reserve(base + 1 + argCount)
+		c.reserve(base + 1)
 		c.expression(e.left, base, 1)
 	}
 	argBase := base + 1
@@ -475,6 +486,11 @@ func (c *compiler) call(e *expression, dest, want int, tail bool) {
 		argBase++
 	}
 	for index, arg := range e.args {
+		c.position = arg.token
+		if index == len(e.args)-1 {
+			c.position = e.after
+		}
+		c.reserve(argBase + index + 1)
 		count := 1
 		if index == len(e.args)-1 && (arg.kind == "call" || arg.kind == "vararg") {
 			count = -1
@@ -578,7 +594,7 @@ func (c *compiler) statement(s *statement) {
 		c.loop(s, base)
 	case "break":
 		if len(c.breaks) == 0 {
-			panic(locatedError(c.proto.chunk, s.line, "no loop to break near '<eof>'"))
+			panic(syntaxError(c.proto.chunk, s.line, "no loop to break near '<eof>'"))
 		}
 		index := len(c.breaks) - 1
 		c.breaks[index] = append(c.breaks[index], c.emit(instruction{op: opJump, line: s.line}))

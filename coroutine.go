@@ -92,11 +92,16 @@ func (s *State) resume(t *thread, args []Value) (values []Value, err error) {
 		return nil, plainError("cannot resume " + t.status + " coroutine")
 	}
 	parent := s.current
+	if parent.cDepth >= 200 {
+		return nil, plainError("C stack overflow")
+	}
+	t.cDepth = parent.cDepth + 1
 	parent.status = "normal"
 	s.current = t
 	t.parent = parent
 	t.status = "running"
 	defer func() {
+		t.cDepth = 0
 		if raised := recover(); raised != nil {
 			if failure, ok := raised.(*Error); ok {
 				err = failure
@@ -117,7 +122,7 @@ func (s *State) resume(t *thread, args []Value) (values []Value, err error) {
 	}()
 	if !t.started {
 		t.started = true
-		return s.protected(t.entry, args)
+		return s.protectedCall(t.entry, args, false)
 	}
 	if t.resumeReturn {
 		done, result := s.finish(args)

@@ -14,6 +14,7 @@ type expression struct {
 	name     string
 	method   bool
 	endLine  int
+	after    token
 }
 
 type tableField struct {
@@ -82,7 +83,7 @@ func (p *parser) peek() token {
 }
 
 func (p *parser) fail(message string) {
-	panic(locatedError(p.lexer.chunk, p.current.line, message+" near '"+p.current.text+"'"))
+	panic(syntaxError(p.lexer.chunk, p.current.line, message+" near '"+p.current.text+"'"))
 }
 
 func (p *parser) expect(kind string) token {
@@ -103,7 +104,7 @@ func (p *parser) accept(kind string) bool {
 func (p *parser) enter() {
 	p.depth++
 	if p.depth >= 200 {
-		panic(locatedError(p.lexer.chunk, p.current.line, "chunk has too many syntax levels"))
+		panic(syntaxError(p.lexer.chunk, p.current.line, "chunk has too many syntax levels"))
 	}
 }
 
@@ -330,6 +331,7 @@ func (p *parser) expr(limit int) *expression {
 		left, right := priority(p.current.kind)
 		if left <= limit {
 			value.endLine = p.lastLine()
+			value.after = p.current
 			return value
 		}
 		op := p.advance()
@@ -397,6 +399,7 @@ func (p *parser) suffix() *expression {
 			call := p.current
 			value = &expression{kind: "call", token: call, left: value, args: p.arguments()}
 		default:
+			value.after = p.current
 			return value
 		}
 		value.endLine = p.lastLine()

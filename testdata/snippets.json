@@ -3966,5 +3966,2033 @@
   {
     "src": "local t={} local x=nil return (t.x or x)()",
     "want": "user_script:1: attempt to call a nil value"
+  },
+  {
+    "src": "return select('#', nil, nil)",
+    "want": "2"
+  },
+  {
+    "src": "return select(-1, 1, 2, 3)",
+    "want": "3"
+  },
+  {
+    "src": "return pcall(select, 0)",
+    "want": "false,bad argument #1 to '?' (index out of range)"
+  },
+  {
+    "src": "return pcall(select, -5, 1)",
+    "want": "false,bad argument #1 to '?' (index out of range)"
+  },
+  {
+    "src": "return select(2.7, 'a', 'b', 'c')",
+    "want": "b,c"
+  },
+  {
+    "src": "return tonumber('0x10'), tonumber('  10  '), tonumber('10', 16), tonumber('z', 36), tonumber('1e1', 10)",
+    "want": "16,10,16,35,10"
+  },
+  {
+    "src": "return tonumber('8', 8), tonumber(' 0x '), tonumber(''), tonumber('1e')",
+    "want": "nil,nil,nil,nil"
+  },
+  {
+    "src": "return tonumber('10', 2), tonumber('ff', 16), tonumber('FF', 16), tonumber('-ff', 16), tonumber(' 11 ', 2), tonumber('2', 2)",
+    "want": "2,255,255,1.844674407371e+19,3,nil"
+  },
+  {
+    "src": "return pcall(tonumber, '10', 1)",
+    "want": "false,bad argument #2 to '?' (base out of range)"
+  },
+  {
+    "src": "return pcall(tonumber, '1', 37)",
+    "want": "false,bad argument #2 to '?' (base out of range)"
+  },
+  {
+    "src": "return tonumber(nil)",
+    "want": "nil"
+  },
+  {
+    "src": "return tonumber(' 0x1A '), tonumber('1e+2'), tonumber('.5'), tonumber('5.'), tonumber('0x.8')",
+    "want": "26,100,0.5,5,0.5"
+  },
+  {
+    "src": "local t = setmetatable({}, {__index=function(t,k) return k*2 end}) return t[21]",
+    "want": "42"
+  },
+  {
+    "src": "local a = {} a[1.5]=1 return #a",
+    "want": "0"
+  },
+  {
+    "src": "return #{1,2,nil,4}",
+    "want": "4"
+  },
+  {
+    "src": "return #{nil,nil,3}",
+    "want": "3"
+  },
+  {
+    "src": "local t={} t[1]=1 t[2]=2 t[4]=4 return #t",
+    "want": "4"
+  },
+  {
+    "src": "local t = {10,20,30,nil} return #t",
+    "want": "3"
+  },
+  {
+    "src": "local t = {} for i = 1, 10 do t[i] = i end t[5] = nil return #t",
+    "want": "10"
+  },
+  {
+    "src": "local t = {1,2,3,4,5,6,7,8} t[8]=nil t[4]=nil return #t",
+    "want": "3"
+  },
+  {
+    "src": "local t = {} t[1]=1 t[2]=2 t[3]=3 t[5]=5 return #t",
+    "want": "3"
+  },
+  {
+    "src": "local function f() error('x', 2) end local function g() f() end local ok,e = pcall(g) return e",
+    "want": "user_script:1: x"
+  },
+  {
+    "src": "return pcall(error)",
+    "want": "false,nil"
+  },
+  {
+    "src": "return select('#', pcall(error))",
+    "want": "2"
+  },
+  {
+    "src": "error(setmetatable({}, {__tostring=function() return 'custom' end}))",
+    "want": "custom"
+  },
+  {
+    "src": "local ok,e = pcall(error,{code=1}) return type(e), e.code",
+    "want": "table,1"
+  },
+  {
+    "src": "local ok, e = pcall(error, 42) return type(e), e",
+    "want": "string,42"
+  },
+  {
+    "src": "local ok,e = pcall(function() error('m', 0) end) return e",
+    "want": "m"
+  },
+  {
+    "src": "return xpcall(function() error('boom') end, function(m) return 'h:'..m end)",
+    "want": "false,h:user_script:1: boom"
+  },
+  {
+    "src": "return xpcall(error, function(e) return type(e) end)",
+    "want": "false,nil"
+  },
+  {
+    "src": "return xpcall(function() error('a') end, function(e) error('b') end)",
+    "want": "false,error in error handling"
+  },
+  {
+    "src": "return pcall(1)",
+    "want": "false,attempt to call a number value"
+  },
+  {
+    "src": "return pcall(pcall)",
+    "want": "true,false,attempt to call a boolean value"
+  },
+  {
+    "src": "return pcall(xpcall, function() end)",
+    "want": "false,bad argument #2 to '?' (value expected)"
+  },
+  {
+    "src": "local co = coroutine.create(function(a,b) local c = coroutine.yield(a+b) local d,e = coroutine.yield(c*2) return d+e end) local _,x = coroutine.resume(co,1,2) local _,y = coroutine.resume(co,10) local _,z = coroutine.resume(co,3,4) local ok, msg = coroutine.resume(co) return x,y,z,ok,msg,coroutine.status(co)",
+    "want": "3,20,7,false,cannot resume dead coroutine,dead"
+  },
+  {
+    "src": "local f = coroutine.wrap(function() error('in co') end) return pcall(f)",
+    "want": "false,user_script:1: in co"
+  },
+  {
+    "src": "local f = coroutine.wrap(function() error(5) end) return pcall(f)",
+    "want": "false,user_script:1: 5"
+  },
+  {
+    "src": "local f = coroutine.wrap(function() error({}) end) local ok, e = pcall(f) return ok, type(e)",
+    "want": "false,table"
+  },
+  {
+    "src": "local f = coroutine.wrap(function() end) f() return pcall(f)",
+    "want": "false,cannot resume dead coroutine"
+  },
+  {
+    "src": "return pcall(coroutine.resume, coroutine.running())",
+    "want": "false,bad argument #1 to '?' (coroutine expected)"
+  },
+  {
+    "src": "local co co = coroutine.create(function() return coroutine.status(co) end) return coroutine.resume(co)",
+    "want": "true,running"
+  },
+  {
+    "src": "local co co = coroutine.create(function() return coroutine.running() == co end) return coroutine.resume(co)",
+    "want": "true,true"
+  },
+  {
+    "src": "local a, b a = coroutine.create(function() return coroutine.resume(b) end) b = coroutine.create(function() return coroutine.status(a) end) return coroutine.resume(a)",
+    "want": "true,true,normal"
+  },
+  {
+    "src": "local co = coroutine.create(function() error({1}) end) local ok, e = coroutine.resume(co) return ok, type(e), coroutine.status(co)",
+    "want": "false,table,dead"
+  },
+  {
+    "src": "local co = coroutine.create(function() local function g() error('x', 2) end g() end) return coroutine.resume(co)",
+    "want": "false,user_script:1: x"
+  },
+  {
+    "src": "local co = coroutine.create(function()\n  local x = nil\n  return x.y\nend) return coroutine.resume(co)",
+    "want": "false,user_script:3: attempt to index local 'x' (a nil value)"
+  },
+  {
+    "src": "return pcall(coroutine.create, tostring)",
+    "want": "false,bad argument #1 to '?' (Lua function expected)"
+  },
+  {
+    "src": "return pcall(coroutine.create)",
+    "want": "false,bad argument #1 to '?' (Lua function expected)"
+  },
+  {
+    "src": "return pcall(coroutine.status, {})",
+    "want": "false,bad argument #1 to '?' (coroutine expected)"
+  },
+  {
+    "src": "local function gen(n) return coroutine.wrap(function() for i=1,n do coroutine.yield(i) end end) end local s=0 for v in gen(5) do s=s+v end return s",
+    "want": "15"
+  },
+  {
+    "src": "local co = coroutine.create(function() local t = setmetatable({}, {__index=function() return coroutine.yield(1) end}) return t.x end) return coroutine.resume(co)",
+    "want": "false,attempt to yield across metamethod/C-call boundary"
+  },
+  {
+    "src": "local co = coroutine.wrap(function() for k in function() return coroutine.yield('it') end do return k end end) return co(), co('v')",
+    "want": "user_script:1: attempt to yield across metamethod/C-call boundary"
+  },
+  {
+    "src": "local f = coroutine.wrap(function(...) local a = {...} while true do a = {coroutine.yield(#a)} end end) return f(1,2,3), f(), f(nil, nil)",
+    "want": "3,0,0"
+  },
+  {
+    "src": "local co = coroutine.create(function(...) return select('#', ...), ... end) return coroutine.resume(co, nil, 2, nil)",
+    "want": "true,3,nil,2,nil"
+  },
+  {
+    "src": "local co = coroutine.create(function() coroutine.yield() end) coroutine.resume(co) return coroutine.status(co), coroutine.resume(co), coroutine.status(co)",
+    "want": "suspended,true,dead"
+  },
+  {
+    "src": "local co = coroutine.wrap(function() return xpcall(function() coroutine.yield(1) end, function(e) return 'h:' .. e end) end) return co()",
+    "want": "false,h:attempt to yield across metamethod/C-call boundary"
+  },
+  {
+    "src": "local mt = {__eq=function() return true end} local a = setmetatable({}, mt) local b = setmetatable({}, mt) return a==b, a==1, rawequal(a,b), a~=b",
+    "want": "true,false,false,false"
+  },
+  {
+    "src": "local a = setmetatable({}, {__eq=function() return true end}) local b = setmetatable({}, {__eq=function() return true end}) return a == b",
+    "want": "false"
+  },
+  {
+    "src": "return pcall(function() return {} < {} end)",
+    "want": "false,user_script:1: attempt to compare two table values"
+  },
+  {
+    "src": "return pcall(function() return 1 < '2' end)",
+    "want": "false,user_script:1: attempt to compare number with string"
+  },
+  {
+    "src": "return pcall(function() return '10' < 5 end)",
+    "want": "false,user_script:1: attempt to compare string with number"
+  },
+  {
+    "src": "return pcall(function() return 1 < setmetatable({}, {__lt=function() return true end}) end)",
+    "want": "false,user_script:1: attempt to compare number with table"
+  },
+  {
+    "src": "local mt={__lt=function(a,b) return true end} local a,b=setmetatable({},mt),setmetatable({},mt) return a<=b, a<b, a>b, a>=b",
+    "want": "false,true,true,false"
+  },
+  {
+    "src": "local mt={__le=function(a,b) return 'yes' end} local a,b=setmetatable({},mt),setmetatable({},mt) return a<=b, a>=b",
+    "want": "true,true"
+  },
+  {
+    "src": "local mt={__concat=function(a,b) return 'c' end} return setmetatable({},mt)..'x', 1 ..setmetatable({},mt)",
+    "want": "c,c"
+  },
+  {
+    "src": "local t=setmetatable({}, {__call=function(self, a, b) return a+b end}) return t(2,3)",
+    "want": "5"
+  },
+  {
+    "src": "local t=setmetatable({}, {__call=5}) return pcall(t)",
+    "want": "false,attempt to call a table value"
+  },
+  {
+    "src": "local store={} local t=setmetatable({}, {__newindex=store}) t.x=5 return rawget(t,'x'), store.x",
+    "want": "nil,5"
+  },
+  {
+    "src": "local t = setmetatable({}, {}) getmetatable(t).__index = t return pcall(function() return t.x end)",
+    "want": "false,user_script:1: loop in gettable"
+  },
+  {
+    "src": "local t = {} t.__index = t setmetatable(t, t) return t.missing",
+    "want": "user_script:1: loop in gettable"
+  },
+  {
+    "src": "local t = {} t.__newindex = t setmetatable(t, t) return pcall(function() t.x = 1 end)",
+    "want": "false,user_script:1: loop in settable"
+  },
+  {
+    "src": "return pcall(tostring, setmetatable({}, {__tostring=function() return 1 end}))",
+    "want": "true,1"
+  },
+  {
+    "src": "local t = setmetatable({}, {__metatable='locked'}) return getmetatable(t), pcall(setmetatable, t, {})",
+    "want": "locked,false,cannot change a protected metatable"
+  },
+  {
+    "src": "local mt = {__unm=function() return 'u' end, __mod=function() return 'm' end, __pow=function() return 'p' end, __div=function() return 'd' end} local a = setmetatable({}, mt) return -a, a%1, 2^a, 1/a",
+    "want": "u,m,p,d"
+  },
+  {
+    "src": "local t = setmetatable({}, {__len = function() return 5 end}) return #t",
+    "want": "0"
+  },
+  {
+    "src": "local t = setmetatable({}, {__index = function(t, k) return t[k] end}) return pcall(function() return t.x end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local t = setmetatable({}, {__index = function(t, i) if i < 4 then return i end end}) local n = 0 for _ in ipairs(t) do n = n + 1 end return n",
+    "want": "0"
+  },
+  {
+    "src": "return '10' + 1, '0x10' + 0, '1e1' * 1, ' 10 ' + 0, '6' / '2'",
+    "want": "11,16,10,10,3"
+  },
+  {
+    "src": "return pcall(function() return 'abc' + 1 end)",
+    "want": "false,user_script:1: attempt to perform arithmetic on a string value"
+  },
+  {
+    "src": "return pcall(function() return '10a' + 0 end)",
+    "want": "false,user_script:1: attempt to perform arithmetic on a string value"
+  },
+  {
+    "src": "return 10 .. 20, 1e15 .. '', 2^53 .. '', -0 .. '', 1/3 .. '', 1e-5 .. '', 0.1 .. ''",
+    "want": "1020,1e+15,9.007199254741e+15,-0,0.33333333333333,1e-05,0.1"
+  },
+  {
+    "src": "return 100000000000000 .. '', 9007199254740993 .. '', (2^53+1) .. '', 123456789012345 .. ''",
+    "want": "1e+14,9.007199254741e+15,9.007199254741e+15,1.2345678901234e+14"
+  },
+  {
+    "src": "return 7 % -3, -7 % 3, 7.5 % 2, -7.5 % 2, 5 % 0, -5 % 0",
+    "want": "-2,2,1.5,0.5,-nan,-nan"
+  },
+  {
+    "src": "return 2^0.5, (-8)^(1/3), 2^-2, -2^2, 2^3^2, -2 ^ -2",
+    "want": "1.4142135623731,-nan,0.25,-4,512,-0.25"
+  },
+  {
+    "src": "return tostring(0/0), tostring(-(0/0)), (1/0) - (1/0), tostring(1/0), tostring(-1/0)",
+    "want": "-nan,nan,-nan,inf,-inf"
+  },
+  {
+    "src": "return tostring(1e100), tostring(0.1), tostring(-0.0), tostring(2^63), tostring(1e15), tostring(1e16), tostring(0.1+0.2)",
+    "want": "1e+100,0.1,-0,9.2233720368548e+18,1e+15,1e+16,0.3"
+  },
+  {
+    "src": "return 1e309 == 1/0, 3 == 3.0, '3' == 3, 0 == -0",
+    "want": "true,true,false,true"
+  },
+  {
+    "src": "local n=0 for i=1,2,0.1 do n=n+1 end return n",
+    "want": "10"
+  },
+  {
+    "src": "for i=1,0 do error() end return 'ok'",
+    "want": "ok"
+  },
+  {
+    "src": "return pcall(function() for i='a',2 do end end)",
+    "want": "false,user_script:1: 'for' initial value must be a number"
+  },
+  {
+    "src": "return pcall(function() for i=1,'x' do end end)",
+    "want": "false,user_script:1: 'for' limit must be a number"
+  },
+  {
+    "src": "return pcall(function() for i=1,2,{} do end end)",
+    "want": "false,user_script:1: 'for' step must be a number"
+  },
+  {
+    "src": "local s=0 for i='1','3' do s=s+i end return s",
+    "want": "6"
+  },
+  {
+    "src": "local n=0 for i=1,3 do i = i*10 n=n+i end return n",
+    "want": "60"
+  },
+  {
+    "src": "local n = 0 for i = 2^53 - 2, 2^53 + 2 do n = n + 1 if n > 10 then break end end return n",
+    "want": "11"
+  },
+  {
+    "src": "local function f(...) local a, b = ... return select('#', ...), a, b end return f(nil, nil, nil)",
+    "want": "3,nil,nil"
+  },
+  {
+    "src": "local function f(...) return ... end return select('#', f(1, nil, nil))",
+    "want": "3"
+  },
+  {
+    "src": "local function f(...) return type(arg) end return f(1)",
+    "want": "table"
+  },
+  {
+    "src": "local function f(...) local x = ... return type(arg) end return f(1)",
+    "want": "nil"
+  },
+  {
+    "src": "local a = {} local i = 1 i, a[i] = i+1, 20 return i, a[1], a[2]",
+    "want": "2,20,nil"
+  },
+  {
+    "src": "local a, b, c = (function() return 1,2,3 end)() return a,b,c",
+    "want": "1,2,3"
+  },
+  {
+    "src": "local function f() return 1,2,3 end local t = {f()} local u = {(f())} local v = {f(), f()} return #t, #u, #v",
+    "want": "3,1,4"
+  },
+  {
+    "src": "local function f() return 1, 2 end return f(), f()",
+    "want": "1,1,2"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'done' end return f(n-1) end return f(100000)",
+    "want": "done"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 0 end return 1 + f(n-1) end return pcall(f, 30000)",
+    "want": "false,user_script:1: stack overflow"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 0 end return 1 + f(n-1) end return f(19000)",
+    "want": "19000"
+  },
+  {
+    "src": "return '\\65\\066\\x41'",
+    "want": "ABx41"
+  },
+  {
+    "src": "return [==[a]]b]==], [[\nline]], [=[a[[b]]c]=]",
+    "want": "a]]b,line,a[[b]]c"
+  },
+  {
+    "src": "--[==[ ]] ]==] return 1",
+    "want": "1"
+  },
+  {
+    "src": "--[[ x ]] return 2",
+    "want": "2"
+  },
+  {
+    "src": "local f, e = loadstring('return 1..2') return e",
+    "want": "[string \"return 1..2\"]:1: malformed number near '1..2'"
+  },
+  {
+    "src": "local f, e = loadstring('return 3x') return e",
+    "want": "[string \"return 3x\"]:1: malformed number near '3x'"
+  },
+  {
+    "src": "local f, e = loadstring('return 0x') return e",
+    "want": "[string \"return 0x\"]:1: malformed number near '0x'"
+  },
+  {
+    "src": "local f, e = loadstring('return \"\\\\256\"') return e",
+    "want": "[string \"return \"\\256\"\"]:1: escape sequence too large near '\"'"
+  },
+  {
+    "src": "return '\\z', 'a\\\nb'",
+    "want": "z,a\nb"
+  },
+  {
+    "src": "local t = {} t[1.0] = 'a' local u = {[1]='a', [1]='b'} return t[1], u[1]",
+    "want": "a,b"
+  },
+  {
+    "src": "local t = {} return pcall(function() t[0/0] = 1 end)",
+    "want": "false,user_script:1: table index is NaN"
+  },
+  {
+    "src": "local t = {} return pcall(function() t[nil] = 1 end)",
+    "want": "false,user_script:1: table index is nil"
+  },
+  {
+    "src": "return pcall(rawset, {}, nil, 1)",
+    "want": "false,table index is nil"
+  },
+  {
+    "src": "return pcall(rawset, {}, 0/0, 1)",
+    "want": "false,table index is NaN"
+  },
+  {
+    "src": "local t = {} t['1'] = 's' t[1] = 'n' return t['1'], t[1]",
+    "want": "s,n"
+  },
+  {
+    "src": "return pcall(function() return rawlen end)",
+    "want": "false,user_script:1: Script attempted to access nonexistent global variable 'rawlen'"
+  },
+  {
+    "src": "return pcall(function() x = 1 end)",
+    "want": "false,user_script:1: Attempt to modify a readonly table"
+  },
+  {
+    "src": "return pcall(function() _G.x = 1 end)",
+    "want": "false,user_script:1: Attempt to modify a readonly table"
+  },
+  {
+    "src": "return pcall(rawset, _G, 'x', 1)",
+    "want": "false,Attempt to modify a readonly table"
+  },
+  {
+    "src": "return pcall(setmetatable, _G, nil)",
+    "want": "false,Attempt to modify a readonly table"
+  },
+  {
+    "src": "return pcall(function() coroutine.x = 1 end)",
+    "want": "false,user_script:1: Attempt to modify a readonly table"
+  },
+  {
+    "src": "return pcall(rawset, coroutine, 'x', 1)",
+    "want": "false,Attempt to modify a readonly table"
+  },
+  {
+    "src": "return type(getmetatable(_G))",
+    "want": "table"
+  },
+  {
+    "src": "return unpack({1,2,3}, 2)",
+    "want": "2,3"
+  },
+  {
+    "src": "return unpack({1,2,3}, -1, 1)",
+    "want": "nil,nil,1"
+  },
+  {
+    "src": "return pcall(unpack, {}, 1, 1e8)",
+    "want": "false,too many results to unpack"
+  },
+  {
+    "src": "return select('#', unpack({1, nil, 3}))",
+    "want": "3"
+  },
+  {
+    "src": "return unpack({1,2,3}, '2')",
+    "want": "2,3"
+  },
+  {
+    "src": "local n=0 for _ in ipairs({1,2,nil,4}) do n=n+1 end return n",
+    "want": "2"
+  },
+  {
+    "src": "return pcall(next, {}, 'nokey')",
+    "want": "false,invalid key to 'next'"
+  },
+  {
+    "src": "local t={a=1,b=2,c=3} for k in pairs(t) do t[k]=nil end return next(t)",
+    "want": "nil"
+  },
+  {
+    "src": "local t = {} for i = 1, 10 do t[i * 0.5] = i end local r = '' for k, v in pairs(t) do r = r .. k .. '=' .. v .. ';' end return r",
+    "want": "1=2;2=4;3=6;4=8;0.5=1;2.5=5;3.5=7;5=10;1.5=3;4.5=9;"
+  },
+  {
+    "src": "local t = {} for _, k in ipairs({'alpha','beta','gamma','delta','epsilon','zeta','eta','theta'}) do t[k] = true end local r = '' for k in pairs(t) do r = r .. k .. ',' end return r",
+    "want": "eta,beta,theta,zeta,epsilon,delta,gamma,alpha,"
+  },
+  {
+    "src": "local t = {} for i = 1, 20 do t['k'..i] = i end for i = 1, 20, 2 do t['k'..i] = nil end for i = 21, 30 do t['k'..i] = i end local r = '' for k, v in pairs(t) do r = r .. k .. ',' end return r",
+    "want": "k16,k26,k22,k21,k29,k25,k30,k24,k23,k28,k20,k10,k8,k12,k2,k27,k18,k14,k6,k4,"
+  },
+  {
+    "src": "local t = {[true]=1, [false]=2, x=3} local r = '' for k, v in pairs(t) do r = r .. tostring(k) .. ',' end return r",
+    "want": "false,true,x,"
+  },
+  {
+    "src": "local t = {[0]=0, [-1]=-1, [1]=1, [2]=2, [3.5]=3, [-0.5]=4, [2^40]=5} local r = '' for k in pairs(t) do r = r .. k .. ',' end return r",
+    "want": "0,2,-0.5,1099511627776,1,-1,3.5,"
+  },
+  {
+    "src": "local t = {} for i = 1, 100 do t[i] = i end for i = 1, 100, 3 do t[i] = nil end t.x = 1 t.y = 2 local r = '' for k in pairs(t) do r = r .. k .. ',' end return r, #t",
+    "want": "2,3,5,6,8,9,11,12,14,15,17,18,20,21,23,24,26,27,29,30,32,33,35,36,38,39,41,42,44,45,47,48,50,51,53,54,56,57,59,60,62,63,65,66,68,69,71,72,74,75,77,78,80,81,83,84,86,87,89,90,92,93,95,96,98,99,y,x,,63"
+  },
+  {
+    "src": "local t = {} for i = 100, 1, -1 do t[i] = i end local r = '' local n = 0 for k in pairs(t) do n = n + 1 if n <= 10 then r = r .. k .. ',' end end return r, #t",
+    "want": "1,2,3,4,5,6,7,8,9,10,,100"
+  },
+  {
+    "src": "local t = {} t[2^53] = 1 return next(t)",
+    "want": "9.007199254741e+15,1"
+  },
+  {
+    "src": "local t = {1, 2, 3, x = 1, y = 2, [10] = 10} t[4] = 4 t[5] = 5 t[6] = 6 local r = '' for k in pairs(t) do r = r .. k .. ',' end return r, #t",
+    "want": "1,2,3,4,5,6,y,10,x,,6"
+  },
+  {
+    "src": "local f, e = loadstring('return 1 +', '=x') return e",
+    "want": "x:1: unexpected symbol near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('x =', '@foo') return e",
+    "want": "foo:1: unexpected symbol near '<eof>'"
+  },
+  {
+    "src": "return loadstring('return ...')(1,2)",
+    "want": "1,2"
+  },
+  {
+    "src": "local parts = {'return ', '4', '2'} local i = 0 return load(function() i = i + 1 return parts[i] end)()",
+    "want": "42"
+  },
+  {
+    "src": "local i = 0 return load(function() i = i + 1 if i == 1 then return 'return 7' end if i == 2 then return 5 end end)()",
+    "want": "75"
+  },
+  {
+    "src": "local i = 0 return pcall(load, function() i = i + 1 if i == 1 then return 'return 7' end return {} end)",
+    "want": "true,nil,reader function must return a string"
+  },
+  {
+    "src": "return select('#', load('syntax error here'))",
+    "want": "user_script:1: bad argument #1 to 'load' (function expected, got string)"
+  },
+  {
+    "src": "local f, e = loadstring('x x') return e",
+    "want": "[string \"x x\"]:1: '=' expected near 'x'"
+  },
+  {
+    "src": "local s = '' for i = 1, 10 do s = s .. 'aaaaaaaaaa' end local f, e = loadstring('--' .. s .. '\\nx x') return e",
+    "want": "[string \"--aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"]:2: '=' expected near 'x'"
+  },
+  {
+    "src": "local f, e = loadstring('a\\nb\\nx x') return e",
+    "want": "[string \"a...\"]:2: '=' expected near 'b'"
+  },
+  {
+    "src": "local s = '' for i=1,201 do s = s .. 'local a'..i..'=1 ' end local f, e = loadstring(s, '=c') return e",
+    "want": "c:1: main function has more than 200 local variables"
+  },
+  {
+    "src": "local s = '' for i=1,61 do s = s..'local a'..i..'=1 ' end s = s..'return function() return ' for i=1,61 do s = s..'a'..i..'+' end s = s..'0 end' local f,e = loadstring(s, '=c') return e",
+    "want": "c:1: function at line 1 has more than 60 upvalues"
+  },
+  {
+    "src": "local s = 'return select(\\'#\\'' for i=1,300 do s=s..',1' end s=s..')' local f,e = loadstring(s, '=c') if f then return f() end return e",
+    "want": "c:1: function or expression too complex near '1'"
+  },
+  {
+    "src": "local s = 'return 1' for i=1,300 do s=s..' .. 1' end local f,e = loadstring(s, '=c') if f then return #f() end return e",
+    "want": "c:1: chunk has too many syntax levels"
+  },
+  {
+    "src": "local s = 'return 1' for i=1,300 do s=s..' + 1' end local f,e = loadstring(s, '=c') if f then return f() end return e",
+    "want": "301"
+  },
+  {
+    "src": "local s = 'return ' for i=1,250 do s=s..'(' end s = s .. '1' for i=1,250 do s=s..')' end local f,e = loadstring(s, '=c') if f then return f() end return e",
+    "want": "c:1: chunk has too many syntax levels"
+  },
+  {
+    "src": "local s = 'local t = {' for i=1,70 do s=s..i..',' end s = s .. '} return #t, t[70]' return loadstring(s)()",
+    "want": "70,70"
+  },
+  {
+    "src": "return loadstring(1)",
+    "want": "nil,[string \"1\"]:1: unexpected symbol near '1'"
+  },
+  {
+    "src": "local f, e = loadstring(1) return e",
+    "want": "[string \"1\"]:1: unexpected symbol near '1'"
+  },
+  {
+    "src": "return select('#', loadstring(''))",
+    "want": "1"
+  },
+  {
+    "src": "local f, e = loadstring('#!x\\nreturn 1') return e",
+    "want": "[string \"#!x...\"]:1: unexpected symbol near '#'"
+  },
+  {
+    "src": "local function f() return x end setfenv(f, {x=5}) return f()",
+    "want": "user_script:1: Script attempted to access nonexistent global variable 'setfenv'"
+  },
+  {
+    "src": "local function f() setfenv(1, {y=3}) return y end return f()",
+    "want": "user_script:1: Script attempted to access nonexistent global variable 'setfenv'"
+  },
+  {
+    "src": "return type(getfenv(1)), getfenv(0) == _G, getfenv(tostring) == _G",
+    "want": "user_script:1: Script attempted to access nonexistent global variable 'getfenv'"
+  },
+  {
+    "src": "return pcall(setfenv, tostring, {})",
+    "want": "user_script:1: Script attempted to access nonexistent global variable 'setfenv'"
+  },
+  {
+    "src": "return pcall(setfenv, 0, {})",
+    "want": "user_script:1: Script attempted to access nonexistent global variable 'setfenv'"
+  },
+  {
+    "src": "return pcall(getfenv, 5)",
+    "want": "user_script:1: Script attempted to access nonexistent global variable 'getfenv'"
+  },
+  {
+    "src": "return pcall(getfenv, -1)",
+    "want": "user_script:1: Script attempted to access nonexistent global variable 'getfenv'"
+  },
+  {
+    "src": "return type(_VERSION), _VERSION",
+    "want": "string,Lua 5.1"
+  },
+  {
+    "src": "local t = {} return pcall(function() return t.x.y end)",
+    "want": "false,user_script:1: attempt to index field 'x' (a nil value)"
+  },
+  {
+    "src": "local up = nil return pcall(function() return up.x end)",
+    "want": "false,user_script:1: attempt to index upvalue 'up' (a nil value)"
+  },
+  {
+    "src": "return pcall(function() local a a() end)",
+    "want": "false,user_script:1: attempt to call local 'a' (a nil value)"
+  },
+  {
+    "src": "local t={} return pcall(function() t.m() end)",
+    "want": "false,user_script:1: attempt to call field 'm' (a nil value)"
+  },
+  {
+    "src": "local t={} return pcall(function() t:m() end)",
+    "want": "false,user_script:1: attempt to call method 'm' (a nil value)"
+  },
+  {
+    "src": "local x return pcall(function() return #x end)",
+    "want": "false,user_script:1: attempt to get length of upvalue 'x' (a nil value)"
+  },
+  {
+    "src": "local n = 123 return pcall(function() return #n end)",
+    "want": "false,user_script:1: attempt to get length of upvalue 'n' (a number value)"
+  },
+  {
+    "src": "return pcall(function() return -{} end)",
+    "want": "false,user_script:1: attempt to perform arithmetic on a table value"
+  },
+  {
+    "src": "local s = 'a' return pcall(function() return s + 1 end)",
+    "want": "false,user_script:1: attempt to perform arithmetic on upvalue 's' (a string value)"
+  },
+  {
+    "src": "return pcall(function() return 'a' .. {} end)",
+    "want": "false,user_script:1: attempt to concatenate a table value"
+  },
+  {
+    "src": "local t={} return pcall(function() return t.x .. 'a' end)",
+    "want": "false,user_script:1: attempt to concatenate field 'x' (a nil value)"
+  },
+  {
+    "src": "local x = 5 return pcall(function() return x.y end)",
+    "want": "false,user_script:1: attempt to index upvalue 'x' (a number value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() t.a.b = 1 end)",
+    "want": "false,user_script:1: attempt to index field 'a' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() local k = 'z' return t[k].q end)",
+    "want": "false,user_script:1: attempt to index field '?' (a nil value)"
+  },
+  {
+    "src": "local t = {{}} return pcall(function() return t[1][2][3] end)",
+    "want": "false,user_script:1: attempt to index field '?' (a nil value)"
+  },
+  {
+    "src": "return pcall(function() local a = {} return a.b.c end)",
+    "want": "false,user_script:1: attempt to index field 'b' (a nil value)"
+  },
+  {
+    "src": "return pcall(function() local a = 1 local b = {} return a + b end)",
+    "want": "false,user_script:1: attempt to perform arithmetic on local 'b' (a table value)"
+  },
+  {
+    "src": "return pcall(function() local a = {} return 1 + a.x end)",
+    "want": "false,user_script:1: attempt to perform arithmetic on field 'x' (a nil value)"
+  },
+  {
+    "src": "\n\nerror('x')",
+    "want": "user_script:3: x"
+  },
+  {
+    "src": "local function f()\n  local x = nil\n  return x.y\nend\nreturn pcall(f)",
+    "want": "false,user_script:3: attempt to index local 'x' (a nil value)"
+  },
+  {
+    "src": "local t = {}\nreturn pcall(function()\n  return t.a\n    .b\nend)",
+    "want": "false,user_script:4: attempt to index field 'a' (a nil value)"
+  },
+  {
+    "src": "return pcall(function()\n  local x = 1 +\n    nil\nend)",
+    "want": "false,user_script:3: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local i = 0 repeat local j = i i = i + 1 until j >= 3 return i",
+    "want": "4"
+  },
+  {
+    "src": "local fs = {} for i = 1, 3 do fs[i] = function() return i end end return fs[1](), fs[2](), fs[3]()",
+    "want": "1,2,3"
+  },
+  {
+    "src": "local fs = {} local i = 1 while i <= 3 do local j = i fs[i] = function() return j end i = i + 1 end return fs[1](), fs[3]()",
+    "want": "1,3"
+  },
+  {
+    "src": "local fs = {} for _, v in ipairs({'a','b'}) do fs[#fs+1] = function() return v end end return fs[1](), fs[2]()",
+    "want": "a,b"
+  },
+  {
+    "src": "local fs = {} local i = 0 repeat local j = i fs[#fs+1] = function() j = j + 1 return j end i = i + 1 until i == 2 return fs[1](), fs[1](), fs[2]()",
+    "want": "1,2,2"
+  },
+  {
+    "src": "local function mk() local n = 0 return function() n = n + 1 return n end, function() return n end end local inc, get = mk() inc() inc() return get()",
+    "want": "2"
+  },
+  {
+    "src": "local f, e = loadstring('goto x') return e",
+    "want": "[string \"goto x\"]:1: '=' expected near 'x'"
+  },
+  {
+    "src": "local goto = 1 return goto",
+    "want": "1"
+  },
+  {
+    "src": "local f, e = loadstring('return 1 // 2') return e",
+    "want": "[string \"return 1 // 2\"]:1: unexpected symbol near '/'"
+  },
+  {
+    "src": "local f, e = loadstring('local a <const> = 1') return e",
+    "want": "[string \"local a <const> = 1\"]:1: unexpected symbol near '<'"
+  },
+  {
+    "src": "local f, e = loadstring('return 1; return 2') return e",
+    "want": "[string \"return 1; return 2\"]:1: '<eof>' expected near 'return'"
+  },
+  {
+    "src": "local f, e = loadstring('return return') return e",
+    "want": "[string \"return return\"]:1: unexpected symbol near 'return'"
+  },
+  {
+    "src": "local f, e = loadstring('x = = 1') return e",
+    "want": "[string \"x = = 1\"]:1: unexpected symbol near '='"
+  },
+  {
+    "src": "local f, e = loadstring('local function() end') return e",
+    "want": "[string \"local function() end\"]:1: '<name>' expected near '('"
+  },
+  {
+    "src": "local f, e = loadstring('f(\\n)') return e",
+    "want": "nil"
+  },
+  {
+    "src": "local f, e = loadstring('local a = {} a.b\\n(1)') return e",
+    "want": "[string \"local a = {} a.b...\"]:2: ambiguous syntax (function call x new statement) near '('"
+  },
+  {
+    "src": "local f, e = loadstring('for i = 1 do end') return e",
+    "want": "[string \"for i = 1 do end\"]:1: ',' expected near 'do'"
+  },
+  {
+    "src": "local f, e = loadstring('if x then') return e",
+    "want": "[string \"if x then\"]:1: 'end' expected near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('return \"abc') return e",
+    "want": "[string \"return \"abc\"]:1: unfinished string near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('return [[abc') return e",
+    "want": "[string \"return [[abc\"]:1: unfinished long string near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('--[[ abc') return e",
+    "want": "[string \"--[[ abc\"]:1: unfinished long comment near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('break') return e",
+    "want": "[string \"break\"]:1: no loop to break near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('return ...', '=v') return e, f and select('#', f())",
+    "want": "nil,0"
+  },
+  {
+    "src": "local f, e = loadstring('function f(a, ...) return ... end local function g() return ... end') return e",
+    "want": "[string \"function f(a, ...) return ... end local function g() return ......\"]:1: cannot use '...' outside a vararg function near '...'"
+  },
+  {
+    "src": "return not nil == true, 1 and nil or 3, not 1 == 2, 1 < 2 == true, 2 .. 3 ^ 2",
+    "want": "true,3,false,true,29"
+  },
+  {
+    "src": "return 'abc' < 'abd', 'Z' < 'a', '' < 'a', 'a\\0b' < 'a\\0c', #'a\\0b'",
+    "want": "true,true,true,true,3"
+  },
+  {
+    "src": "return rawequal('a', 'a'), rawequal({}, {}), rawequal(1, 1.0)",
+    "want": "true,false,true"
+  },
+  {
+    "src": "return pcall(assert, false)",
+    "want": "false,assertion failed!"
+  },
+  {
+    "src": "return pcall(assert, nil, 'msg')",
+    "want": "false,msg"
+  },
+  {
+    "src": "local ok, e = pcall(assert, false, 12) return type(e), e",
+    "want": "string,12"
+  },
+  {
+    "src": "return pcall(assert)",
+    "want": "false,bad argument #1 to '?' (value expected)"
+  },
+  {
+    "src": "return pcall(setmetatable, {}, 1)",
+    "want": "false,bad argument #2 to '?' (nil or table expected)"
+  },
+  {
+    "src": "return pcall(setmetatable, 1, {})",
+    "want": "false,bad argument #1 to '?' (table expected, got number)"
+  },
+  {
+    "src": "return pcall(ipairs)",
+    "want": "false,bad argument #1 to '?' (table expected, got no value)"
+  },
+  {
+    "src": "return pcall(pairs, nil)",
+    "want": "false,bad argument #1 to '?' (table expected, got nil)"
+  },
+  {
+    "src": "return pcall(rawget, 1, 2)",
+    "want": "false,bad argument #1 to '?' (table expected, got number)"
+  },
+  {
+    "src": "return type(nil), type(type), type('x'), type(1), type({}), type(true)",
+    "want": "nil,function,string,number,table,boolean"
+  },
+  {
+    "src": "return pcall(tostring)",
+    "want": "false,bad argument #1 to '?' (value expected)"
+  },
+  {
+    "src": "return tostring(nil), tostring(true), tostring(12), tostring('s'), tostring(-0)",
+    "want": "nil,true,12,s,-0"
+  },
+  {
+    "src": "return pcall(error, 'msg', 1)",
+    "want": "false,msg"
+  },
+  {
+    "src": "return pcall(error, 'msg', 2)",
+    "want": "false,user_script:1: msg"
+  },
+  {
+    "src": "local function f() error('deep', 3) end local function g() f() end local function h() g() end return pcall(h)",
+    "want": "false,user_script:1: deep"
+  },
+  {
+    "src": "local obj = {n = 5} function obj:get() return self.n end function obj.static(x) return x end return obj:get(), obj.static(7)",
+    "want": "5,7"
+  },
+  {
+    "src": "local t = {} return pcall(function() function t.a.b() end end)",
+    "want": "false,user_script:1: attempt to index field 'a' (a nil value)"
+  },
+  {
+    "src": "local function fact(n) if n <= 1 then return 1 end return n * fact(n - 1) end return fact(20)",
+    "want": "2.4329020081766e+18"
+  },
+  {
+    "src": "local fact = function(n) if n <= 1 then return 1 end return n * fact(n - 1) end return pcall(fact, 3)",
+    "want": "false,user_script:1: Script attempted to access nonexistent global variable 'fact'"
+  },
+  {
+    "src": "local function f(a, a) return a end return f(1, 2)",
+    "want": "2"
+  },
+  {
+    "src": "local a = 1 local a = a + 1 return a",
+    "want": "2"
+  },
+  {
+    "src": "local x = 1 do local x = x + 1 end return x",
+    "want": "1"
+  },
+  {
+    "src": "return select('#', (function() end)())",
+    "want": "0"
+  },
+  {
+    "src": "return (function(...) return select('#', ...) end)()",
+    "want": "0"
+  },
+  {
+    "src": "return (nil)",
+    "want": "nil"
+  },
+  {
+    "src": "return",
+    "want": ""
+  },
+  {
+    "src": "local a = {} for i = 1, 5 do a[#a + 1] = i * i end return a[5], #a",
+    "want": "25,5"
+  },
+  {
+    "src": "local t = {} t[1] = 1 t[3] = 3 t[2] = 2 return #t",
+    "want": "3"
+  },
+  {
+    "src": "local t = {n = 0} local mt = {__index = function(t, k) return k .. '!' end} setmetatable(t, mt) return t.n, t.m, rawget(t, 'm')",
+    "want": "0,m!,nil"
+  },
+  {
+    "src": "local x = 0 local t = setmetatable({}, {__newindex = function(t, k, v) x = x + v rawset(t, k, v * 2) end}) t.a = 1 t.a = 5 return x, t.a",
+    "want": "1,5"
+  },
+  {
+    "src": "return gcinfo ~= nil, collectgarbage ~= nil",
+    "want": "true,true"
+  },
+  {
+    "src": "return pcall(collectgarbage, 'bogus')",
+    "want": "false,bad argument #1 to '?' (invalid option 'bogus')"
+  },
+  {
+    "src": "return type(collectgarbage('count'))",
+    "want": "number"
+  },
+  {
+    "src": "return collectgarbage('step'), collectgarbage()",
+    "want": "false,0"
+  },
+  {
+    "src": "return pcall(newproxy)",
+    "want": "user_script:1: Script attempted to access nonexistent global variable 'newproxy'"
+  },
+  {
+    "src": "return type(newproxy())",
+    "want": "user_script:1: Script attempted to access nonexistent global variable 'newproxy'"
+  },
+  {
+    "src": "local p = newproxy(true) local mt = getmetatable(p) mt.__index = function() return 'v' end return p.k, type(p)",
+    "want": "user_script:1: Script attempted to access nonexistent global variable 'newproxy'"
+  },
+  {
+    "src": "return pcall(print, 'x')",
+    "want": "user_script:1: Script attempted to access nonexistent global variable 'print'"
+  },
+  {
+    "src": "return type(rawget(_G,'dofile')), type(rawget(_G,'loadfile')), type(rawget(_G,'require')), type(rawget(_G,'module')), type(rawget(_G,'newproxy')), type(rawget(_G,'gcinfo')), type(rawget(_G,'print')), type(rawget(_G,'unpack')), type(rawget(_G, 'load'))",
+    "want": "nil,nil,nil,nil,nil,function,nil,function,function"
+  },
+  {
+    "src": "local n = 0 for k, v in pairs(coroutine) do n = n + 1 end return n",
+    "want": "6"
+  },
+  {
+    "src": "local r = {} for k in pairs(coroutine) do r[#r + 1] = k end local s = '' for i = 1, #r do s = s .. r[i] .. ',' end return s",
+    "want": "resume,yield,status,wrap,create,running,"
+  },
+  {
+    "src": "local co = coroutine.create(function() for i = 1, 3 do coroutine.yield(i) end return 'end' end) local r = '' while true do local ok, v = coroutine.resume(co) if not ok or v == nil then r = r .. tostring(ok) .. tostring(v) break end r = r .. v .. ',' if coroutine.status(co) == 'dead' then break end end return r",
+    "want": "1,2,3,end,"
+  },
+  {
+    "src": "local co = coroutine.wrap(function() local ok, e = pcall(function() coroutine.yield(1) end) return ok, e end) return co()",
+    "want": "false,attempt to yield across metamethod/C-call boundary"
+  },
+  {
+    "src": "local co = coroutine.create(function() error('x') end) local ok, e = coroutine.resume(co) return e",
+    "want": "user_script:1: x"
+  },
+  {
+    "src": "local co = coroutine.create(function() local t = nil return t.x end) local ok, e = coroutine.resume(co) return e",
+    "want": "user_script:1: attempt to index local 't' (a nil value)"
+  },
+  {
+    "src": "local function f() return coroutine.yield(1) end local co = coroutine.create(function() return f() end) local _, a = coroutine.resume(co) local _, b = coroutine.resume(co, 'r') return a, b",
+    "want": "1,r"
+  },
+  {
+    "src": "local co = coroutine.wrap(function() local t = {} for i = 1, 3 do t[i] = coroutine.yield() end return t[1] + t[2] + t[3] end) co() co(1) co(2) return co(3)",
+    "want": "6"
+  },
+  {
+    "src": "local co = coroutine.create(function() return select('#', coroutine.yield()) end) coroutine.resume(co) return coroutine.resume(co)",
+    "want": "true,0"
+  },
+  {
+    "src": "local co = coroutine.create(function() coroutine.yield(coroutine.status(coroutine.running())) end) return coroutine.resume(co)",
+    "want": "true,running"
+  },
+  {
+    "src": "local t = setmetatable({}, {__index = function(t, k) error('idx ' .. k) end}) return pcall(function() return t.foo end)",
+    "want": "false,user_script:1: idx foo"
+  },
+  {
+    "src": "local t = setmetatable({}, {__index = function(t, k) error('idx ' .. k, 2) end}) return pcall(function() return t.foo end)",
+    "want": "false,user_script:1: idx foo"
+  },
+  {
+    "src": "local t = setmetatable({}, {__add = function(a, b) error('add') end}) return pcall(function() return t + 1 end)",
+    "want": "false,user_script:1: add"
+  },
+  {
+    "src": "return pcall(function() local t = setmetatable({}, {__index = 5}) return t.x end)",
+    "want": "false,user_script:1: attempt to index a number value"
+  },
+  {
+    "src": "local t = setmetatable({}, {__tostring = function() return 'T!' end}) return tostring(t)",
+    "want": "T!"
+  },
+  {
+    "src": "local t = setmetatable({}, {__tostring = function() error('ts') end}) return pcall(tostring, t)",
+    "want": "false,user_script:1: ts"
+  },
+  {
+    "src": "return pcall(error, setmetatable({}, {__tostring = function() return 'E!' end}))",
+    "want": "false,E!,nil"
+  },
+  {
+    "src": "local s = 'local x = 1 return x' for i=1,300 do s=s..' + x' end local f,e = loadstring(s, '=c') if f then return f() end return e",
+    "want": "301"
+  },
+  {
+    "src": "local s = 'local x = 1 return x' for i=1,300 do s=s..' * 1' end local f,e = loadstring(s, '=c') if f then return f() end return e",
+    "want": "1"
+  },
+  {
+    "src": "local s = 'local x = \"a\" return x' for i=1,300 do s=s..' .. x' end local f,e = loadstring(s, '=c') if f then return #f() end return e",
+    "want": "c:1: chunk has too many syntax levels"
+  },
+  {
+    "src": "local s = 'local x = 1 return x' for i=1,300 do s=s..' + (x * x)' end local f,e = loadstring(s, '=c') if f then return f() end return e",
+    "want": "301"
+  },
+  {
+    "src": "local s = 'local x = 1 local t = {}' for i=1,300 do s=s..' t[' .. i .. '] = x + x' end s = s .. ' return #t' local f,e = loadstring(s, '=c') if f then return f() end return e",
+    "want": "300"
+  },
+  {
+    "src": "local s = 'local x = true return x' for i=1,300 do s=s..' and x' end local f,e = loadstring(s, '=c') if f then return f() end return e",
+    "want": "true"
+  },
+  {
+    "src": "local s = 'local x = 1 return x' for i=1,300 do s=s..' == x' end local f,e = loadstring(s, '=c') if f then return f() end return e",
+    "want": "false"
+  },
+  {
+    "src": "local s = 'local x = 1 return {' for i=1,300 do s=s..'x + x,' end s = s .. '}' local f,e = loadstring(s, '=c') if f then return #f() end return e",
+    "want": "300"
+  },
+  {
+    "src": "local s = 'local x = 1 return f(' for i=1,300 do s=s..'x,' end s = s .. 'x)' local f,e = loadstring(s, '=c') return e",
+    "want": "c:1: function or expression too complex near 'x'"
+  },
+  {
+    "src": "local s = 'return 1' for i=1,250 do s=s..' + 1' end local f,e = loadstring(s, '=c') if f then return f() end return e",
+    "want": "251"
+  },
+  {
+    "src": "local s = 'local a = 1 return -' for i=1,250 do s=s..'-' end s = s .. 'a' local f,e = loadstring(s, '=c') if f then return f() end return e",
+    "want": ""
+  },
+  {
+    "src": "local s = 'return ' for i=1,250 do s=s..'not ' end s = s .. 'nil' local f,e = loadstring(s, '=c') if f then return f() end return e",
+    "want": "c:1: chunk has too many syntax levels"
+  },
+  {
+    "src": "local t = setmetatable({}, {__newindex = function(t, k, v) t[k] = v end}) return pcall(function() t.x = 1 end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local mt = {} mt.__eq = function(a, b) return a == b end local a, b = setmetatable({}, mt), setmetatable({}, mt) return pcall(function() return a == b end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local mt = {} mt.__lt = function(a, b) return a < b end local a, b = setmetatable({}, mt), setmetatable({}, mt) return pcall(function() return a < b end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local mt = {} mt.__concat = function(a, b) return a .. b end local a = setmetatable({}, mt) return pcall(function() return a .. 'x' end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local mt = {} mt.__add = function(a, b) return a + b end local a = setmetatable({}, mt) return pcall(function() return a + 1 end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local mt = {} mt.__unm = function(a) return -a end local a = setmetatable({}, mt) return pcall(function() return -a end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local t t = setmetatable({}, {__call = function(self) return (t()) end}) return pcall(t)",
+    "want": "false,user_script:1: stack overflow"
+  },
+  {
+    "src": "local t = setmetatable({}, {__tostring = function(s) return tostring(s) end}) return pcall(tostring, t)",
+    "want": "false,C stack overflow"
+  },
+  {
+    "src": "local function f() return pcall(f) end local r = {f()} return #r, r[#r]",
+    "want": "199,C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'bottom' end return select(2, pcall(f, n - 1)) end return f(150)",
+    "want": "bottom"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'bottom' end return select(2, pcall(f, n - 1)) end return f(250)",
+    "want": "C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'bottom' end local co = coroutine.wrap(f) return co(n - 1) end return pcall(f, 300)",
+    "want": "false,user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'bottom' end local co = coroutine.create(f) return select(2, coroutine.resume(co, n - 1)) end return f(300)",
+    "want": "C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'bottom' end local r for v in function() if r == nil then r = f(n - 1) return r end end do end return r end return pcall(f, 300)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'bottom' end local r = setmetatable({}, {__index = function() return f(n - 1) end}) return r.x end return pcall(f, 300)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'bottom' end local r = setmetatable({}, {__index = function() return f(n - 1) end}) return r.x end return pcall(f, 190)",
+    "want": "true,bottom"
+  },
+  {
+    "src": "local t = setmetatable({}, {__index = function(t, k) if k > 0 then return t[k - 1] end return 'z' end}) return pcall(function() return t[198] end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local t = setmetatable({}, {__index = function(t, k) if k > 0 then return t[k - 1] end return 'z' end}) return pcall(function() return t[199] end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local t = setmetatable({}, {__index = function(t, k) if k > 0 then return t[k - 1] end return 'z' end}) return pcall(function() return t[200] end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'bottom' end return xpcall(function() return f(n - 1) end, function(e) return e end) end local r = {f(300)} return r[#r]",
+    "want": "C stack overflow"
+  },
+  {
+    "src": "local s = '' for i = 1, 4 do s = s .. 'aaaaaaaaaa' end local f, e = loadstring(s .. 'b c') return e",
+    "want": "[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab c\"]:1: '=' expected near 'c'"
+  },
+  {
+    "src": "local s = '' for i = 1, 4 do s = s .. 'aaaaaaaaaa' end local f, e = loadstring(s .. 'bbbb c') return e",
+    "want": "[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbb c\"]:1: '=' expected near 'c'"
+  },
+  {
+    "src": "local s = '' for i = 1, 4 do s = s .. 'aaaaaaaaaa' end local f, e = loadstring(s .. 'bbbbbbbbbbbbbbbbb c') return e",
+    "want": "[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbb c\"]:1: '=' expected near 'c'"
+  },
+  {
+    "src": "local s = '' for i = 1, 4 do s = s .. 'aaaaaaaaaa' end local f, e = loadstring(s .. 'bbbbbbbbbbbbbbbbbbbbbbbbbb c') return e",
+    "want": "[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbb...\"]:1: '=' expected near 'c'"
+  },
+  {
+    "src": "local s = '' for i = 1, 6 do s = s .. 'aaaaaaaaaa' end local f, e = loadstring(s .. 'bb c') return e",
+    "want": "[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabb ...\"]:1: '=' expected near 'c'"
+  },
+  {
+    "src": "local f, e = loadstring('x\\ny y') return e",
+    "want": "[string \"x...\"]:2: '=' expected near 'y'"
+  },
+  {
+    "src": "local f, e = loadstring('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\\ny y') return e",
+    "want": "[string \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...\"]:2: '=' expected near 'y'"
+  },
+  {
+    "src": "local f, e = loadstring('x x', 'chunknamechunknamechunknamechunknamechunknamechunknamechunknamechunkname') return e",
+    "want": "[string \"chunknamechunknamechunknamechunknamechunknamechunknamechunkname...\"]:1: '=' expected near 'x'"
+  },
+  {
+    "src": "local f, e = loadstring('x x', '@filefilefilefilefilefilefilefilefilefilefilefilefilefilefilefilefile') return e",
+    "want": "filefilefilefilefilefilefilefilefilefilefilefilefilefilefilefilefile:1: '=' expected near 'x'"
+  },
+  {
+    "src": "local f, e = loadstring('x x', '=eqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeq') return e",
+    "want": "eqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeqeq:1: '=' expected near 'x'"
+  },
+  {
+    "src": "local s = '' for i = 1, 5 do s = s .. 'xxxxxxxxxx' end return pcall(function() error(s, 1) end)",
+    "want": "false,user_script:1: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  },
+  {
+    "src": "local t = {} return pcall(function() t[1]() end)",
+    "want": "false,user_script:1: attempt to call field '?' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() return t[1] + 1 end)",
+    "want": "false,user_script:1: attempt to perform arithmetic on field '?' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() return t['a b'].c end)",
+    "want": "false,user_script:1: attempt to index field 'a b' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() return t[1].x end)",
+    "want": "false,user_script:1: attempt to index field '?' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() return t[true].x end)",
+    "want": "false,user_script:1: attempt to index field '?' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() local i = 1 return t[i] .. 'x' end)",
+    "want": "false,user_script:1: attempt to concatenate field '?' (a nil value)"
+  },
+  {
+    "src": "local t = {x = {}} return pcall(function() return t.x.y.z end)",
+    "want": "false,user_script:1: attempt to index field 'y' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() return #t.x end)",
+    "want": "false,user_script:1: attempt to get length of field 'x' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() return -t.x end)",
+    "want": "false,user_script:1: attempt to perform arithmetic on field 'x' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() return t.x < 1 end)",
+    "want": "false,user_script:1: attempt to compare nil with number"
+  },
+  {
+    "src": "return pcall(function() return ('x')() end)",
+    "want": "false,user_script:1: attempt to call a string value"
+  },
+  {
+    "src": "return pcall(function() local a = {} local b = a.x return b.y end)",
+    "want": "false,user_script:1: attempt to index local 'b' (a nil value)"
+  },
+  {
+    "src": "return pcall(function() local a = {} return (a.x).y end)",
+    "want": "false,user_script:1: attempt to index field 'x' (a nil value)"
+  },
+  {
+    "src": "local up = {} return pcall(function() return up.x.y end)",
+    "want": "false,user_script:1: attempt to index field 'x' (a nil value)"
+  },
+  {
+    "src": "local up = {} return pcall(function() up.x.y = 1 end)",
+    "want": "false,user_script:1: attempt to index field 'x' (a nil value)"
+  },
+  {
+    "src": "return pcall(function(...) local a = ... return a.x end)",
+    "want": "false,user_script:1: attempt to index local 'a' (a nil value)"
+  },
+  {
+    "src": "return pcall(function(a) return a.x end)",
+    "want": "false,user_script:1: attempt to index local 'a' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() local x = t.a return x() end)",
+    "want": "false,user_script:1: attempt to call local 'x' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() return (t.a)() end)",
+    "want": "false,user_script:1: attempt to call field 'a' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() t.a.b.c = 1 end)",
+    "want": "false,user_script:1: attempt to index field 'a' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() for k in t.x do end end)",
+    "want": "false,user_script:1: attempt to call a nil value"
+  },
+  {
+    "src": "local t = {} return pcall(function() for i = 1, t.x do end end)",
+    "want": "false,user_script:1: 'for' limit must be a number"
+  },
+  {
+    "src": "local t = {} return pcall(function() return t .. 'x' end)",
+    "want": "false,user_script:1: attempt to concatenate upvalue 't' (a table value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() return 1 .. t.y .. 2 end)",
+    "want": "false,user_script:1: attempt to concatenate field 'y' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() return 'a' .. 'b' .. t.y end)",
+    "want": "false,user_script:1: attempt to concatenate field 'y' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() return 'a' .. t .. 'b' end)",
+    "want": "false,user_script:1: attempt to concatenate upvalue 't' (a table value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() local a, b = 1, t.z return a + b end)",
+    "want": "false,user_script:1: attempt to perform arithmetic on local 'b' (a nil value)"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__index=function(t,k) n=n+1 if n < 195 then return t.x end return n end}) return pcall(function() return t.x end)",
+    "want": "true,195"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__index=function(t,k) n=n+1 if n < 196 then return t.x end return n end}) return pcall(function() return t.x end)",
+    "want": "true,196"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__index=function(t,k) n=n+1 if n < 197 then return t.x end return n end}) return pcall(function() return t.x end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__index=function(t,k) n=n+1 if n < 198 then return t.x end return n end}) return pcall(function() return t.x end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__index=function(t,k) n=n+1 if n < 199 then return t.x end return n end}) return pcall(function() return t.x end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__index=function(t,k) n=n+1 if n < 200 then return t.x end return n end}) return pcall(function() return t.x end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__newindex=function(t,k,v) n=n+1 if n < 195 then t.x=v end end}) local ok,e=pcall(function() t.x=1 end) return ok,e,n",
+    "want": "true,nil,195"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__newindex=function(t,k,v) n=n+1 if n < 196 then t.x=v end end}) local ok,e=pcall(function() t.x=1 end) return ok,e,n",
+    "want": "true,nil,196"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__newindex=function(t,k,v) n=n+1 if n < 197 then t.x=v end end}) local ok,e=pcall(function() t.x=1 end) return ok,e,n",
+    "want": "false,user_script:1: C stack overflow,196"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__newindex=function(t,k,v) n=n+1 if n < 198 then t.x=v end end}) local ok,e=pcall(function() t.x=1 end) return ok,e,n",
+    "want": "false,user_script:1: C stack overflow,196"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__newindex=function(t,k,v) n=n+1 if n < 199 then t.x=v end end}) local ok,e=pcall(function() t.x=1 end) return ok,e,n",
+    "want": "false,user_script:1: C stack overflow,196"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__newindex=function(t,k,v) n=n+1 if n < 200 then t.x=v end end}) local ok,e=pcall(function() t.x=1 end) return ok,e,n",
+    "want": "false,user_script:1: C stack overflow,196"
+  },
+  {
+    "src": "local n=0 local mt={} mt.__eq=function(a,b) n=n+1 if n < 195 then return a==b end return true end local a,b=setmetatable({},mt),setmetatable({},mt) local ok,e=pcall(function() return a==b end) return ok,e,n",
+    "want": "true,true,195"
+  },
+  {
+    "src": "local n=0 local mt={} mt.__eq=function(a,b) n=n+1 if n < 196 then return a==b end return true end local a,b=setmetatable({},mt),setmetatable({},mt) local ok,e=pcall(function() return a==b end) return ok,e,n",
+    "want": "true,true,196"
+  },
+  {
+    "src": "local n=0 local mt={} mt.__eq=function(a,b) n=n+1 if n < 197 then return a==b end return true end local a,b=setmetatable({},mt),setmetatable({},mt) local ok,e=pcall(function() return a==b end) return ok,e,n",
+    "want": "false,user_script:1: C stack overflow,196"
+  },
+  {
+    "src": "local n=0 local mt={} mt.__eq=function(a,b) n=n+1 if n < 198 then return a==b end return true end local a,b=setmetatable({},mt),setmetatable({},mt) local ok,e=pcall(function() return a==b end) return ok,e,n",
+    "want": "false,user_script:1: C stack overflow,196"
+  },
+  {
+    "src": "local n=0 local mt={} mt.__eq=function(a,b) n=n+1 if n < 199 then return a==b end return true end local a,b=setmetatable({},mt),setmetatable({},mt) local ok,e=pcall(function() return a==b end) return ok,e,n",
+    "want": "false,user_script:1: C stack overflow,196"
+  },
+  {
+    "src": "local n=0 local mt={} mt.__eq=function(a,b) n=n+1 if n < 200 then return a==b end return true end local a,b=setmetatable({},mt),setmetatable({},mt) local ok,e=pcall(function() return a==b end) return ok,e,n",
+    "want": "false,user_script:1: C stack overflow,196"
+  },
+  {
+    "src": "local n=0 local mt={} mt.__lt=function(a,b) n=n+1 if n < 195 then return a<b end return true end local a,b=setmetatable({},mt),setmetatable({},mt) local ok,e=pcall(function() return a<b end) return ok,e,n",
+    "want": "true,true,195"
+  },
+  {
+    "src": "local n=0 local mt={} mt.__lt=function(a,b) n=n+1 if n < 196 then return a<b end return true end local a,b=setmetatable({},mt),setmetatable({},mt) local ok,e=pcall(function() return a<b end) return ok,e,n",
+    "want": "true,true,196"
+  },
+  {
+    "src": "local n=0 local mt={} mt.__lt=function(a,b) n=n+1 if n < 197 then return a<b end return true end local a,b=setmetatable({},mt),setmetatable({},mt) local ok,e=pcall(function() return a<b end) return ok,e,n",
+    "want": "false,user_script:1: C stack overflow,196"
+  },
+  {
+    "src": "local n=0 local mt={} mt.__lt=function(a,b) n=n+1 if n < 198 then return a<b end return true end local a,b=setmetatable({},mt),setmetatable({},mt) local ok,e=pcall(function() return a<b end) return ok,e,n",
+    "want": "false,user_script:1: C stack overflow,196"
+  },
+  {
+    "src": "local n=0 local mt={} mt.__lt=function(a,b) n=n+1 if n < 199 then return a<b end return true end local a,b=setmetatable({},mt),setmetatable({},mt) local ok,e=pcall(function() return a<b end) return ok,e,n",
+    "want": "false,user_script:1: C stack overflow,196"
+  },
+  {
+    "src": "local n=0 local mt={} mt.__lt=function(a,b) n=n+1 if n < 200 then return a<b end return true end local a,b=setmetatable({},mt),setmetatable({},mt) local ok,e=pcall(function() return a<b end) return ok,e,n",
+    "want": "false,user_script:1: C stack overflow,196"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__concat=function(a,b) n=n+1 if n < 195 then return a..b end return n end}) return pcall(function() return t..\"x\" end)",
+    "want": "true,195"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__concat=function(a,b) n=n+1 if n < 196 then return a..b end return n end}) return pcall(function() return t..\"x\" end)",
+    "want": "true,196"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__concat=function(a,b) n=n+1 if n < 197 then return a..b end return n end}) return pcall(function() return t..\"x\" end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__concat=function(a,b) n=n+1 if n < 198 then return a..b end return n end}) return pcall(function() return t..\"x\" end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__concat=function(a,b) n=n+1 if n < 199 then return a..b end return n end}) return pcall(function() return t..\"x\" end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__concat=function(a,b) n=n+1 if n < 200 then return a..b end return n end}) return pcall(function() return t..\"x\" end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__add=function(a,b) n=n+1 if n < 195 then return a+b end return n end}) return pcall(function() return t+1 end)",
+    "want": "true,195"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__add=function(a,b) n=n+1 if n < 196 then return a+b end return n end}) return pcall(function() return t+1 end)",
+    "want": "true,196"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__add=function(a,b) n=n+1 if n < 197 then return a+b end return n end}) return pcall(function() return t+1 end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__add=function(a,b) n=n+1 if n < 198 then return a+b end return n end}) return pcall(function() return t+1 end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__add=function(a,b) n=n+1 if n < 199 then return a+b end return n end}) return pcall(function() return t+1 end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__add=function(a,b) n=n+1 if n < 200 then return a+b end return n end}) return pcall(function() return t+1 end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__unm=function(a) n=n+1 if n < 195 then return -a end return n end}) return pcall(function() return -t end)",
+    "want": "true,195"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__unm=function(a) n=n+1 if n < 196 then return -a end return n end}) return pcall(function() return -t end)",
+    "want": "true,196"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__unm=function(a) n=n+1 if n < 197 then return -a end return n end}) return pcall(function() return -t end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__unm=function(a) n=n+1 if n < 198 then return -a end return n end}) return pcall(function() return -t end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__unm=function(a) n=n+1 if n < 199 then return -a end return n end}) return pcall(function() return -t end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({}, {__unm=function(a) n=n+1 if n < 200 then return -a end return n end}) return pcall(function() return -t end)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end local r for v in function() if r==nil then r=f(n-1) return r end end do end return r end return pcall(f, 195)",
+    "want": "true,bottom"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end local r for v in function() if r==nil then r=f(n-1) return r end end do end return r end return pcall(f, 196)",
+    "want": "true,bottom"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end local r for v in function() if r==nil then r=f(n-1) return r end end do end return r end return pcall(f, 197)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end local r for v in function() if r==nil then r=f(n-1) return r end end do end return r end return pcall(f, 198)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end local r for v in function() if r==nil then r=f(n-1) return r end end do end return r end return pcall(f, 199)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end local r for v in function() if r==nil then r=f(n-1) return r end end do end return r end return pcall(f, 200)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return select(2,pcall(f,n-1)) end return f(195)",
+    "want": "bottom"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return select(2,pcall(f,n-1)) end return f(196)",
+    "want": "bottom"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return select(2,pcall(f,n-1)) end return f(197)",
+    "want": "bottom"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return select(2,pcall(f,n-1)) end return f(198)",
+    "want": "C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return select(2,pcall(f,n-1)) end return f(199)",
+    "want": "C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return select(2,pcall(f,n-1)) end return f(200)",
+    "want": "C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return xpcall(function() return f(n-1) end,function(e) return e end) end local r={f(195)} return r[#r]",
+    "want": "bottom"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return xpcall(function() return f(n-1) end,function(e) return e end) end local r={f(196)} return r[#r]",
+    "want": "bottom"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return xpcall(function() return f(n-1) end,function(e) return e end) end local r={f(197)} return r[#r]",
+    "want": "bottom"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return xpcall(function() return f(n-1) end,function(e) return e end) end local r={f(198)} return r[#r]",
+    "want": "C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return xpcall(function() return f(n-1) end,function(e) return e end) end local r={f(199)} return r[#r]",
+    "want": "C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return xpcall(function() return f(n-1) end,function(e) return e end) end local r={f(200)} return r[#r]",
+    "want": "C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return select(2,coroutine.resume(coroutine.create(f),n-1)) end return f(195)",
+    "want": "bottom"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return select(2,coroutine.resume(coroutine.create(f),n-1)) end return f(196)",
+    "want": "bottom"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return select(2,coroutine.resume(coroutine.create(f),n-1)) end return f(197)",
+    "want": "bottom"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return select(2,coroutine.resume(coroutine.create(f),n-1)) end return f(198)",
+    "want": "bottom"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return select(2,coroutine.resume(coroutine.create(f),n-1)) end return f(199)",
+    "want": "C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return select(2,coroutine.resume(coroutine.create(f),n-1)) end return f(200)",
+    "want": "C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return coroutine.wrap(f)(n-1) end return pcall(f, 195)",
+    "want": "true,bottom"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return coroutine.wrap(f)(n-1) end return pcall(f, 196)",
+    "want": "true,bottom"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return coroutine.wrap(f)(n-1) end return pcall(f, 197)",
+    "want": "true,bottom"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return coroutine.wrap(f)(n-1) end return pcall(f, 198)",
+    "want": "false,user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return coroutine.wrap(f)(n-1) end return pcall(f, 199)",
+    "want": "false,user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n==0 then return \"bottom\" end return coroutine.wrap(f)(n-1) end return pcall(f, 200)",
+    "want": "false,user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: user_script:1: C stack overflow"
+  },
+  {
+    "src": "local f,e=loadstring('return )', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"]:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"]:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"]:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"]:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"]:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"]:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"]:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"]:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"]:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"]:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"]:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"]:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"]:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"]:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"]:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"]:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"]:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,[string \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"]:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('return )', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return e",
+    "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f=loadstring('return nil+1', '=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') return pcall(f)",
+    "want": "false,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:1: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local f,e=loadstring('local x=1 local function f(...) return select(\"#\",...) end return f(x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x)', '=limits') if f then return f() end return e",
+    "want": "245"
+  },
+  {
+    "src": "local f,e=loadstring('local x=1 local function f(...) return select(\"#\",...) end return f(x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x)', '=limits') if f then return f() end return e",
+    "want": "246"
+  },
+  {
+    "src": "local f,e=loadstring('local x=1 local function f(...) return select(\"#\",...) end return f(x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x)', '=limits') if f then return f() end return e",
+    "want": "limits:1: function or expression too complex near '<eof>'"
+  },
+  {
+    "src": "local f,e=loadstring('local x=1 local function f(...) return select(\"#\",...) end return f(x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x)', '=limits') if f then return f() end return e",
+    "want": "limits:1: function or expression too complex near 'x'"
+  },
+  {
+    "src": "local f,e=loadstring('local x=1 local function f(...) return select(\"#\",...) end return f(x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x)', '=limits') if f then return f() end return e",
+    "want": "limits:1: function or expression too complex near 'x'"
+  },
+  {
+    "src": "local f,e=loadstring('local x=1 local function f(...) return select(\"#\",...) end return f(x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x)', '=limits') if f then return f() end return e",
+    "want": "limits:1: function or expression too complex near 'x'"
+  },
+  {
+    "src": "local f,e=loadstring('local x=1 local function f(...) return select(\"#\",...) end return f(x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x)', '=limits') if f then return f() end return e",
+    "want": "limits:1: function or expression too complex near 'x'"
   }
 ]

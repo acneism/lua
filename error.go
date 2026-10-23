@@ -11,6 +11,7 @@ type Error struct {
 	Line     int
 	Abort    error
 	Internal bool
+	cDepth   int
 }
 
 func (e *Error) Error() string {
@@ -30,32 +31,48 @@ func plainError(message string) *Error {
 }
 
 func chunkID(chunk string) string {
+	return sizedChunkID(chunk, 60)
+}
+
+func sizedChunkID(chunk string, size int) string {
 	if zero := strings.IndexByte(chunk, 0); zero >= 0 {
 		chunk = chunk[:zero]
 	}
 	if strings.HasPrefix(chunk, "=") {
 		chunk = chunk[1:]
-		if len(chunk) > 59 {
-			chunk = chunk[:59]
+		if len(chunk) >= size {
+			chunk = chunk[:size-1]
 		}
 		return chunk
 	}
 	if strings.HasPrefix(chunk, "@") {
 		chunk = chunk[1:]
-		if len(chunk) > 59 {
-			chunk = "..." + chunk[len(chunk)-56:]
+		limit := size - len(" '...' ") - 1
+		if len(chunk) > limit {
+			chunk = "..." + chunk[len(chunk)-limit:]
 		}
 		return chunk
 	}
-	first, _, multiline := strings.Cut(chunk, "\n")
-	if len(first) > 43 {
-		first = first[:43]
+	end := strings.IndexAny(chunk, "\r\n")
+	if end < 0 {
+		end = len(chunk)
+	}
+	first, multiline := chunk[:end], end != len(chunk)
+	limit := size - len(` [string "..."] `) - 1
+	if len(first) > limit {
+		first = first[:limit]
 		multiline = true
 	}
 	if multiline {
 		first += "..."
 	}
 	return `[string "` + first + `"]`
+}
+
+func syntaxError(chunk string, line int, message string) *Error {
+	err := plainError(fmt.Sprintf("%s:%d: %s", sizedChunkID(chunk, 80), line, message))
+	err.Line = line
+	return err
 }
 
 func locatedError(chunk string, line int, message string) *Error {

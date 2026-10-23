@@ -45,9 +45,6 @@ func (s *State) native(fn *function, args []Value, name nameInfo, method bool) [
 	t.frames = append(t.frames, frame{function: fn, callName: name, method: method})
 	t.nativeDepth++
 	defer func() { t.nativeDepth--; t.frames = t.frames[:depth] }()
-	if t.nativeDepth+1 >= 200 {
-		panic(plainError("C stack overflow"))
-	}
 	s.tick()
 	values, err := fn.native(s, args)
 	if err != nil {
@@ -210,7 +207,7 @@ func (s *State) execute(stop int) (result []Value) {
 					t.stack[a] = Number(luaModulo(x, y))
 					continue
 				case "^":
-					t.stack[a] = Number(math.Pow(x, y))
+					t.stack[a] = Number(luaPower(x, y))
 					continue
 				case "<":
 					t.stack[a] = Bool(x < y)
@@ -487,7 +484,7 @@ func (s *State) binary(operator string, left, right Value, leftName, rightName n
 			case "%":
 				return Number(luaModulo(a, b))
 			case "^":
-				return Number(math.Pow(a, b))
+				return Number(luaPower(a, b))
 			}
 		}
 		name := ""
@@ -523,6 +520,14 @@ func (s *State) binary(operator string, left, right Value, leftName, rightName n
 func luaModulo(left, right float64) float64 {
 	product := float64(math.Floor(left/right) * right)
 	return left - product
+}
+
+func luaPower(left, right float64) float64 {
+	value := math.Pow(left, right)
+	if math.IsNaN(value) && !math.IsNaN(left) && !math.IsNaN(right) {
+		return math.Copysign(value, -1)
+	}
+	return value
 }
 
 func (s *State) less(left, right Value, equal bool) bool {
