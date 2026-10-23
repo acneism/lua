@@ -2,5 +2,13 @@
   {
     "src": "return tostring(1e300 * 1e10), tostring(-(0/0))",
     "rule": "nan-sign"
+  },
+  {
+    "src": "return 7 % -3, -7 % 3, 7.5 % 2, -7.5 % 2, 5 % 0, -5 % 0",
+    "rule": "nan-sign"
+  },
+  {
+    "src": "return tostring(0/0), tostring(-(0/0)), (1/0) - (1/0), tostring(1/0), tostring(-1/0)",
+    "rule": "nan-sign"
   }
 ]

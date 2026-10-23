@@ -36,7 +36,7 @@ Object tostring values use stable IDs instead of machine addresses. Type
 prefixes such as `table: 0x` match. Pointer-key table order may differ.
 Numeric constants may merge signed zero. The specification also permits
 equivalent fpconv rounding, pooled random-state differences, and
-platform-dependent NaN signs. One source is explicitly listed for NaN-sign
+platform-dependent NaN signs. Three sources are explicitly listed for NaN-sign
 normalization on arm64 in testdata/normalization.json. All other fields still compare
 exactly. A separate test requires formatting to preserve the actual NaN sign.
 
