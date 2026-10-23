@@ -1,0 +1,1217 @@
+[
+  {
+    "src": "return tostring(1/0), tostring(-1/0), tostring(math.huge)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%5.2f', 3.14159), string.format('%d', 3.7), string.format('%x', 255), string.format('%g', 0.1), string.format('%s', 1.5)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%10.3s|', 'abcdef'), string.format('%c', 65), string.format('%e', 12345.678), string.format('%i', -2.5)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%q', 'a\\nb\\0c\"')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%q', 1/3)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%-5d|%+d|% d|%05.1f|%#x|%o', 42, 7, 3, 2.5, 255, 8)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%5s|%-5s|%.2s', 'ab', 'cd', 'xyz')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%z', 1)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%d')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%10.20f', 1)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.rep()",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.rep('x', 'y')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return ('x'):rep()",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "table.setn({}, 5)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.gsub('abc', '%w', {a='1', b=true})",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.find('x', '[a')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.find('x', '%')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('x', '(()')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.gsub('abc', '(a)', '%2')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return loadstring(string.dump(function() return 1 end))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "string.foo = 1",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return 5 % 3, -5 % 3, 5.5 % 2, 2^10, 2^0.5, 5 % 0, -5 % math.huge",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.modf(3.7), math.modf(-3.7)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.fmod(7, 3), math.fmod(-7, 3), math.mod(7, 3)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.frexp(8), math.ldexp(0.5, 4)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.floor(-3.5), math.ceil(-3.5), math.abs(-0.0)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.max(1, 5, 3), math.min(4, 2, 8)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.max()",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "math.randomseed(42) return math.random(100), math.random(100), math.random(1, 10), math.random()",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.random(0)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.random(1, 2, 3)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.gsub('hello world', '(%w+)', '<%1>')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.gsub('THE (quick) fox', '%f[%a]%a+', 'W')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('x(a(b)c)y', '%b()')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.gsub('abc', '.', function(c) return c:upper() .. '-' end)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.gsub('aaaa', 'a', 'b', 2)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('key:123:x', '(%a+):(%d+)')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.find('a.b', '.', 1, true)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('  trim  ', '^%s*(.-)%s*$')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.find('abc', 'b', -10), string.find('abc', '', 10), string.find('abc', '', 4)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {} for a, b in string.gmatch('k1=v1, k2=v2', '(%w+)=(%w+)') do t[#t+1] = a .. b end return table.concat(t, ';')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.gsub('hello', '', '-')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.byte('ABC', 1, -1)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return ('hello'):sub(-3), ('hello'):sub(2, 100), ('hello'):sub(0), ('hello'):sub(4, 2)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.rep('ab', 3, ','), string.rep('x', 0), string.rep('x', -1)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.char(72, 105), string.char()",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.char(256)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.reverse('abc'), string.upper('aBc'), string.lower('AbC'), string.len('\\0a')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {3,1,2} table.sort(t, function(a,b) return true end) return table.concat(t, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {5,2,8,1} table.sort(t, function(a,b) return a > b end) return table.concat(t, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {'b', 'a', 'c'} table.sort(t) return table.concat(t, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {1, 'a'} table.sort(t)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return table.concat({1, 2, 3}, ', ', 2, 3), table.concat({}), table.concat({1, {}})",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {1, 2} table.insert(t, 3) table.insert(t, 1, 0) return table.concat(t, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {} table.insert(t, 1, 2, 3)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {1, 2, 3} return table.remove(t), table.remove(t, 1), table.concat(t, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return table.maxn({1, 2, [10] = 3}), table.getn({1, 2, 3})",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {} table.foreach({a=1}, function(k, v) t[#t+1] = k .. v end) return t[1]",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {} for i = 1.5, 3.5 do t[#t+1] = i end return table.concat(t, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%s %s', 1, nil)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%5.1s|', true)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local co = coroutine.create(function() local t = {3, 1, 2} table.sort(t, function(a, b) coroutine.yield() return a < b end) end) return coroutine.resume(co)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {} for i = 1, 3 do t[#t + 1] = i i = 10 end return table.concat(t, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return getmetatable('').__index == string, ('abc'):upper(), ('x'):rep(3)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%s', setmetatable({}, {__tostring = function() return 'T' end}))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.find('a', '%f')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('abc', '%bx')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return #string.gsub('abc', '%w', '%'), (string.gsub('abc', '%w', '%')):byte(1)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.gsub('abc', '%w', '%x')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.find('abc', '[a-')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('hello', '()ll()')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.gsub('abc', 'b*', '-')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('2024-01-02', '(%d+)-(%d+)-(%d+)')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.find('a+b', '+', 1, true), string.find('a+b', '%+')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.gsub('hello world', 'o', {o = '0'})",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.gsub('abc', '%w', function() return nil end)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.gsub('abc', '%w', function() return false end)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.rep('ab', 3):gsub('b', '%%')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('x', string.rep('(', 33) .. 'x' .. string.rep(')', 33))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return ('%d'):format(5), ('abc'):find('b'), ('a,b'):gsub(',', ';')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.upper(123), string.len(123), string.rep(1, 3)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return ('x'):len(), #'\\0\\0', ('\\0'):byte()",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.find('abc', 'c', 10), string.find('', ''), string.find('abc', '', -1)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('abc', '.-'), string.match('abc', 'a(.*)'), string.match('abc', '(x?)')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.gsub('abc def', '(%w+) (%w+)', '%2 %1')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.gsub('abc', '', '')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.find('ab', 'b', 0)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local it = string.gmatch('abc', '()') local a, b, c, d = it(), it(), it(), it() return a, b, c, d",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.gsub('abc', '%f[%w]', '^')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.find('a\\0b', '\\0', 1, true), string.find('a\\0b', '%z')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('  x', '^%s*()')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('[%s]', 'a\\0b'):len()",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%123d', 1)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%5.1f|%-8.3e|%G', 3.14159, 0.000123, 1e20)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%q', '\\r\\0\\1')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%d', '10'), string.format('%x', 255.9), string.format('%5.2s|', 'abc')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%d', 'x')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%%'), string.format('a%%b')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%c%c', 0, 65):byte(1, -1)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%.3f', 2.0005), string.format('%.0f', 0.5), string.format('%.0f', 1.5), string.format('%.0f', 2.5)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {1, 2, 3} table.insert(t, 5, 'x') return #t, t[5]",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {1, 2} table.insert(t, 0, 'x') return t[0], t[1], t[2], t[3]",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return select('#', table.remove({}))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return select('#', table.remove({1, 2, 3}, 7))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return table.concat({1, 2, 3}, ', ', 3, 2), table.concat({'a', 'b'}, nil), table.concat({1.5, 2})",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {} for i = 1, 10 do t[i] = 5 end table.sort(t, function(a, b) return a <= b end) return 'ok'",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return table.maxn({}), table.maxn({[1.5] = 1, [-1] = 2})",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local s = '' table.foreachi({10, 20}, function(i, v) s = s .. i .. '=' .. v .. ';' end) return s",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return table.foreach({1}, function(k, v) return 'stop' end)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.sub('abcdef', 2.7, 4.9), string.rep('x', 2.9), string.byte('abc', 1.9)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return tostring(0/0), tostring(math.huge - math.huge), tostring(math.sqrt(-1)), tostring(-(0/0))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.floor('3.7'), ('5'):rep(2) + 1",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.floor('x')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return select('#', string.byte('')), select('#', string.byte('abc', 10))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.len(nil)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.max(1, 'x')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.floor(2^31 + 0.5), math.floor(-2^31 - 0.5), 2^63, 2^53 + 1",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.fmod(5.5, 2), math.fmod(-6, 4), math.fmod(1, 0)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.pow(2, 0.5), math.sqrt(16), math.exp(0), math.log(1), math.log10(100), math.log(8, 2)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.abs(-3), math.abs('-3'), math.ceil(3.2), math.deg(math.pi), math.rad(180)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.sin(0), math.cos(0), math.tan(0), math.asin(1), math.atan2(1, 1), math.sinh(0), math.cosh(0), math.tanh(0)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "math.randomseed(7) local t = {} for i = 1, 5 do t[i] = math.random(1000) end return table.concat(t, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "math.randomseed(1.9) local a = math.random(1000) math.randomseed(1) return a == math.random(1000)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.floor(-0.5)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.ceil(-0.5)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return ('abc'):sub(2)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return ('abc'):upper()",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return ('  x  '):match('^%s*(.-)%s*$')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%d %s', 1, 'a')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%5d|', 42)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%-5d|', 42)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%.2f', 3.14159)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%g', 0.00001)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%e', 1234.5)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%q', 'tab\\there')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return table.concat({1, 2, 3}, '-')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return table.concat({'a', 'b'}, ',', 1, 1)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {3, 2, 1} table.sort(t) return t[1] .. t[2] .. t[3]",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {'b', 'c', 'a'} table.sort(t) return table.concat(t)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {5, 2, 8, 1} table.sort(t) return table.concat(t, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {} table.insert(t, 1) table.insert(t, 2) table.insert(t, 1, 0) return table.concat(t, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {1, 2, 3} table.remove(t, 2) return table.concat(t, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {1, 2, 3} return table.remove(t, 3)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {[5] = 1} return table.maxn(t)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {1, nil, 3} return table.getn(t)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return tostring(1):sub(1, 1)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.rep('ab', 2)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.find('hello', 'l')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.find('hello', 'l', 4)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.find('hello', 'xyz')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.find('a+b', '+', 1, true)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.find('abc', '^b')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.find('abc', '^a')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('abc', '^a')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('abc', 'c$')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return tostring(string.match('abc', 'd$'))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return select(2, string.gsub('abc', 'b', 'X', 0))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return (string.gsub('aaa', 'a', 'b'))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return (string.gsub('abc', '.', function(c) return c end))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return (string.gsub('a1b2', '(%a)(%d)', '%2%1'))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('  x', '^%s*(.*)')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('x  ', '(.*)%s*$')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('abc123def', '%a+(%d+)%a+')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return tostring(string.match('abc', '%d'))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return (string.gsub('one two', '(%w+)', '<%1>'))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.byte('hello', 1, -1)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return select('#', string.byte('hello', 10))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.char(0):len()",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return ('abc'):rep(0)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.floor(3.7)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.ceil(3.2)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.sqrt(2) > 1.41",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.abs(-0.5)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.min(-1, -2)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.max(1)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return tostring(math.mod(5.5, 2))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return tostring(math.fmod(5.5, 2))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.floor(math.huge)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return tostring(-math.huge)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.pow(2, -1)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return tostring(math.sqrt(-1))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.modf(3.7)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.modf(-3.7)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return tostring(math.atan2(0, 1))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return math.atan2(1, 1) == math.pi / 4",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return tostring(math.cos(0))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%.3f', math.sin(0))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local d = string.dump(function() end) return d:sub(1, 4)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local d = string.dump(function() end) local f, e = loadstring(d) return tostring(f) .. '|' .. tostring(e)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('a\\tb', '%c')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('a.b', '%p')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('0123456789abcdef', '%x+')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('ab1', '%C+')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('ab1', '%P+')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return tostring(string.match('abc', '%X'))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('a\\0b', '%z')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('abc', '%A+')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('the cat', '%f[%a]%a+')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('(a(b)c)', '%b()')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.match('a(b', '%b()') == nil",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%o', 8)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%u', 42)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%c%c', 104, 105)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%10s|', 'x')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%-10s|', 'x')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%.3s', 'abcdef')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%+d', 5)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%#x', 255)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%#o', 8)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%q', 42)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%q', 3.7)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('% d', 5)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%q', 'a\\rb')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%q', 'a\\0b')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%%d', 1)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return (string.gsub('abc', 'b', function() return nil end))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return (string.gsub('abc', 'b', function() return 42 end))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return (string.gsub('abc', 'b', {b = 7}))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return (string.gsub('abc', 'b', {b = false}))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return select(2, string.gsub('aaa', 'a', 'b', 2))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return (string.gsub('a.b', '%.', '%%'))",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {1, 2, 3} table.insert(t, 1, 0) table.insert(t, 5) return table.concat(t, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {1, 2} table.remove(t, 0) return table.concat(t, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {} table.remove(t) return #t",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {1, 2, 3} table.remove(t, 2) return #t",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return table.concat({}, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {1, 2, 3} return table.concat(t, ',', 2)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local i = 0 local r = {} repeat local x = i i = i + 1 r[#r+1] = tostring(x) until x == 2 return table.concat(r, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "math.pi = 3",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "string.len = nil",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "table.sort = 1",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%100d', 1)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return string.format('%0000001d', 1)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "return ('x'):bad()",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {} for i = 1, 20 do t['key' .. i] = i end t.alpha = 1 t.beta = 2 t[3.5] = 'x' t[true] = 'y' t[100] = 'z' t[-7] = 1 local o = {} for k in pairs(t) do o[#o + 1] = tostring(k) end return table.concat(o, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {} for i = 1, 10 do t[i * 1.5] = i end local o = {} for k in pairs(t) do o[#o + 1] = k end return table.concat(o, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {x = 1, y = 2, z = 3} t.y = nil t.w = 4 local o = {} for k in pairs(t) do o[#o + 1] = k end return table.concat(o, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {} for i = 1, 40 do t['k' .. i] = i end for i = 1, 40, 3 do t['k' .. i] = nil end t.extra = 1 local o = {} for k in pairs(t) do o[#o + 1] = k end return table.concat(o, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {1, 2, 3, nil, 5, x = 'a', [10] = 10, [-1] = -1, [0] = 0} local o = {} for k in pairs(t) do o[#o + 1] = tostring(k) end return table.concat(o, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {} for i = 100, 1, -1 do t[i] = i end local o = {} for k in pairs(t) do o[#o + 1] = k end return table.concat(o, ',', 1, 20)",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local t = {} t[2^53] = 1 t[-0.0] = 2 t[0] = 3 t[1e300] = 4 local o = {} for k, v in pairs(t) do o[#o + 1] = tostring(k) .. '=' .. v end return table.concat(o, ',')",
+    "stage": "A2",
+    "reason": "String, table, or math library"
+  },
+  {
+    "src": "local f,e=loadstring(\"return \\128\",\"@probe\") local out=\"\" for i=1,#e do out=out..string.format(\"%02x\",string.byte(e,i)) end return out",
+    "stage": "A2",
+    "reason": "Hex encoding uses string.format and string.byte; binary syntax errors are also checked by TestBinarySyntaxTokens"
+  },
+  {
+    "src": "local f,e=loadstring(\"return \\255\",\"@probe\") local out=\"\" for i=1,#e do out=out..string.format(\"%02x\",string.byte(e,i)) end return out",
+    "stage": "A2",
+    "reason": "Hex encoding uses string.format and string.byte; binary syntax errors are also checked by TestBinarySyntaxTokens"
+  }
+]

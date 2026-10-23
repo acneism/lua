@@ -1,6 +1,6 @@
 # Architecture decisions
 
-No interpreter decisions have been accepted in A0.
-
-A1 must record the execution strategy and value representation with benchmark
-evidence. It must also document the Lua 5.1 table port and coroutine strategy.
+- [Register VM](0001-register-vm.md)
+- [Tagged values](0002-tagged-values.md)
+- [Lua table port](0003-lua-tables.md)
+- [Coroutines as VM stacks](0004-coroutine-stacks.md)

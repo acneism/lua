@@ -3,14 +3,25 @@ Copyright 2026 acneism
 
 This project is licensed under the Apache License, Version 2.0.
 
-The reference corpus and capture wrapper originate in the project specification
-and capture tool supplied by acneism on 2026-10-24. Recorded answers were obtained
-from Redis 7.2.16. The corpus is copied without editing its answers.
+Lua 5.1.5, as included in Redis 7.2.16
+Copyright (C) 1994-2012 Lua.org, PUC-Rio. All rights reserved.
+License: MIT; full terms in LICENSES/Lua-5.1.5.txt.
 
-No upstream interpreter or Redis implementation code has been ported in A0.
-Redis is an external test service and is not distributed in this repository.
+The Go interpreter adapts algorithms and behavior from deps/lua/src/ltable.c,
+llex.c, lparser.c, lcode.c, lvm.c, ldo.c, ldebug.c, lobject.c, lbaselib.c,
+lfunc.c, lstate.h, lua.h, and luaconf.h in Redis 7.2.16.
+The register instruction representation and coroutine stack implementation
+are specific to this Go implementation.
 
-Future ports must include the license and copyright notices from the exact source
-files in Redis 7.2.16. These include Lua 5.1.5 (MIT), Redis (BSD-3-Clause),
-lua-cjson (MIT), lua-cmsgpack (BSD-2-Clause), lua_struct (MIT), LuaBitOp (MIT),
-and LZF (BSD-2-Clause), as each component is introduced.
+Redis 7.2.16, src/script_lua.c
+Copyright (c) 2009-2021, Redis Ltd. All rights reserved.
+License: BSD-3-Clause; full terms in LICENSES/Redis-script-lua.txt.
+
+The interpreter follows Redis's protected-call behavior and read-only table
+extension. Redis is also an external reference service. The original reference
+corpus and capture wrapper were supplied by acneism on 2026-10-24.
+New reference answers are captured from Redis with the same wrapper.
+
+No string, table, math, bit, struct, cjson, cmsgpack, fpconv, CRC64, or LZF
+library implementation is included in A1. Add notices from the exact upstream
+source headers when those components are ported.

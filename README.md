@@ -7,34 +7,61 @@ uses the Go standard library only. It requires Go 1.26.1 or later.
 
 ## Status
 
-A0 provides the project scaffold, 707 reference snippets, a capture and verification
-tool, and CI. The interpreter and Redis engine are not implemented yet. The module
-does not expose a scripting API at this stage.
+A1 implements the interpreter core, base and coroutine libraries, immutable
+prototypes, Lua tables, metatables, closures, varargs, tail calls, error locations,
+read-only tables, and an interruption hook.
 
-The planned packages are `github.com/acneism/lua` for the interpreter and
-`github.com/acneism/lua/redis` for the scripting engine. Redis commands will run
-through a host interface. The library will not include a Redis server or storage.
-A host example will be added when the engine API exists.
+The corpus has 975 snippets. The interpreter runs 732 through the original
+capture wrapper. The other 243 are explicitly listed by source and stage in
+`testdata/pending.json`. All 243 currently need the A2 libraries.
+The reference verifier checks all 975 against Redis.
+
+String, table, and math libraries belong to A2. The Redis engine, host interface,
+EVAL, and FUNCTION API belong to later stages.
+
+## Interpreter example
+
+```go
+package main
+
+import (
+    "fmt"
+
+    "github.com/acneism/lua"
+)
+
+func main() {
+    proto, err := lua.Compile([]byte("return ... + 1"), "@example")
+    if err != nil {
+        panic(err)
+    }
+    state := lua.NewState(lua.Options{})
+    values, err := state.Call(state.Load(proto, nil), lua.Number(41))
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(values[0].Float())
+}
+```
+
+Compile once and load the prototype into separate states. A state can be reused
+between calls and must not be called concurrently. Allocate host tables and
+functions through the state to give objects stable identities.
 
 ## Development
-
-Run the deterministic tests and static checks:
 
 ```sh
 go test ./...
 go vet ./...
-```
-
-Verify the complete reference corpus against a disposable Redis 7.2.16 instance:
-
-```sh
+go test -race ./...
 go run ./internal/cmd/capture -addr 127.0.0.1:6390 -verify testdata/snippets.json
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for capture instructions and CI details,
-[architecture](docs/architecture.md) for the implementation sequence, and
-[compatibility](docs/compatibility.md) for the target and current limits.
+See [CONTRIBUTING.md](CONTRIBUTING.md), [architecture](docs/architecture.md),
+[decisions](docs/adr/README.md), [compatibility](docs/compatibility.md), and
+[benchmarks](docs/benchmarks.md).
 
 ## License
 
-Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Apache-2.0, with upstream notices for ported Lua and Redis behavior.
+See [LICENSE](LICENSE), [NOTICE](NOTICE), and [LICENSES](LICENSES).

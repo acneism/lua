@@ -1,0 +1,337 @@
+package lua
+
+import (
+	"errors"
+	"fmt"
+)
+
+type GoFunction func(s *State, args []Value) ([]Value, error)
+
+type Options struct {
+	Hook      func() error
+	HookEvery int
+	MaxString int
+	Memory    *Budget
+}
+
+type function struct {
+	proto    *Proto
+	native   GoFunction
+	name     string
+	env      *Table
+	upvalues []*upvalue
+}
+
+type upvalue struct {
+	thread *thread
+	index  int
+	value  Value
+	next   *upvalue
+}
+
+func (u *upvalue) get() Value {
+	if u.thread != nil {
+		return u.thread.stack[u.index]
+	}
+	return u.value
+}
+
+func (u *upvalue) set(value Value) {
+	if u.thread != nil {
+		u.thread.stack[u.index] = value
+	} else {
+		u.value = value
+	}
+}
+
+type frame struct {
+	function    *function
+	start       int
+	base        int
+	pc          int
+	line        int
+	varargBase  int
+	varargCount int
+	limit       int
+	returnDest  int
+	want        int
+	callName    nameInfo
+	method      bool
+}
+
+type thread struct {
+	object       object
+	stack        []Value
+	frames       []frame
+	used         int
+	top          int
+	open         *upvalue
+	status       string
+	entry        Value
+	started      bool
+	nativeDepth  int
+	boundary     int
+	resumeDest   int
+	resumeWant   int
+	resumeReturn bool
+	parent       *thread
+	tail         []Value
+}
+
+type State struct {
+	options    Options
+	globals    *Table
+	stringMeta *Table
+	main       *thread
+	current    *thread
+	threads    []*thread
+	nextID     uint64
+	steps      int
+	running    int
+}
+
+func NewState(options Options) *State {
+	if options.HookEvery <= 0 {
+		options.HookEvery = 10000
+	}
+	if options.MaxString <= 0 {
+		options.MaxString = 512 << 20
+	}
+	s := &State{options: options}
+	s.main = &thread{status: "running"}
+	s.main.object.thread = s.main
+	s.current = s.main
+	s.globals = s.NewTable(0, 32)
+	s.stringMeta = s.NewTable(0, 1)
+	s.stringMeta.set(String("__index"), s.NewTable(0, 0).Value())
+	s.stringMeta.readonly = true
+	s.openBase()
+	s.openCoroutine()
+	return s
+}
+
+func (s *State) Globals() *Table { return s.globals }
+
+func (s *State) NewTable(arraySize, hashSize int) *Table {
+	s.reserve(192)
+	s.nextID++
+	t := &Table{}
+	if s.running > 0 {
+		t.memory = s.options.Memory
+	}
+	t.object = object{id: s.nextID, table: t}
+	t.resize(arraySize, hashSize)
+	return t
+}
+
+func (s *State) Function(name string, native GoFunction) Value {
+	s.nextID++
+	s.reserve(128)
+	return Value{kind: TypeFunction, object: &object{id: s.nextID, function: &function{native: native, name: name, env: s.globals}}}
+}
+
+func (s *State) Userdata(data any) Value {
+	s.nextID++
+	return Value{kind: TypeUserdata, object: &object{id: s.nextID, data: data}}
+}
+
+func (v Value) Userdata() any {
+	if v.kind == TypeUserdata {
+		return v.object.data
+	}
+	return nil
+}
+
+func (s *State) Load(proto *Proto, env *Table) Value {
+	if env == nil {
+		env = s.globals
+	}
+	return s.closure(proto, env, nil)
+}
+
+func (s *State) closure(proto *Proto, env *Table, upvalues []*upvalue) Value {
+	s.nextID++
+	s.reserve(128 + int64(len(upvalues))*8)
+	return Value{kind: TypeFunction, object: &object{id: s.nextID, function: &function{proto: proto, env: env, upvalues: upvalues}}}
+}
+
+func (s *State) Call(fn Value, args ...Value) (values []Value, err error) {
+	outer := s.running == 0
+	s.running++
+	if outer {
+		s.steps = 0
+	}
+	defer func() {
+		s.running--
+		if outer {
+			s.cleanup()
+		}
+	}()
+	if !outer {
+		s.current.boundary++
+		defer func() { s.current.boundary-- }()
+	}
+	return s.protected(fn, args)
+}
+
+func (s *State) protected(fn Value, args []Value) (values []Value, err error) {
+	t := s.current
+	depth, used, top, nativeDepth := len(t.frames), t.used, t.top, t.nativeDepth
+	defer func() {
+		if raised := recover(); raised != nil {
+			failure, ok := raised.(*Error)
+			if !ok {
+				cause := fmt.Errorf("internal Lua error: %v", raised)
+				failure = &Error{Message: cause.Error(), Value: String(cause.Error()), Abort: cause, Internal: true}
+			}
+			if failure.Line == 0 {
+				failure.Line = s.currentLine()
+			}
+			err = failure
+		}
+		if err != nil {
+			t.close(used)
+			clear(t.stack[used:t.used])
+			t.frames = t.frames[:depth]
+			t.used, t.top, t.nativeDepth = used, top, nativeDepth
+		}
+	}()
+	if fn.kind != TypeFunction {
+		fn, args = s.callable(fn, args, nameInfo{})
+	}
+	if fn.object.function.native != nil {
+		return s.native(fn.object.function, args, nameInfo{}, false), nil
+	}
+	s.push(fn.object.function, args, -1, -1, nameInfo{}, false)
+	return s.execute(depth), nil
+}
+
+func (s *State) invoke(fn Value, args []Value) []Value {
+	s.current.boundary++
+	defer func() { s.current.boundary-- }()
+	values, err := s.protected(fn, args)
+	if err != nil {
+		panic(err)
+	}
+	return values
+}
+
+func (s *State) cleanup() {
+	for _, t := range s.threads {
+		t.close(0)
+		clear(t.stack)
+		clear(t.frames[:cap(t.frames)])
+		clear(t.tail)
+		t.tail = t.tail[:0]
+		t.entry = Nil()
+		t.frames = t.frames[:0]
+		t.used, t.top, t.nativeDepth, t.boundary = 0, 0, 0, 0
+		t.status = "dead"
+		t.parent = nil
+	}
+	s.threads = s.threads[:0]
+	s.current = s.main
+	s.main.close(0)
+	clear(s.main.stack)
+	clear(s.main.frames[:cap(s.main.frames)])
+	clear(s.main.tail)
+	s.main.tail = s.main.tail[:0]
+	s.main.frames = s.main.frames[:0]
+	s.main.used, s.main.top, s.main.nativeDepth, s.main.boundary = 0, 0, 0, 0
+}
+
+func (t *thread) ensure(size int) {
+	if size > len(t.stack) {
+		t.stack = append(t.stack, make([]Value, size-len(t.stack))...)
+	}
+}
+
+func (t *thread) capture(index int) *upvalue {
+	for current := t.open; current != nil; current = current.next {
+		if current.index == index {
+			return current
+		}
+	}
+	current := &upvalue{thread: t, index: index, next: t.open}
+	t.open = current
+	return current
+}
+
+func (t *thread) close(base int) {
+	link := &t.open
+	for *link != nil {
+		current := *link
+		if current.index >= base {
+			current.value = t.stack[current.index]
+			current.thread = nil
+			*link = current.next
+			current.next = nil
+		} else {
+			link = &current.next
+		}
+	}
+}
+
+func (s *State) currentLine() int {
+	for i := len(s.current.frames) - 1; i >= 0; i-- {
+		if s.current.frames[i].function.proto != nil {
+			return s.current.frames[i].line
+		}
+	}
+	return 0
+}
+
+func (s *State) raise(message string, level int) {
+	t := s.current
+	index := len(t.frames) - 1 - level
+	err := plainError(message)
+	if index >= 0 && t.frames[index].function.proto != nil {
+		err = locatedError(t.frames[index].function.proto.chunk, t.frames[index].line, message)
+	}
+	err.Line = s.currentLine()
+	panic(err)
+}
+
+func (s *State) runtimeError(message string) { s.raise(message, 0) }
+
+func (s *State) typeError(action string, value Value, info nameInfo) {
+	if info.name != "" {
+		s.runtimeError(fmt.Sprintf("attempt to %s %s '%s' (a %s value)", action, info.kind, info.name, value.kind))
+	}
+	s.runtimeError(fmt.Sprintf("attempt to %s a %s value", action, value.kind))
+}
+
+func (s *State) tick() {
+	s.steps++
+	if s.steps < s.options.HookEvery {
+		return
+	}
+	s.pollHook()
+}
+
+func (s *State) pollHook() {
+	s.steps = 0
+	if s.options.Hook != nil {
+		if err := s.options.Hook(); err != nil {
+			panic(&Error{Message: err.Error(), Value: String(err.Error()), Line: s.currentLine(), Abort: err})
+		}
+	}
+}
+
+func (s *State) reserve(size int64) {
+	if s.running > 0 {
+		s.options.Memory.reserve(size)
+	}
+}
+
+func (s *State) checkString(size int) {
+	if size < 0 || size > s.options.MaxString {
+		s.runtimeError("string length overflow")
+	}
+	s.options.Memory.reserve(int64(size))
+}
+
+func abortError(err error) bool {
+	var failure *Error
+	return errors.As(err, &failure) && (failure.Abort != nil || failure.Internal)
+}

@@ -81,3 +81,13 @@ func TestOutputFailure(t *testing.T) {
 		t.Fatalf("got %v", err)
 	}
 }
+
+func TestCaptureRejectsNonUTF8(t *testing.T) {
+	path := inputFile(t, encoded(t, corpus(t)[:1]))
+	dest := inputFile(t, "preserve me")
+	addr, _ := reference(t, "redis_version:7.2.16\r\n", []string{bulk(string([]byte{255}))})
+	err := run([]string{"-addr", addr, "-out", dest, path}, io.Discard)
+	if err == nil || !strings.Contains(err.Error(), "not valid UTF-8") {
+		t.Fatalf("got %v", err)
+	}
+}

@@ -75,6 +75,10 @@ jobs:
               package = ""
             }
             END {
+              if (!("lua" in statements)) {
+                print "lua package is missing from the coverage report"
+                failed = 1
+              }
               for (p in statements) {
                 percent = 100 * covered[p] / statements[p]
                 printf "%s coverage: %.1f%%\n", p, percent

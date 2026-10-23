@@ -131,8 +131,8 @@ func TestCorpusIsComplete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(cases) != 707 {
-		t.Fatalf("got %d snippets, want 707", len(cases))
+	if len(cases) < 707 {
+		t.Fatalf("got %d snippets, want at least 707", len(cases))
 	}
 }
 

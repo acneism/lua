@@ -1,23 +1,48 @@
 # Compatibility
 
-The target is byte-for-byte compatibility with Redis 7.2.16 scripting replies,
-errors, and host command order. The language target is Redis's Lua 5.1 variant.
+The target is Redis 7.2.16 and its Lua 5.1 variant. A1 implements the interpreter
+and base and coroutine libraries. EVAL, FUNCTION, host commands, A2 libraries,
+and C extensions are not implemented yet.
 
-A0 has no interpreter or engine. Verifying the reference corpus proves that the
-recorded answers match Redis. It does not prove that this library executes Lua.
-The local interpreter corpus runner will be introduced in A1 and extended in A2.
+Of 975 reference snippets, 732 execute in A1. The other 243 are listed explicitly
+in `testdata/pending.json`. Tests execute the original capture wrapper; its
+helper environment is separate from the snippet environment. Reference CI
+checks all recorded answers against Redis, including pending entries.
 
-The specification permits address normalization for objects, pointer-key table
-iteration differences, initial random state differences between pooled states,
-negative-zero constant folding differences, equivalent fpconv rounding, and
-platform-dependent NaN signs. A0 verification does not apply normalization:
-the supplied corpus has stable answers under the capture wrapper.
+## Interpreter details
 
-Planned intentional differences must be documented when implemented:
+- Tables preserve Lua's hash chains, traversal order, and length boundaries.
+- Constructors flush positional fields in batches of 50. Later explicit fields
+  can replace values from earlier batches, as confirmed by Redis probes.
+- Numbers are float64. Strings are byte sequences and may contain zero bytes.
+- Unknown escape letters follow Lua 5.1.
+- Read-only writes fail with Redis's error. The standalone globals start writable;
+  installation of the Redis sandbox belongs to B.
+- Binary chunks are parsed as text and rejected.
+- Weak-table and finalizer fields are accepted without weak references or
+  Lua finalizer execution.
+- Coroutines use VM stacks. Unfinished coroutines close after the outer call.
+- Native nesting and syntax limits match the captured wrapper probes.
+- Strings have a default 512 MiB limit. Options.MaxString can reduce it.
+  Redis has no corresponding limit.
 
-- FUNCTION library upvalues belong to each pooled state.
-- EVAL cache entries use bounded LRU eviction, unlike Redis 7.2.
-- String size and script memory limits protect the host.
-- Hosts may opt into killing scripts that have issued writes.
+Budget provides approximate accounting for new script tables, strings, and
+closures. It is not an engine memory limit or a replacement for Go's allocator.
+Engine accounting, reset policy, KILL, and BUSY remain part of E.
 
-These features are not implemented in A0.
+## Permitted differences
+
+Object tostring values use stable IDs instead of machine addresses. Type
+prefixes such as `table: 0x` match. Pointer-key table order may differ.
+Numeric constants may merge signed zero. The specification also permits
+equivalent fpconv rounding, pooled random-state differences, and
+platform-dependent NaN signs. A1's active corpus needs no normalization.
+
+collectgarbage and gcinfo expose plausible Go memory statistics rather than the
+Redis Lua allocator's exact figures. Lua controls do not stop Go's process-wide
+collector.
+
+## Planned engine differences
+
+Pooled FUNCTION upvalues, bounded EVAL cache eviction, script memory limits,
+and opt-in killing of writers will be documented when implemented.

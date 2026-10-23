@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 const referenceVersion = "7.2.16"
@@ -70,6 +71,9 @@ func run(args []string, out io.Writer) error {
 		got, err := client.command("EVAL", fmt.Sprintf(wrapper, quote(cases[i].Src)), "0")
 		if err != nil {
 			return fmt.Errorf("snippet %d: %w", i+1, err)
+		}
+		if !utf8.ValidString(got) {
+			return fmt.Errorf("snippet %d: result is not valid UTF-8; encode binary output as hex in the snippet", i+1)
 		}
 		got = strings.TrimPrefix(got, "ERR ")
 		if *verify {

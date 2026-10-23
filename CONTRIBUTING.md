@@ -15,10 +15,28 @@ CI tests Linux, Windows, and macOS. Race detection runs on Linux. Tests for the
 capture tool use an isolated local TCP listener and do not need Redis. A separate
 reference job verifies every corpus entry against `redis:7.2.16`.
 
-The interpreter, Redis engine, differential tests, and fuzz targets are pending.
-They must be added with their implementation stages. Future randomized tests use
-`LUA_DIFF_SEED` and report it on failure. Differential tests will also use
-`REDIS_REF_ADDR` and `LUA_DIFF_STEPS`.
+The root corpus runner executes the original wrapper and reads the explicit
+pending list from `testdata/pending.json`. Do not defer a core-language failure
+as a later-stage library feature. Each pending entry must name its source,
+stage, and missing feature. Remove entries when their implementation lands.
+
+The table model test reads `LUA_DIFF_SEED` and reports it on failure.
+Redis differential tests remain part of B and will also use `REDIS_REF_ADDR`
+and `LUA_DIFF_STEPS`.
+
+Run the current fuzz targets with bounded resources:
+
+```sh
+go test . -run '^$' -fuzz '^FuzzCompile$' -fuzztime=30s -parallel=2
+go test . -run '^$' -fuzz '^FuzzRun$' -fuzztime=30s -parallel=2
+```
+
+Compile fuzzing accepts arbitrary input up to 64 KiB. Run fuzzing generates
+small programs with a step hook and checks deterministic execution in fresh
+states. The fuzz workflow runs each target for 30 seconds per PR and ten
+minutes nightly. Heavy fuzzing and performance measurements run on the
+designated Azure machine, which must be deallocated and lose its public IP
+after the run.
 
 ## Reference corpus
 
@@ -47,6 +65,9 @@ against Redis and writes the output only after every request succeeds. It writes
 a temporary file beside the destination, then renames it into place. Existing
 answers must never be edited by hand. Review new output and run `-verify` before
 committing it. `-verify` and `-out` cannot be combined.
+
+Capture rejects invalid UTF-8 output because JSON would replace its bytes.
+Encode binary results as hexadecimal inside the snippet before capturing them.
 
 See [reference provenance](docs/reference.md) for the exact wrapper convention.
 

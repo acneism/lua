@@ -2826,5 +2826,1077 @@
   {
     "src": "return '0x1p4' + 0, '1e309' + 0, ' inf ' * 1",
     "want": "16,inf,inf"
+  },
+  {
+    "src": "return -7 + 3.5",
+    "want": "-3.5"
+  },
+  {
+    "src": "return -7 - 3.5",
+    "want": "-10.5"
+  },
+  {
+    "src": "return -7 * 3.5",
+    "want": "-24.5"
+  },
+  {
+    "src": "return -7 / 3.5",
+    "want": "-2"
+  },
+  {
+    "src": "return -7 % 3.5",
+    "want": "0"
+  },
+  {
+    "src": "return -7 ^ 3.5",
+    "want": "-907.49269969515"
+  },
+  {
+    "src": "return -0.0 + 3.5",
+    "want": "3.5"
+  },
+  {
+    "src": "return -0.0 - 3.5",
+    "want": "-3.5"
+  },
+  {
+    "src": "return -0.0 * 3.5",
+    "want": "-0"
+  },
+  {
+    "src": "return -0.0 / 3.5",
+    "want": "-0"
+  },
+  {
+    "src": "return -0.0 % 3.5",
+    "want": "0"
+  },
+  {
+    "src": "return -0.0 ^ 3.5",
+    "want": "-0"
+  },
+  {
+    "src": "return 0 + 3.5",
+    "want": "3.5"
+  },
+  {
+    "src": "return 0 - 3.5",
+    "want": "-3.5"
+  },
+  {
+    "src": "return 0 * 3.5",
+    "want": "0"
+  },
+  {
+    "src": "return 0 / 3.5",
+    "want": "0"
+  },
+  {
+    "src": "return 0 % 3.5",
+    "want": "0"
+  },
+  {
+    "src": "return 0 ^ 3.5",
+    "want": "0"
+  },
+  {
+    "src": "return 0.125 + 3.5",
+    "want": "3.625"
+  },
+  {
+    "src": "return 0.125 - 3.5",
+    "want": "-3.375"
+  },
+  {
+    "src": "return 0.125 * 3.5",
+    "want": "0.4375"
+  },
+  {
+    "src": "return 0.125 / 3.5",
+    "want": "0.035714285714286"
+  },
+  {
+    "src": "return 0.125 % 3.5",
+    "want": "0.125"
+  },
+  {
+    "src": "return 0.125 ^ 3.5",
+    "want": "0.00069053396600249"
+  },
+  {
+    "src": "return 1 + 3.5",
+    "want": "4.5"
+  },
+  {
+    "src": "return 1 - 3.5",
+    "want": "-2.5"
+  },
+  {
+    "src": "return 1 * 3.5",
+    "want": "3.5"
+  },
+  {
+    "src": "return 1 / 3.5",
+    "want": "0.28571428571429"
+  },
+  {
+    "src": "return 1 % 3.5",
+    "want": "1"
+  },
+  {
+    "src": "return 1 ^ 3.5",
+    "want": "1"
+  },
+  {
+    "src": "return 2^53 + 3.5",
+    "want": "9.007199254741e+15"
+  },
+  {
+    "src": "return 2^53 - 3.5",
+    "want": "9.007199254741e+15"
+  },
+  {
+    "src": "return 2^53 * 3.5",
+    "want": "3.1525197391593e+16"
+  },
+  {
+    "src": "return 2^53 / 3.5",
+    "want": "2.5734855013546e+15"
+  },
+  {
+    "src": "return 2^53 % 3.5",
+    "want": "0"
+  },
+  {
+    "src": "return 2^53 ^ 3.5",
+    "want": "inf"
+  },
+  {
+    "src": "return 1e100 + 3.5",
+    "want": "1e+100"
+  },
+  {
+    "src": "return 1e100 - 3.5",
+    "want": "1e+100"
+  },
+  {
+    "src": "return 1e100 * 3.5",
+    "want": "3.5e+100"
+  },
+  {
+    "src": "return 1e100 / 3.5",
+    "want": "2.8571428571429e+99"
+  },
+  {
+    "src": "return 1e100 % 3.5",
+    "want": "0"
+  },
+  {
+    "src": "return 1e100 ^ 3.5",
+    "want": "inf"
+  },
+  {
+    "src": "return \"0x10\" + 3.5",
+    "want": "19.5"
+  },
+  {
+    "src": "return \"0x10\" - 3.5",
+    "want": "12.5"
+  },
+  {
+    "src": "return \"0x10\" * 3.5",
+    "want": "56"
+  },
+  {
+    "src": "return \"0x10\" / 3.5",
+    "want": "4.5714285714286"
+  },
+  {
+    "src": "return \"0x10\" % 3.5",
+    "want": "2"
+  },
+  {
+    "src": "return \"0x10\" ^ 3.5",
+    "want": "16384"
+  },
+  {
+    "src": "local x = nil return x + 2",
+    "want": "user_script:1: attempt to perform arithmetic on local 'x' (a nil value)"
+  },
+  {
+    "src": "local x = nil return x * 2",
+    "want": "user_script:1: attempt to perform arithmetic on local 'x' (a nil value)"
+  },
+  {
+    "src": "local x = nil return x .. 2",
+    "want": "user_script:1: attempt to concatenate local 'x' (a nil value)"
+  },
+  {
+    "src": "local x = nil return x < 2",
+    "want": "user_script:1: attempt to compare nil with number"
+  },
+  {
+    "src": "local x = nil return x == 2",
+    "want": "false"
+  },
+  {
+    "src": "local x = false return x + 2",
+    "want": "user_script:1: attempt to perform arithmetic on local 'x' (a boolean value)"
+  },
+  {
+    "src": "local x = false return x * 2",
+    "want": "user_script:1: attempt to perform arithmetic on local 'x' (a boolean value)"
+  },
+  {
+    "src": "local x = false return x .. 2",
+    "want": "user_script:1: attempt to concatenate local 'x' (a boolean value)"
+  },
+  {
+    "src": "local x = false return x < 2",
+    "want": "user_script:1: attempt to compare boolean with number"
+  },
+  {
+    "src": "local x = false return x == 2",
+    "want": "false"
+  },
+  {
+    "src": "local x = true return x + 2",
+    "want": "user_script:1: attempt to perform arithmetic on local 'x' (a boolean value)"
+  },
+  {
+    "src": "local x = true return x * 2",
+    "want": "user_script:1: attempt to perform arithmetic on local 'x' (a boolean value)"
+  },
+  {
+    "src": "local x = true return x .. 2",
+    "want": "user_script:1: attempt to concatenate local 'x' (a boolean value)"
+  },
+  {
+    "src": "local x = true return x < 2",
+    "want": "user_script:1: attempt to compare boolean with number"
+  },
+  {
+    "src": "local x = true return x == 2",
+    "want": "false"
+  },
+  {
+    "src": "local x = {} return x + 2",
+    "want": "user_script:1: attempt to perform arithmetic on local 'x' (a table value)"
+  },
+  {
+    "src": "local x = {} return x * 2",
+    "want": "user_script:1: attempt to perform arithmetic on local 'x' (a table value)"
+  },
+  {
+    "src": "local x = {} return x .. 2",
+    "want": "user_script:1: attempt to concatenate local 'x' (a table value)"
+  },
+  {
+    "src": "local x = {} return x < 2",
+    "want": "user_script:1: attempt to compare table with number"
+  },
+  {
+    "src": "local x = {} return x == 2",
+    "want": "false"
+  },
+  {
+    "src": "local x = function() end return x + 2",
+    "want": "user_script:1: attempt to perform arithmetic on local 'x' (a function value)"
+  },
+  {
+    "src": "local x = function() end return x * 2",
+    "want": "user_script:1: attempt to perform arithmetic on local 'x' (a function value)"
+  },
+  {
+    "src": "local x = function() end return x .. 2",
+    "want": "user_script:1: attempt to concatenate local 'x' (a function value)"
+  },
+  {
+    "src": "local x = function() end return x < 2",
+    "want": "user_script:1: attempt to compare function with number"
+  },
+  {
+    "src": "local x = function() end return x == 2",
+    "want": "false"
+  },
+  {
+    "src": "local x = \"abc\" return x + 2",
+    "want": "user_script:1: attempt to perform arithmetic on local 'x' (a string value)"
+  },
+  {
+    "src": "local x = \"abc\" return x * 2",
+    "want": "user_script:1: attempt to perform arithmetic on local 'x' (a string value)"
+  },
+  {
+    "src": "local x = \"abc\" return x .. 2",
+    "want": "abc2"
+  },
+  {
+    "src": "local x = \"abc\" return x < 2",
+    "want": "user_script:1: attempt to compare string with number"
+  },
+  {
+    "src": "local x = \"abc\" return x == 2",
+    "want": "false"
+  },
+  {
+    "src": "local x = \"0x1p4\" return x + 2",
+    "want": "18"
+  },
+  {
+    "src": "local x = \"0x1p4\" return x * 2",
+    "want": "32"
+  },
+  {
+    "src": "local x = \"0x1p4\" return x .. 2",
+    "want": "0x1p42"
+  },
+  {
+    "src": "local x = \"0x1p4\" return x < 2",
+    "want": "user_script:1: attempt to compare string with number"
+  },
+  {
+    "src": "local x = \"0x1p4\" return x == 2",
+    "want": "false"
+  },
+  {
+    "src": "local x = \" inf \" return x + 2",
+    "want": "inf"
+  },
+  {
+    "src": "local x = \" inf \" return x * 2",
+    "want": "inf"
+  },
+  {
+    "src": "local x = \" inf \" return x .. 2",
+    "want": " inf 2"
+  },
+  {
+    "src": "local x = \" inf \" return x < 2",
+    "want": "user_script:1: attempt to compare string with number"
+  },
+  {
+    "src": "local x = \" inf \" return x == 2",
+    "want": "false"
+  },
+  {
+    "src": "local t = {} for i=1,1 do t[\"k\"..i]=i end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return out",
+    "want": "k1=1;"
+  },
+  {
+    "src": "local t = {} for i=1,1,-1 do t[i]=i end for i=1,1,3 do t[i]=nil end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return #t,out",
+    "want": "0,"
+  },
+  {
+    "src": "local t = {} for i=1,2 do t[\"k\"..i]=i end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return out",
+    "want": "k1=1;k2=2;"
+  },
+  {
+    "src": "local t = {} for i=2,1,-1 do t[i]=i end for i=1,2,3 do t[i]=nil end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return #t,out",
+    "want": "2,2=2;"
+  },
+  {
+    "src": "local t = {} for i=1,3 do t[\"k\"..i]=i end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return out",
+    "want": "k1=1;k3=3;k2=2;"
+  },
+  {
+    "src": "local t = {} for i=3,1,-1 do t[i]=i end for i=1,3,3 do t[i]=nil end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return #t,out",
+    "want": "3,2=2;3=3;"
+  },
+  {
+    "src": "local t = {} for i=1,7 do t[\"k\"..i]=i end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return out",
+    "want": "k4=4;k6=6;k5=5;k1=1;k7=7;k3=3;k2=2;"
+  },
+  {
+    "src": "local t = {} for i=7,1,-1 do t[i]=i end for i=1,7,3 do t[i]=nil end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return #t,out",
+    "want": "3,2=2;3=3;5=5;6=6;"
+  },
+  {
+    "src": "local t = {} for i=1,16 do t[\"k\"..i]=i end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return out",
+    "want": "k12=12;k16=16;k9=9;k8=8;k1=1;k15=15;k3=3;k2=2;k14=14;k13=13;k10=10;k11=11;k6=6;k7=7;k4=4;k5=5;"
+  },
+  {
+    "src": "local t = {} for i=16,1,-1 do t[i]=i end for i=1,16,3 do t[i]=nil end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return #t,out",
+    "want": "15,2=2;3=3;5=5;6=6;8=8;9=9;11=11;12=12;14=14;15=15;"
+  },
+  {
+    "src": "local t = {} for i=1,31 do t[\"k\"..i]=i end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return out",
+    "want": "k16=16;k26=26;k19=19;k31=31;k30=30;k9=9;k15=15;k21=21;k29=29;k25=25;k11=11;k24=24;k23=23;k22=22;k17=17;k28=28;k20=20;k10=10;k8=8;k1=1;k12=12;k3=3;k2=2;k27=27;k13=13;k18=18;k14=14;k6=6;k7=7;k4=4;k5=5;"
+  },
+  {
+    "src": "local t = {} for i=31,1,-1 do t[i]=i end for i=1,31,3 do t[i]=nil end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return #t,out",
+    "want": "15,2=2;3=3;5=5;6=6;8=8;9=9;11=11;12=12;14=14;15=15;17=17;18=18;20=20;21=21;23=23;24=24;26=26;27=27;29=29;30=30;"
+  },
+  {
+    "src": "local t = {} for i=1,32 do t[\"k\"..i]=i end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return out",
+    "want": "k16=16;k26=26;k32=32;k19=19;k31=31;k30=30;k9=9;k15=15;k21=21;k29=29;k25=25;k11=11;k24=24;k23=23;k22=22;k17=17;k28=28;k20=20;k10=10;k8=8;k1=1;k12=12;k3=3;k2=2;k27=27;k13=13;k18=18;k14=14;k6=6;k7=7;k4=4;k5=5;"
+  },
+  {
+    "src": "local t = {} for i=32,1,-1 do t[i]=i end for i=1,32,3 do t[i]=nil end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return #t,out",
+    "want": "32,2=2;3=3;5=5;6=6;8=8;9=9;11=11;12=12;14=14;15=15;17=17;18=18;20=20;21=21;23=23;24=24;26=26;27=27;29=29;30=30;32=32;"
+  },
+  {
+    "src": "local t = {} for i=1,33 do t[\"k\"..i]=i end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return out",
+    "want": "k12=12;k32=32;k19=19;k31=31;k11=11;k30=30;k14=14;k1=1;k3=3;k27=27;k18=18;k7=7;k5=5;k26=26;k22=22;k21=21;k29=29;k25=25;k28=28;k20=20;k8=8;k23=23;k16=16;k9=9;k2=2;k15=15;k13=13;k24=24;k33=33;k6=6;k17=17;k4=4;k10=10;"
+  },
+  {
+    "src": "local t = {} for i=33,1,-1 do t[i]=i end for i=1,33,3 do t[i]=nil end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return #t,out",
+    "want": "33,2=2;3=3;5=5;6=6;8=8;9=9;11=11;12=12;14=14;15=15;17=17;18=18;20=20;21=21;23=23;24=24;26=26;27=27;29=29;30=30;32=32;33=33;"
+  },
+  {
+    "src": "local t = {} for i=1,50 do t[\"k\"..i]=i end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return out",
+    "want": "k12=12;k32=32;k19=19;k39=39;k31=31;k11=11;k30=30;k38=38;k14=14;k47=47;k1=1;k43=43;k3=3;k27=27;k34=34;k18=18;k7=7;k5=5;k50=50;k26=26;k15=15;k22=22;k48=48;k46=46;k45=45;k41=41;k21=21;k29=29;k25=25;k49=49;k42=42;k40=40;k35=35;k36=36;k28=28;k20=20;k37=37;k8=8;k23=23;k16=16;k9=9;k2=2;k44=44;k13=13;k24=24;k33=33;k6=6;k17=17;k4=4;k10=10;"
+  },
+  {
+    "src": "local t = {} for i=50,1,-1 do t[i]=i end for i=1,50,3 do t[i]=nil end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return #t,out",
+    "want": "50,2=2;3=3;5=5;6=6;8=8;9=9;11=11;12=12;14=14;15=15;17=17;18=18;20=20;21=21;23=23;24=24;26=26;27=27;29=29;30=30;32=32;33=33;35=35;36=36;38=38;39=39;41=41;42=42;44=44;45=45;47=47;48=48;50=50;"
+  },
+  {
+    "src": "local t = {} for i=1,51 do t[\"k\"..i]=i end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return out",
+    "want": "k12=12;k32=32;k19=19;k51=51;k39=39;k31=31;k11=11;k30=30;k38=38;k14=14;k47=47;k1=1;k43=43;k3=3;k27=27;k34=34;k18=18;k7=7;k5=5;k50=50;k26=26;k15=15;k22=22;k48=48;k46=46;k45=45;k41=41;k21=21;k29=29;k25=25;k49=49;k42=42;k40=40;k35=35;k36=36;k28=28;k20=20;k37=37;k8=8;k23=23;k16=16;k9=9;k2=2;k44=44;k13=13;k24=24;k33=33;k6=6;k17=17;k4=4;k10=10;"
+  },
+  {
+    "src": "local t = {} for i=51,1,-1 do t[i]=i end for i=1,51,3 do t[i]=nil end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return #t,out",
+    "want": "51,2=2;3=3;5=5;6=6;8=8;9=9;11=11;12=12;14=14;15=15;17=17;18=18;20=20;21=21;23=23;24=24;26=26;27=27;29=29;30=30;32=32;33=33;35=35;36=36;38=38;39=39;41=41;42=42;44=44;45=45;47=47;48=48;50=50;51=51;"
+  },
+  {
+    "src": "local t = {} for i=1,64 do t[\"k\"..i]=i end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return out",
+    "want": "k12=12;k24=24;k32=32;k19=19;k56=56;k35=35;k51=51;k46=46;k39=39;k31=31;k59=59;k11=11;k60=60;k52=52;k58=58;k57=57;k30=30;k38=38;k14=14;k47=47;k1=1;k43=43;k3=3;k63=63;k27=27;k34=34;k18=18;k54=54;k55=55;k7=7;k23=23;k5=5;k50=50;k26=26;k15=15;k22=22;k48=48;k61=61;k45=45;k41=41;k21=21;k29=29;k25=25;k49=49;k42=42;k40=40;k62=62;k36=36;k28=28;k20=20;k37=37;k8=8;k53=53;k16=16;k9=9;k2=2;k44=44;k13=13;k64=64;k33=33;k6=6;k17=17;k4=4;k10=10;"
+  },
+  {
+    "src": "local t = {} for i=64,1,-1 do t[i]=i end for i=1,64,3 do t[i]=nil end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return #t,out",
+    "want": "63,2=2;3=3;5=5;6=6;8=8;9=9;11=11;12=12;14=14;15=15;17=17;18=18;20=20;21=21;23=23;24=24;26=26;27=27;29=29;30=30;32=32;33=33;35=35;36=36;38=38;39=39;41=41;42=42;44=44;45=45;47=47;48=48;50=50;51=51;53=53;54=54;56=56;57=57;59=59;60=60;62=62;63=63;"
+  },
+  {
+    "src": "local t = {} for i=1,100 do t[\"k\"..i]=i end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return out",
+    "want": "k16=16;k32=32;k71=71;k75=75;k39=39;k31=31;k79=79;k96=96;k72=72;k98=98;k67=67;k10=10;k58=58;k1=1;k63=63;k27=27;k34=34;k23=23;k74=74;k50=50;k81=81;k45=45;k85=85;k41=41;k66=66;k49=49;k42=42;k28=28;k20=20;k37=37;k8=8;k77=77;k73=73;k44=44;k33=33;k60=60;k4=4;k84=84;k12=12;k91=91;k55=55;k19=19;k95=95;k51=51;k69=69;k99=99;k59=59;k36=36;k76=76;k52=52;k97=97;k46=46;k30=30;k38=38;k14=14;k47=47;k87=87;k43=43;k3=3;k93=93;k92=92;k90=90;k89=89;k54=54;k94=94;k7=7;k56=56;k83=83;k82=82;k80=80;k78=78;k22=22;k70=70;k61=61;k100=100;k68=68;k21=21;k29=29;k25=25;k65=65;k11=11;k86=86;k62=62;k35=35;k57=57;k88=88;k48=48;k24=24;k53=53;k18=18;k5=5;k2=2;k26=26;k17=17;k64=64;k15=15;k6=6;k9=9;k40=40;k13=13;"
+  },
+  {
+    "src": "local t = {} for i=100,1,-1 do t[i]=i end for i=1,100,3 do t[i]=nil end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return #t,out",
+    "want": "63,2=2;3=3;5=5;6=6;8=8;9=9;11=11;12=12;14=14;15=15;17=17;18=18;20=20;21=21;23=23;24=24;26=26;27=27;29=29;30=30;32=32;33=33;35=35;36=36;38=38;39=39;41=41;42=42;44=44;45=45;47=47;48=48;50=50;51=51;53=53;54=54;56=56;57=57;59=59;60=60;62=62;63=63;65=65;66=66;68=68;69=69;71=71;72=72;74=74;75=75;77=77;78=78;80=80;81=81;83=83;84=84;86=86;87=87;89=89;90=90;92=92;93=93;95=95;96=96;98=98;99=99;"
+  },
+  {
+    "src": "local t = {} for i=1,127 do t[\"k\"..i]=i end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return out",
+    "want": "k16=16;k32=32;k103=103;k71=71;k126=126;k124=124;k75=75;k39=39;k31=31;k125=125;k79=79;k68=68;k122=122;k96=96;k72=72;k98=98;k67=67;k10=10;k58=58;k1=1;k121=121;k120=120;k63=63;k27=27;k34=34;k23=23;k119=119;k118=118;k117=117;k74=74;k50=50;k81=81;k45=45;k116=116;k115=115;k9=9;k113=113;k85=85;k41=41;k66=66;k112=112;k106=106;k49=49;k42=42;k105=105;k102=102;k110=110;k28=28;k20=20;k37=37;k8=8;k109=109;k77=77;k73=73;k108=108;k44=44;k123=123;k104=104;k33=33;k60=60;k127=127;k4=4;k84=84;k12=12;k91=91;k55=55;k19=19;k111=111;k95=95;k51=51;k46=46;k69=69;k99=99;k59=59;k36=36;k76=76;k52=52;k97=97;k101=101;k30=30;k38=38;k14=14;k47=47;k87=87;k43=43;k3=3;k93=93;k92=92;k90=90;k89=89;k54=54;k94=94;k7=7;k56=56;k83=83;k82=82;k80=80;k78=78;k22=22;k70=70;k61=61;k100=100;k107=107;k21=21;k29=29;k25=25;k65=65;k11=11;k86=86;k62=62;k35=35;k57=57;k88=88;k48=48;k24=24;k53=53;k18=18;k5=5;k2=2;k26=26;k17=17;k64=64;k15=15;k6=6;k114=114;k40=40;k13=13;"
+  },
+  {
+    "src": "local t = {} for i=127,1,-1 do t[i]=i end for i=1,127,3 do t[i]=nil end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return #t,out",
+    "want": "63,2=2;3=3;5=5;6=6;8=8;9=9;11=11;12=12;14=14;15=15;17=17;18=18;20=20;21=21;23=23;24=24;26=26;27=27;29=29;30=30;32=32;33=33;35=35;36=36;38=38;39=39;41=41;42=42;44=44;45=45;47=47;48=48;50=50;51=51;53=53;54=54;56=56;57=57;59=59;60=60;62=62;63=63;65=65;66=66;68=68;69=69;71=71;72=72;74=74;75=75;77=77;78=78;80=80;81=81;83=83;84=84;86=86;87=87;89=89;90=90;92=92;93=93;95=95;96=96;98=98;99=99;101=101;102=102;104=104;105=105;107=107;108=108;110=110;111=111;113=113;114=114;116=116;117=117;119=119;120=120;122=122;123=123;125=125;126=126;"
+  },
+  {
+    "src": "local t = {} for i=1,128 do t[\"k\"..i]=i end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return out",
+    "want": "k16=16;k128=128;k32=32;k103=103;k71=71;k126=126;k124=124;k75=75;k39=39;k31=31;k125=125;k79=79;k68=68;k122=122;k96=96;k72=72;k98=98;k67=67;k10=10;k58=58;k1=1;k121=121;k120=120;k63=63;k27=27;k34=34;k23=23;k119=119;k118=118;k117=117;k74=74;k50=50;k81=81;k45=45;k116=116;k115=115;k9=9;k113=113;k85=85;k41=41;k66=66;k112=112;k106=106;k49=49;k42=42;k105=105;k102=102;k110=110;k28=28;k20=20;k37=37;k8=8;k109=109;k77=77;k73=73;k108=108;k44=44;k123=123;k104=104;k33=33;k60=60;k127=127;k4=4;k84=84;k12=12;k91=91;k55=55;k19=19;k111=111;k95=95;k51=51;k46=46;k69=69;k99=99;k59=59;k36=36;k76=76;k52=52;k97=97;k101=101;k30=30;k38=38;k14=14;k47=47;k87=87;k43=43;k3=3;k93=93;k92=92;k90=90;k89=89;k54=54;k94=94;k7=7;k56=56;k83=83;k82=82;k80=80;k78=78;k22=22;k70=70;k61=61;k100=100;k107=107;k21=21;k29=29;k25=25;k65=65;k11=11;k86=86;k62=62;k35=35;k57=57;k88=88;k48=48;k24=24;k53=53;k18=18;k5=5;k2=2;k26=26;k17=17;k64=64;k15=15;k6=6;k114=114;k40=40;k13=13;"
+  },
+  {
+    "src": "local t = {} for i=128,1,-1 do t[i]=i end for i=1,128,3 do t[i]=nil end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return #t,out",
+    "want": "128,2=2;3=3;5=5;6=6;8=8;9=9;11=11;12=12;14=14;15=15;17=17;18=18;20=20;21=21;23=23;24=24;26=26;27=27;29=29;30=30;32=32;33=33;35=35;36=36;38=38;39=39;41=41;42=42;44=44;45=45;47=47;48=48;50=50;51=51;53=53;54=54;56=56;57=57;59=59;60=60;62=62;63=63;65=65;66=66;68=68;69=69;71=71;72=72;74=74;75=75;77=77;78=78;80=80;81=81;83=83;84=84;86=86;87=87;89=89;90=90;92=92;93=93;95=95;96=96;98=98;99=99;101=101;102=102;104=104;105=105;107=107;108=108;110=110;111=111;113=113;114=114;116=116;117=117;119=119;120=120;122=122;123=123;125=125;126=126;128=128;"
+  },
+  {
+    "src": "local t = {} for i=1,129 do t[\"k\"..i]=i end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return out",
+    "want": "k16=16;k32=32;k71=71;k124=124;k118=118;k108=108;k79=79;k96=96;k58=58;k102=102;k23=23;k74=74;k5=5;k26=26;k85=85;k41=41;k82=82;k37=37;k68=68;k33=33;k60=60;k127=127;k4=4;k84=84;k12=12;k55=55;k111=111;k51=51;k92=92;k103=103;k76=76;k101=101;k30=30;k38=38;k83=83;k129=129;k87=87;k54=54;k7=7;k65=65;k100=100;k21=21;k29=29;k122=122;k86=86;k62=62;k48=48;k93=93;k117=117;k97=97;k13=13;k64=64;k6=6;k114=114;k40=40;k35=35;k113=113;k115=115;k39=39;k56=56;k72=72;k98=98;k67=67;k9=9;k104=104;k63=63;k90=90;k34=34;k18=18;k81=81;k45=45;k89=89;k106=106;k42=42;k110=110;k28=28;k20=20;k8=8;k77=77;k73=73;k44=44;k123=123;k125=125;k91=91;k19=19;k95=95;k99=99;k15=15;k52=52;k78=78;k47=47;k43=43;k3=3;k94=94;k70=70;k128=128;k126=126;k75=75;k31=31;k10=10;k22=22;k1=1;k61=61;k121=121;k107=107;k120=120;k27=27;k25=25;k119=119;k50=50;k116=116;k66=66;k112=112;k57=57;k88=88;k49=49;k24=24;k53=53;k105=105;k109=109;k2=2;k46=46;k80=80;k69=69;k59=59;k36=36;k14=14;k11=11;k17=17;"
+  },
+  {
+    "src": "local t = {} for i=129,1,-1 do t[i]=i end for i=1,129,3 do t[i]=nil end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return #t,out",
+    "want": "129,2=2;3=3;5=5;6=6;8=8;9=9;11=11;12=12;14=14;15=15;17=17;18=18;20=20;21=21;23=23;24=24;26=26;27=27;29=29;30=30;32=32;33=33;35=35;36=36;38=38;39=39;41=41;42=42;44=44;45=45;47=47;48=48;50=50;51=51;53=53;54=54;56=56;57=57;59=59;60=60;62=62;63=63;65=65;66=66;68=68;69=69;71=71;72=72;74=74;75=75;77=77;78=78;80=80;81=81;83=83;84=84;86=86;87=87;89=89;90=90;92=92;93=93;95=95;96=96;98=98;99=99;101=101;102=102;104=104;105=105;107=107;108=108;110=110;111=111;113=113;114=114;116=116;117=117;119=119;120=120;122=122;123=123;125=125;126=126;128=128;129=129;"
+  },
+  {
+    "src": "local t = {} for i=1,257 do t[\"k\"..i]=i end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return out",
+    "want": "k254=254;k149=149;k71=71;k108=108;k193=193;k184=184;k58=58;k217=217;k239=239;k128=128;k50=50;k249=249;k145=145;k194=194;k244=244;k49=49;k37=37;k60=60;k127=127;k228=228;k137=137;k59=59;k103=103;k76=76;k243=243;k147=147;k38=38;k83=83;k87=87;k201=201;k209=209;k214=214;k185=185;k237=237;k29=29;k203=203;k86=86;k62=62;k174=174;k48=48;k93=93;k153=153;k97=97;k139=139;k114=114;k40=40;k35=35;k136=136;k200=200;k212=212;k39=39;k56=56;k144=144;k222=222;k72=72;k98=98;k67=67;k120=120;k156=156;k135=135;k63=63;k164=164;k34=34;k146=146;k81=81;k45=45;k213=213;k221=221;k66=66;k155=155;k42=42;k105=105;k132=132;k73=73;k235=235;k126=126;k123=123;k202=202;k125=125;k91=91;k181=181;k176=176;k99=99;k36=36;k52=52;k166=166;k190=190;k165=165;k14=14;k47=47;k43=43;k3=3;k225=225;k236=236;k22=22;k183=183;k224=224;k69=69;k57=57;k88=88;k24=24;k53=53;k138=138;k256=256;k2=2;k80=80;k171=171;k246=246;k16=16;k141=141;k124=124;k75=75;k79=79;k238=238;k27=27;k231=231;k74=74;k5=5;k26=26;k168=168;k218=218;k178=178;k142=142;k160=160;k220=220;k68=68;k33=33;k4=4;k84=84;k12=12;k170=170;k159=159;k111=111;k187=187;k189=189;k119=119;k199=199;k205=205;k197=197;k234=234;k101=101;k30=30;k216=216;k129=129;k223=223;k158=158;k180=180;k121=121;k140=140;k112=112;k100=100;k230=230;k21=21;k151=151;k122=122;k219=219;k248=248;k134=134;k188=188;k229=229;k116=116;k250=250;k17=17;k64=64;k131=131;k6=6;k115=115;k130=130;k251=251;k31=31;k206=206;k177=177;k10=10;k18=18;k152=152;k215=215;k106=106;k208=208;k257=257;k161=161;k20=20;k8=8;k167=167;k77=77;k32=32;k109=109;k255=255;k118=118;k143=143;k252=252;k157=157;k240=240;k96=96;k204=204;k242=242;k150=150;k19=19;k207=207;k95=95;k247=247;k102=102;k23=23;k210=210;k245=245;k11=11;k241=241;k169=169;k85=85;k41=41;k82=82;k173=173;k133=133;k233=233;k232=232;k179=179;k227=227;k253=253;k226=226;k55=55;k51=51;k162=162;k94=94;k70=70;k192=192;k92=92;k148=148;k54=54;k7=7;k198=198;k211=211;k61=61;k65=65;k107=107;k196=196;k117=117;k13=13;k113=113;k195=195;k9=9;k191=191;k104=104;k90=90;k186=186;k182=182;k154=154;k89=89;k110=110;k28=28;k175=175;k44=44;k172=172;k15=15;k78=78;k1=1;k25=25;k46=46;k163=163;"
+  },
+  {
+    "src": "local t = {} for i=257,1,-1 do t[i]=i end for i=1,257,3 do t[i]=nil end local out=\"\" for k,v in pairs(t) do out=out..k..\"=\"..v..\";\" end return #t,out",
+    "want": "255,2=2;3=3;5=5;6=6;8=8;9=9;11=11;12=12;14=14;15=15;17=17;18=18;20=20;21=21;23=23;24=24;26=26;27=27;29=29;30=30;32=32;33=33;35=35;36=36;38=38;39=39;41=41;42=42;44=44;45=45;47=47;48=48;50=50;51=51;53=53;54=54;56=56;57=57;59=59;60=60;62=62;63=63;65=65;66=66;68=68;69=69;71=71;72=72;74=74;75=75;77=77;78=78;80=80;81=81;83=83;84=84;86=86;87=87;89=89;90=90;92=92;93=93;95=95;96=96;98=98;99=99;101=101;102=102;104=104;105=105;107=107;108=108;110=110;111=111;113=113;114=114;116=116;117=117;119=119;120=120;122=122;123=123;125=125;126=126;128=128;129=129;131=131;132=132;134=134;135=135;137=137;138=138;140=140;141=141;143=143;144=144;146=146;147=147;149=149;150=150;152=152;153=153;155=155;156=156;158=158;159=159;161=161;162=162;164=164;165=165;167=167;168=168;170=170;171=171;173=173;174=174;176=176;177=177;179=179;180=180;182=182;183=183;185=185;186=186;188=188;189=189;191=191;192=192;194=194;195=195;197=197;198=198;200=200;201=201;203=203;204=204;206=206;207=207;209=209;210=210;212=212;213=213;215=215;216=216;218=218;219=219;221=221;222=222;224=224;225=225;227=227;228=228;230=230;231=231;233=233;234=234;236=236;237=237;239=239;240=240;242=242;243=243;245=245;246=246;248=248;249=249;251=251;252=252;254=254;255=255;257=257;"
+  },
+  {
+    "src": "local fs={} for i=1,1 do local x=i fs[i]=function() x=x+1 return x end end return fs[1](),fs[1](),fs[1]()",
+    "want": "2,3,4"
+  },
+  {
+    "src": "local function f(a,...) return a,select(\"#\",...),... end return f(1,false,nil,7)",
+    "want": "1,3,false,nil,7"
+  },
+  {
+    "src": "local x=1 do local x=x+1 local function f() return x end x=x*2 return f() end",
+    "want": "4"
+  },
+  {
+    "src": "local fs={} for i=1,2 do local x=i fs[i]=function() x=x+1 return x end end return fs[1](),fs[2](),fs[1]()",
+    "want": "2,3,3"
+  },
+  {
+    "src": "local function f(a,...) return a,select(\"#\",...),... end return f(2,false,nil,7)",
+    "want": "2,3,false,nil,7"
+  },
+  {
+    "src": "local x=2 do local x=x+1 local function f() return x end x=x*2 return f() end",
+    "want": "6"
+  },
+  {
+    "src": "local fs={} for i=1,3 do local x=i fs[i]=function() x=x+1 return x end end return fs[1](),fs[3](),fs[1]()",
+    "want": "2,4,3"
+  },
+  {
+    "src": "local function f(a,...) return a,select(\"#\",...),... end return f(3,false,nil,7)",
+    "want": "3,3,false,nil,7"
+  },
+  {
+    "src": "local x=3 do local x=x+1 local function f() return x end x=x*2 return f() end",
+    "want": "8"
+  },
+  {
+    "src": "local fs={} for i=1,7 do local x=i fs[i]=function() x=x+1 return x end end return fs[1](),fs[7](),fs[1]()",
+    "want": "2,8,3"
+  },
+  {
+    "src": "local function f(a,...) return a,select(\"#\",...),... end return f(7,false,nil,7)",
+    "want": "7,3,false,nil,7"
+  },
+  {
+    "src": "local x=7 do local x=x+1 local function f() return x end x=x*2 return f() end",
+    "want": "16"
+  },
+  {
+    "src": "local fs={} for i=1,16 do local x=i fs[i]=function() x=x+1 return x end end return fs[1](),fs[16](),fs[1]()",
+    "want": "2,17,3"
+  },
+  {
+    "src": "local function f(a,...) return a,select(\"#\",...),... end return f(16,false,nil,7)",
+    "want": "16,3,false,nil,7"
+  },
+  {
+    "src": "local x=16 do local x=x+1 local function f() return x end x=x*2 return f() end",
+    "want": "34"
+  },
+  {
+    "src": "local fs={} for i=1,31 do local x=i fs[i]=function() x=x+1 return x end end return fs[1](),fs[31](),fs[1]()",
+    "want": "2,32,3"
+  },
+  {
+    "src": "local function f(a,...) return a,select(\"#\",...),... end return f(31,false,nil,7)",
+    "want": "31,3,false,nil,7"
+  },
+  {
+    "src": "local x=31 do local x=x+1 local function f() return x end x=x*2 return f() end",
+    "want": "64"
+  },
+  {
+    "src": "local fs={} for i=1,32 do local x=i fs[i]=function() x=x+1 return x end end return fs[1](),fs[32](),fs[1]()",
+    "want": "2,33,3"
+  },
+  {
+    "src": "local function f(a,...) return a,select(\"#\",...),... end return f(32,false,nil,7)",
+    "want": "32,3,false,nil,7"
+  },
+  {
+    "src": "local x=32 do local x=x+1 local function f() return x end x=x*2 return f() end",
+    "want": "66"
+  },
+  {
+    "src": "local fs={} for i=1,33 do local x=i fs[i]=function() x=x+1 return x end end return fs[1](),fs[33](),fs[1]()",
+    "want": "2,34,3"
+  },
+  {
+    "src": "local function f(a,...) return a,select(\"#\",...),... end return f(33,false,nil,7)",
+    "want": "33,3,false,nil,7"
+  },
+  {
+    "src": "local x=33 do local x=x+1 local function f() return x end x=x*2 return f() end",
+    "want": "68"
+  },
+  {
+    "src": "local fs={} for i=1,50 do local x=i fs[i]=function() x=x+1 return x end end return fs[1](),fs[50](),fs[1]()",
+    "want": "2,51,3"
+  },
+  {
+    "src": "local function f(a,...) return a,select(\"#\",...),... end return f(50,false,nil,7)",
+    "want": "50,3,false,nil,7"
+  },
+  {
+    "src": "local x=50 do local x=x+1 local function f() return x end x=x*2 return f() end",
+    "want": "102"
+  },
+  {
+    "src": "local fs={} for i=1,51 do local x=i fs[i]=function() x=x+1 return x end end return fs[1](),fs[51](),fs[1]()",
+    "want": "2,52,3"
+  },
+  {
+    "src": "local function f(a,...) return a,select(\"#\",...),... end return f(51,false,nil,7)",
+    "want": "51,3,false,nil,7"
+  },
+  {
+    "src": "local x=51 do local x=x+1 local function f() return x end x=x*2 return f() end",
+    "want": "104"
+  },
+  {
+    "src": "local x\nreturn x()",
+    "want": "user_script:2: attempt to call local 'x' (a nil value)"
+  },
+  {
+    "src": "local x\nlocal function f()\nreturn x.value\nend\nreturn f()",
+    "want": "user_script:3: attempt to index upvalue 'x' (a nil value)"
+  },
+  {
+    "src": "local x={}\nreturn x.value.more",
+    "want": "user_script:2: attempt to index field 'value' (a nil value)"
+  },
+  {
+    "src": "local long_local_name\nreturn long_local_name()",
+    "want": "user_script:2: attempt to call local 'long_local_name' (a nil value)"
+  },
+  {
+    "src": "local long_local_name\nlocal function f()\nreturn long_local_name.value\nend\nreturn f()",
+    "want": "user_script:3: attempt to index upvalue 'long_local_name' (a nil value)"
+  },
+  {
+    "src": "local long_local_name={}\nreturn long_local_name.value.more",
+    "want": "user_script:2: attempt to index field 'value' (a nil value)"
+  },
+  {
+    "src": "local callable\nreturn callable()",
+    "want": "user_script:2: attempt to call local 'callable' (a nil value)"
+  },
+  {
+    "src": "local callable\nlocal function f()\nreturn callable.value\nend\nreturn f()",
+    "want": "user_script:3: attempt to index upvalue 'callable' (a nil value)"
+  },
+  {
+    "src": "local callable={}\nreturn callable.value.more",
+    "want": "user_script:2: attempt to index field 'value' (a nil value)"
+  },
+  {
+    "src": "local target\nreturn target()",
+    "want": "user_script:2: attempt to call local 'target' (a nil value)"
+  },
+  {
+    "src": "local target\nlocal function f()\nreturn target.value\nend\nreturn f()",
+    "want": "user_script:3: attempt to index upvalue 'target' (a nil value)"
+  },
+  {
+    "src": "local target={}\nreturn target.value.more",
+    "want": "user_script:2: attempt to index field 'value' (a nil value)"
+  },
+  {
+    "src": "local function f()\n error(\"location\",-2)\nend\nreturn pcall(f)",
+    "want": "false,location"
+  },
+  {
+    "src": "return pcall(error,\"location\",-2)",
+    "want": "false,location"
+  },
+  {
+    "src": "local function f()\n error(\"location\",0)\nend\nreturn pcall(f)",
+    "want": "false,location"
+  },
+  {
+    "src": "return pcall(error,\"location\",0)",
+    "want": "false,location"
+  },
+  {
+    "src": "local function f()\n error(\"location\",1)\nend\nreturn pcall(f)",
+    "want": "false,user_script:2: location"
+  },
+  {
+    "src": "return pcall(error,\"location\",1)",
+    "want": "false,location"
+  },
+  {
+    "src": "local function f()\n error(\"location\",2)\nend\nreturn pcall(f)",
+    "want": "false,location"
+  },
+  {
+    "src": "return pcall(error,\"location\",2)",
+    "want": "false,user_script:1: location"
+  },
+  {
+    "src": "local function f()\n error(\"location\",3)\nend\nreturn pcall(f)",
+    "want": "false,user_script:4: location"
+  },
+  {
+    "src": "return pcall(error,\"location\",3)",
+    "want": "false,location"
+  },
+  {
+    "src": "local function f()\n error(\"location\",20)\nend\nreturn pcall(f)",
+    "want": "false,location"
+  },
+  {
+    "src": "return pcall(error,\"location\",20)",
+    "want": "false,location"
+  },
+  {
+    "src": "return .25,0x1e2,0Xff,08",
+    "want": "0.25,482,255,8"
+  },
+  {
+    "src": "return 1e-9999,-1e-9999",
+    "want": "0,0"
+  },
+  {
+    "src": "return tonumber(\"0xA.8\"),tonumber(\"0x.8\"),tonumber(\"0x1p+4\")",
+    "want": "10.5,0.5,16"
+  },
+  {
+    "src": "return tonumber(\"NaN(payload_1)\"),tonumber(\"nan(bad!)\")",
+    "want": "nan,nil"
+  },
+  {
+    "src": "return tonumber(\"1_0\"),tonumber(\"0b11\"),tonumber(\"  +12  \")",
+    "want": "nil,nil,12"
+  },
+  {
+    "src": "return tonumber(\"-1\",2),tonumber(\"18446744073709551616\",16)",
+    "want": "1.844674407371e+19,1.844674407371e+19"
+  },
+  {
+    "src": "local t={} t[-0.0]=1 t[0]=2 local k,v=next(t) return tostring(k),v",
+    "want": "-0,2"
+  },
+  {
+    "src": "local t={[1]=1,[2]=2,3} return t[1],t[2]",
+    "want": "3,2"
+  },
+  {
+    "src": "local t={1,2,[2]=\"x\"} return t[1],t[2]",
+    "want": "1,2"
+  },
+  {
+    "src": "local t={a=1,b=2,c=3} local out=\"\" for k in pairs(t) do out=out..k t[k]=nil end return out,next(t)",
+    "want": "acb,nil"
+  },
+  {
+    "src": "local t={} for i=1,100 do t[\"a\"..i]=i end for k in pairs(t) do t[k]=nil end return next(t)",
+    "want": "nil"
+  },
+  {
+    "src": "local t={} t[1.5]=2 t[2^53]=3 t[true]=4 local out=\"\" for k,v in pairs(t) do out=out..tostring(k)..\"=\"..v..\";\" end return out",
+    "want": "true=4;9.007199254741e+15=3;1.5=2;"
+  },
+  {
+    "src": "local mt={__index=3} return setmetatable({},mt).missing",
+    "want": "user_script:1: attempt to index a number value"
+  },
+  {
+    "src": "local mt={} local t=setmetatable({},mt) mt.__index=t return t.x",
+    "want": "user_script:1: loop in gettable"
+  },
+  {
+    "src": "local mt={} local t=setmetatable({},mt) mt.__newindex=t t.x=1",
+    "want": "user_script:1: loop in settable"
+  },
+  {
+    "src": "local mt={__call={}} local t=setmetatable({},mt) return t()",
+    "want": "user_script:1: attempt to call local 't' (a table value)"
+  },
+  {
+    "src": "local mt={__tostring=function() return false end} return tostring(setmetatable({},mt))",
+    "want": "false"
+  },
+  {
+    "src": "local mt={__len=function() return 99 end} return #setmetatable({1,2},mt)",
+    "want": "2"
+  },
+  {
+    "src": "local a=setmetatable({},{__eq=function() return true end}) local b=setmetatable({},{__eq=function() return true end}) return a==b",
+    "want": "false"
+  },
+  {
+    "src": "local f=function() return true end local a=setmetatable({},{__eq=f}) local b=setmetatable({},{__eq=f}) return a==b",
+    "want": "true"
+  },
+  {
+    "src": "local co=coroutine.create(function() return 1 end) return coroutine.status(co),type(co)",
+    "want": "suspended,thread"
+  },
+  {
+    "src": "local co=coroutine.create(function() local a,b=coroutine.yield(1,2) return a,b end) local ok,a,b=coroutine.resume(co) local ok2,x,y=coroutine.resume(co,3,4) return ok,a,b,ok2,x,y",
+    "want": "true,1,2,true,3,4"
+  },
+  {
+    "src": "local co=coroutine.create(function() local t=setmetatable({},{__index=function() return coroutine.yield(1) end}) return t.x end) return coroutine.resume(co)",
+    "want": "false,attempt to yield across metamethod/C-call boundary"
+  },
+  {
+    "src": "local co=coroutine.create(function() local t=setmetatable({},{__add=function() return coroutine.yield(1) end}) return t+1 end) return coroutine.resume(co)",
+    "want": "false,attempt to yield across metamethod/C-call boundary"
+  },
+  {
+    "src": "local co=coroutine.create(function() for x in function() coroutine.yield(1) end do end end) return coroutine.resume(co)",
+    "want": "false,attempt to yield across metamethod/C-call boundary"
+  },
+  {
+    "src": "local co=coroutine.create(function() return xpcall(coroutine.yield,tostring) end) return coroutine.resume(co)",
+    "want": "true,false,attempt to yield across metamethod/C-call boundary"
+  },
+  {
+    "src": "local co=coroutine.wrap(function() return coroutine.yield(1,2) end) local a,b=co() local c,d=co(3,4) return a,b,c,d",
+    "want": "1,2,3,4"
+  },
+  {
+    "src": "return coroutine.create(type)",
+    "want": "user_script:1: bad argument #1 to 'create' (Lua function expected)"
+  },
+  {
+    "src": "return coroutine.wrap(type)",
+    "want": "user_script:1: bad argument #1 to 'wrap' (Lua function expected)"
+  },
+  {
+    "src": "return coroutine.status(false)",
+    "want": "user_script:1: bad argument #1 to 'status' (coroutine expected)"
+  },
+  {
+    "src": "return xpcall(function() error(\"x\") end,function() error(\"y\") end)",
+    "want": "false,error in error handling"
+  },
+  {
+    "src": "local ok,e=pcall(function() error(false) end) return ok,e",
+    "want": "false,false"
+  },
+  {
+    "src": "local ok,e=pcall(function() error({err=\"BAD\"}) end) return ok,e",
+    "want": "false,BAD"
+  },
+  {
+    "src": "local f,e=loadstring(\"return +\",\"=short\") return f,e",
+    "want": "nil,short:1: unexpected symbol near '+'"
+  },
+  {
+    "src": "local f,e=loadstring(\"return +\",\"@short.lua\") return f,e",
+    "want": "nil,short.lua:1: unexpected symbol near '+'"
+  },
+  {
+    "src": "local f,e=load(function() return {} end) return f,e",
+    "want": "nil,user_script:1: reader function must return a string"
+  },
+  {
+    "src": "local count=0 local f=load(function() count=count+1 if count==1 then return \"return \" elseif count==2 then return 12 end end) return f()",
+    "want": "12"
+  },
+  {
+    "src": "return pcall(type)",
+    "want": "false,bad argument #1 to '?' (value expected)"
+  },
+  {
+    "src": "return pcall(tonumber)",
+    "want": "false,bad argument #1 to '?' (value expected)"
+  },
+  {
+    "src": "return pcall(rawget,{})",
+    "want": "false,bad argument #2 to '?' (value expected)"
+  },
+  {
+    "src": "return pcall(setmetatable,{},1)",
+    "want": "false,bad argument #2 to '?' (nil or table expected)"
+  },
+  {
+    "src": "return collectgarbage(\"bogus\")",
+    "want": "user_script:1: bad argument #1 to 'collectgarbage' (invalid option 'bogus')"
+  },
+  {
+    "src": "return 1e",
+    "want": "user_script:1: malformed number near '1e'"
+  },
+  {
+    "src": "return 0x",
+    "want": "user_script:1: malformed number near '0x'"
+  },
+  {
+    "src": "return ...",
+    "want": ""
+  },
+  {
+    "src": "return function() return ... end",
+    "want": "user_script:1: cannot use '...' outside a vararg function near '...'"
+  },
+  {
+    "src": "local x=true return -x",
+    "want": "user_script:1: attempt to perform arithmetic on local 'x' (a boolean value)"
+  },
+  {
+    "src": "local x=false return #x",
+    "want": "user_script:1: attempt to get length of local 'x' (a boolean value)"
+  },
+  {
+    "src": "local a={1,2,3} local b=1 a[b],b=8,2 return a[1],a[2],b",
+    "want": "8,2,2"
+  },
+  {
+    "src": "local a=1 a,a=2,3 return a",
+    "want": "2"
+  },
+  {
+    "src": "local function f() return 1,2,3 end local a,b,c=f(),f() return a,b,c",
+    "want": "1,1,2"
+  },
+  {
+    "src": "local function f() return 1,2,3 end return {f()}[1]",
+    "want": "user_script:1: '<eof>' expected near '['"
+  },
+  {
+    "src": "local f=loadstring(\"return 4\") return f(1,2)",
+    "want": "4"
+  },
+  {
+    "src": "local t={} for i=\"3\",\"1\",\"-1\" do t[#t+1]=i end return t[1],t[2],t[3]",
+    "want": "3,2,1"
+  },
+  {
+    "src": "for i=nil,2 do end",
+    "want": "user_script:1: 'for' initial value must be a number"
+  },
+  {
+    "src": "for i=1,false do end",
+    "want": "user_script:1: 'for' limit must be a number"
+  },
+  {
+    "src": "for i=1,2,{} do end",
+    "want": "user_script:1: 'for' step must be a number"
+  },
+  {
+    "src": "break",
+    "want": "user_script:1: no loop to break near '<eof>'"
+  },
+  {
+    "src": "return +",
+    "want": "user_script:1: unexpected symbol near '+'"
+  },
+  {
+    "src": "local function f() return f() + 1 end return f()",
+    "want": "user_script:1: stack overflow"
+  },
+  {
+    "src": "local n=0 local function f() n=n+1 local ok,e=pcall(f) if not ok then error(e,0) end end local ok,e=pcall(f) return n,ok,e",
+    "want": "197,false,C stack overflow"
+  },
+  {
+    "src": "local v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15,v16,v17,v18,v19,v20,v21,v22,v23,v24,v25,v26,v27,v28,v29,v30,v31,v32,v33,v34,v35,v36,v37,v38,v39,v40,v41,v42,v43,v44,v45,v46,v47,v48,v49,v50,v51,v52,v53,v54,v55,v56,v57,v58,v59,v60,v61,v62,v63,v64,v65,v66,v67,v68,v69,v70,v71,v72,v73,v74,v75,v76,v77,v78,v79,v80,v81,v82,v83,v84,v85,v86,v87,v88,v89,v90,v91,v92,v93,v94,v95,v96,v97,v98,v99,v100,v101,v102,v103,v104,v105,v106,v107,v108,v109,v110,v111,v112,v113,v114,v115,v116,v117,v118,v119,v120,v121,v122,v123,v124,v125,v126,v127,v128,v129,v130,v131,v132,v133,v134,v135,v136,v137,v138,v139,v140,v141,v142,v143,v144,v145,v146,v147,v148,v149,v150,v151,v152,v153,v154,v155,v156,v157,v158,v159,v160,v161,v162,v163,v164,v165,v166,v167,v168,v169,v170,v171,v172,v173,v174,v175,v176,v177,v178,v179,v180,v181,v182,v183,v184,v185,v186,v187,v188,v189,v190,v191,v192,v193,v194,v195,v196,v197,v198,v199,v200,v201",
+    "want": "user_script:1: main function has more than 200 local variables"
+  },
+  {
+    "src": "local v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15,v16,v17,v18,v19,v20,v21,v22,v23,v24,v25,v26,v27,v28,v29,v30,v31,v32,v33,v34,v35,v36,v37,v38,v39,v40,v41,v42,v43,v44,v45,v46,v47,v48,v49,v50,v51,v52,v53,v54,v55,v56,v57,v58,v59,v60,v61,v62,v63,v64,v65,v66,v67,v68,v69,v70,v71,v72,v73,v74,v75,v76,v77,v78,v79,v80,v81,v82,v83,v84,v85,v86,v87,v88,v89,v90,v91,v92,v93,v94,v95,v96,v97,v98,v99,v100,v101,v102,v103,v104,v105,v106,v107,v108,v109,v110,v111,v112,v113,v114,v115,v116,v117,v118,v119,v120,v121,v122,v123,v124,v125,v126,v127,v128,v129,v130,v131,v132,v133,v134,v135,v136,v137,v138,v139,v140,v141,v142,v143,v144,v145,v146,v147,v148,v149,v150,v151,v152,v153,v154,v155,v156,v157,v158,v159,v160,v161,v162,v163,v164,v165,v166,v167,v168,v169,v170,v171,v172,v173,v174,v175,v176,v177,v178,v179,v180,v181,v182,v183,v184,v185,v186,v187,v188,v189,v190,v191,v192,v193,v194,v195,v196,v197,v198,v199,v200 return type(v200)",
+    "want": "nil"
+  },
+  {
+    "src": "local v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15,v16,v17,v18,v19,v20,v21,v22,v23,v24,v25,v26,v27,v28,v29,v30,v31,v32,v33,v34,v35,v36,v37,v38,v39,v40,v41,v42,v43,v44,v45,v46,v47,v48,v49,v50,v51,v52,v53,v54,v55,v56,v57,v58,v59,v60 local function f() return v1+v2+v3+v4+v5+v6+v7+v8+v9+v10+v11+v12+v13+v14+v15+v16+v17+v18+v19+v20+v21+v22+v23+v24+v25+v26+v27+v28+v29+v30+v31+v32+v33+v34+v35+v36+v37+v38+v39+v40+v41+v42+v43+v44+v45+v46+v47+v48+v49+v50+v51+v52+v53+v54+v55+v56+v57+v58+v59+v60 end return type(f)",
+    "want": "function"
+  },
+  {
+    "src": "local v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15,v16,v17,v18,v19,v20,v21,v22,v23,v24,v25,v26,v27,v28,v29,v30,v31,v32,v33,v34,v35,v36,v37,v38,v39,v40,v41,v42,v43,v44,v45,v46,v47,v48,v49,v50,v51,v52,v53,v54,v55,v56,v57,v58,v59,v60,v61 local function f() return v1+v2+v3+v4+v5+v6+v7+v8+v9+v10+v11+v12+v13+v14+v15+v16+v17+v18+v19+v20+v21+v22+v23+v24+v25+v26+v27+v28+v29+v30+v31+v32+v33+v34+v35+v36+v37+v38+v39+v40+v41+v42+v43+v44+v45+v46+v47+v48+v49+v50+v51+v52+v53+v54+v55+v56+v57+v58+v59+v60+v61 end return type(f)",
+    "want": "user_script:1: function at line 1 has more than 60 upvalues"
+  },
+  {
+    "src": "return (((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((1)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))",
+    "want": "user_script:1: chunk has too many syntax levels"
+  },
+  {
+    "src": "local t={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,[1]=\"x\",[50]=\"y\",[51]=\"z\"} return t[1],t[50],t[51],#t",
+    "want": "1,y,z,51"
+  },
+  {
+    "src": "local t={[1]=\"x\",1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49} return t[1],#t",
+    "want": "1,49"
+  },
+  {
+    "src": "local t={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,[1]=\"x\",[50]=\"y\",[51]=\"z\"} return t[1],t[50],t[51],#t",
+    "want": "x,y,z,51"
+  },
+  {
+    "src": "local t={[1]=\"x\",1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50} return t[1],#t",
+    "want": "1,50"
+  },
+  {
+    "src": "local t={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,[1]=\"x\",[50]=\"y\",[51]=\"z\"} return t[1],t[50],t[51],#t",
+    "want": "x,y,51,51"
+  },
+  {
+    "src": "local t={[1]=\"x\",1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51} return t[1],#t",
+    "want": "1,51"
+  },
+  {
+    "src": "local t={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,[1]=\"x\",[50]=\"y\",[51]=\"z\"} return t[1],t[50],t[51],#t",
+    "want": "x,y,z,100"
+  },
+  {
+    "src": "local t={[1]=\"x\",1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100} return t[1],#t",
+    "want": "1,100"
+  },
+  {
+    "src": "local t={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,[1]=\"x\",[50]=\"y\",[51]=\"z\"} return t[1],t[50],t[51],#t",
+    "want": "x,y,z,251"
+  },
+  {
+    "src": "local t={[1]=\"x\",1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251} return t[1],#t",
+    "want": "1,251"
+  },
+  {
+    "src": "local function f(...) return function() return arg.n,arg[1] end end return f(7,8)()",
+    "want": "2,7"
+  },
+  {
+    "src": "return (((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((1)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))",
+    "want": "1"
+  },
+  {
+    "src": "return ((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((1))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))",
+    "want": "user_script:1: chunk has too many syntax levels"
+  },
+  {
+    "src": "return (((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((1)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))",
+    "want": "user_script:1: chunk has too many syntax levels"
+  },
+  {
+    "src": "return ((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((1))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))",
+    "want": "user_script:1: chunk has too many syntax levels"
+  },
+  {
+    "src": "local v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15,v16,v17,v18,v19,v20,v21,v22,v23,v24,v25,v26,v27,v28,v29,v30,v31,v32,v33,v34,v35,v36,v37,v38,v39,v40,v41,v42,v43,v44,v45,v46,v47,v48,v49,v50,v51,v52,v53,v54,v55,v56,v57,v58,v59,v60,v61,v62,v63,v64,v65,v66,v67,v68,v69,v70,v71,v72,v73,v74,v75,v76,v77,v78,v79,v80,v81,v82,v83,v84,v85,v86,v87,v88,v89,v90,v91,v92,v93,v94,v95,v96,v97,v98,v99,v100,v101,v102,v103,v104,v105,v106,v107,v108,v109,v110,v111,v112,v113,v114,v115,v116,v117,v118,v119,v120,v121,v122,v123,v124,v125,v126,v127,v128,v129,v130,v131,v132,v133,v134,v135,v136,v137,v138,v139,v140,v141,v142,v143,v144,v145,v146,v147,v148,v149,v150,v151,v152,v153,v154,v155,v156,v157,v158,v159,v160,v161,v162,v163,v164,v165,v166,v167,v168,v169,v170,v171,v172,v173,v174,v175,v176,v177,v178,v179,v180,v181,v182,v183,v184,v185,v186,v187,v188,v189,v190,v191,v192,v193,v194,v195 for i=1,1 do end return 1",
+    "want": "1"
+  },
+  {
+    "src": "local v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15,v16,v17,v18,v19,v20,v21,v22,v23,v24,v25,v26,v27,v28,v29,v30,v31,v32,v33,v34,v35,v36,v37,v38,v39,v40,v41,v42,v43,v44,v45,v46,v47,v48,v49,v50,v51,v52,v53,v54,v55,v56,v57,v58,v59,v60,v61,v62,v63,v64,v65,v66,v67,v68,v69,v70,v71,v72,v73,v74,v75,v76,v77,v78,v79,v80,v81,v82,v83,v84,v85,v86,v87,v88,v89,v90,v91,v92,v93,v94,v95,v96,v97,v98,v99,v100,v101,v102,v103,v104,v105,v106,v107,v108,v109,v110,v111,v112,v113,v114,v115,v116,v117,v118,v119,v120,v121,v122,v123,v124,v125,v126,v127,v128,v129,v130,v131,v132,v133,v134,v135,v136,v137,v138,v139,v140,v141,v142,v143,v144,v145,v146,v147,v148,v149,v150,v151,v152,v153,v154,v155,v156,v157,v158,v159,v160,v161,v162,v163,v164,v165,v166,v167,v168,v169,v170,v171,v172,v173,v174,v175,v176,v177,v178,v179,v180,v181,v182,v183,v184,v185,v186,v187,v188,v189,v190,v191,v192,v193,v194,v195,v196 for i=1,1 do end return 1",
+    "want": "1"
+  },
+  {
+    "src": "local v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15,v16,v17,v18,v19,v20,v21,v22,v23,v24,v25,v26,v27,v28,v29,v30,v31,v32,v33,v34,v35,v36,v37,v38,v39,v40,v41,v42,v43,v44,v45,v46,v47,v48,v49,v50,v51,v52,v53,v54,v55,v56,v57,v58,v59,v60,v61,v62,v63,v64,v65,v66,v67,v68,v69,v70,v71,v72,v73,v74,v75,v76,v77,v78,v79,v80,v81,v82,v83,v84,v85,v86,v87,v88,v89,v90,v91,v92,v93,v94,v95,v96,v97,v98,v99,v100,v101,v102,v103,v104,v105,v106,v107,v108,v109,v110,v111,v112,v113,v114,v115,v116,v117,v118,v119,v120,v121,v122,v123,v124,v125,v126,v127,v128,v129,v130,v131,v132,v133,v134,v135,v136,v137,v138,v139,v140,v141,v142,v143,v144,v145,v146,v147,v148,v149,v150,v151,v152,v153,v154,v155,v156,v157,v158,v159,v160,v161,v162,v163,v164,v165,v166,v167,v168,v169,v170,v171,v172,v173,v174,v175,v176,v177,v178,v179,v180,v181,v182,v183,v184,v185,v186,v187,v188,v189,v190,v191,v192,v193,v194,v195,v196,v197 for i=1,1 do end return 1",
+    "want": "user_script:1: main function has more than 200 local variables"
+  },
+  {
+    "src": "for a,b=1,2 do end",
+    "want": "user_script:1: 'in' expected near '='"
+  },
+  {
+    "src": "local function f(x) return function(y) return x..y end end return f[[a\nb]](\"c\")",
+    "want": "a\nbc"
+  },
+  {
+    "src": "local function f(x) return function(y) return x..y end end return f'a\\\nb'(\"c\")",
+    "want": "a\nbc"
+  },
+  {
+    "src": "return 'prefix\\300'",
+    "want": "user_script:1: escape sequence too large near ''prefix'"
+  },
+  {
+    "src": "return [==x",
+    "want": "user_script:1: invalid long string delimiter near '[=='"
+  },
+  {
+    "src": "local '\\65'",
+    "want": "user_script:1: '<name>' expected near ''A''"
+  },
+  {
+    "src": "local [[hello]]",
+    "want": "user_script:1: '<name>' expected near '[[hello]]'"
+  },
+  {
+    "src": "return 'prefix\\n\nsuffix'",
+    "want": "user_script:1: unfinished string near ''prefix\n'"
+  },
+  {
+    "src": "local f,e=loadstring(\"return \\128\",\"@probe\") local out=\"\" for i=1,#e do out=out..string.format(\"%02x\",string.byte(e,i)) end return out",
+    "want": "70726f62653a313a20756e65787065637465642073796d626f6c206e65617220278027"
+  },
+  {
+    "src": "local f,e=loadstring(\"return \\255\",\"@probe\") local out=\"\" for i=1,#e do out=out..string.format(\"%02x\",string.byte(e,i)) end return out",
+    "want": "70726f62653a313a20756e65787065637465642073796d626f6c206e6561722027ff27"
   }
 ]
