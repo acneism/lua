@@ -13,7 +13,7 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 - Tagged values and Lua array/hash tables, metatables, and read-only support.
 - Closures, shared upvalues, varargs, multiple results, loops, and tail calls.
 - Base and coroutine libraries, native callbacks, hooks, and panic isolation.
-- A 975-entry reference corpus and explicit pending-stage list.
+- A 992-entry reference corpus and explicit pending-stage list.
 - Model, lifecycle, allocation, and semantic regression tests.
 - Compile/run fuzz targets, PR fuzz jobs, and ten-minute nightly fuzz jobs.
 - CI on Linux, Windows, and macOS, lint, race, and reference checks.

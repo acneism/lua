@@ -205,6 +205,11 @@ func (c *compiler) resolve(name string) (opcode, int, nameInfo) {
 }
 
 func (c *compiler) name(e *expression) nameInfo {
+	if e.kind == "binary" && e.left.kind == "literal" {
+		if e.name == "and" && e.left.value.Truth() || e.name == "or" && !e.left.value.Truth() {
+			return c.name(e.right)
+		}
+	}
 	if e.kind == "name" {
 		_, _, info := c.resolve(e.name)
 		return info
@@ -321,6 +326,9 @@ func (c *compiler) expression(e *expression, dest, want int) {
 	case "paren":
 		c.expression(e.left, dest, 1)
 	case "index":
+		if e.endLine > 0 {
+			i.line = e.endLine
+		}
 		i.op = opGetTable
 		i.b = c.temp()
 		i.c = c.temp()
@@ -345,6 +353,9 @@ func (c *compiler) expression(e *expression, dest, want int) {
 		c.emit(i)
 		return
 	case "unary":
+		if e.endLine > 0 {
+			i.line = e.endLine
+		}
 		if e.name == "-" && e.left.kind == "literal" && e.left.value.kind == TypeNumber {
 			i.op = opConstant
 			i.b = c.constant(Number(-e.left.value.number))
@@ -358,6 +369,9 @@ func (c *compiler) expression(e *expression, dest, want int) {
 		c.expression(e.left, i.b, 1)
 		c.emit(i)
 	case "binary":
+		if e.endLine > 0 {
+			i.line = e.endLine
+		}
 		if e.name == "and" || e.name == "or" {
 			c.expression(e.left, dest, 1)
 			i.op = opJumpFalse
@@ -500,7 +514,7 @@ func (c *compiler) statement(s *statement) {
 		}
 		targets := make([]instruction, len(s.targets))
 		for index, target := range s.targets {
-			i := instruction{line: s.line}
+			i := instruction{line: s.endLine}
 			if target.kind == "name" {
 				i.op, i.a, i.left = c.resolve(target.name)
 				switch i.op {
@@ -598,7 +612,7 @@ func (c *compiler) loop(s *statement, base int) {
 			c.addLocal(token{text: name, line: s.line})
 		}
 		variable := c.addLocal(s.names[0])
-		prep := c.emit(instruction{op: opForPrep, a: base, line: s.line})
+		prep := c.emit(instruction{op: opForPrep, a: base, line: s.prepLine})
 		start = len(c.proto.code)
 		c.block(s.body, true)
 		c.close(variable, s.line)

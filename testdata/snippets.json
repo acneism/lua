@@ -3898,5 +3898,73 @@
   {
     "src": "local f,e=loadstring(\"return \\255\",\"@probe\") local out=\"\" for i=1,#e do out=out..string.format(\"%02x\",string.byte(e,i)) end return out",
     "want": "70726f62653a313a20756e65787065637465642073796d626f6c206e6561722027ff27"
+  },
+  {
+    "src": "local x\nreturn x +\n 1",
+    "want": "user_script:3: attempt to perform arithmetic on local 'x' (a nil value)"
+  },
+  {
+    "src": "local x\nreturn #\n x",
+    "want": "user_script:3: attempt to get length of local 'x' (a nil value)"
+  },
+  {
+    "src": "local x\nreturn x[\n 'k'\n]",
+    "want": "user_script:4: attempt to index local 'x' (a nil value)"
+  },
+  {
+    "src": "_G.x =\n 1",
+    "want": "user_script:2: Attempt to modify a readonly table"
+  },
+  {
+    "src": "rawset(\n _G,'x',1\n)",
+    "want": "Attempt to modify a readonly table"
+  },
+  {
+    "src": "local t = 1\nreturn t.\n x",
+    "want": "user_script:3: attempt to index local 't' (a number value)"
+  },
+  {
+    "src": "return 1 +\n nil",
+    "want": "user_script:2: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "return -\n {}",
+    "want": "user_script:2: attempt to perform arithmetic on a table value"
+  },
+  {
+    "src": "for i=\n nil,2\n do end",
+    "want": "user_script:3: 'for' initial value must be a number"
+  },
+  {
+    "src": "for i=1,\n nil do end",
+    "want": "user_script:2: 'for' limit must be a number"
+  },
+  {
+    "src": "local t=1\nt[\n 'x'\n]=\n1",
+    "want": "user_script:5: attempt to index local 't' (a number value)"
+  },
+  {
+    "src": "return (\n nil\n) + 1",
+    "want": "user_script:3: attempt to perform arithmetic on a nil value"
+  },
+  {
+    "src": "local t={}\nreturn t:bad(\n1)",
+    "want": "user_script:2: attempt to call method 'bad' (a nil value)"
+  },
+  {
+    "src": "return loadstring(\"\\27LuaQ\\0garbage\")",
+    "want": "nil,[string \"\u001bLuaQ\"]:1: unexpected symbol near 'char(27)'"
+  },
+  {
+    "src": "local x=1 return (true and x)()",
+    "want": "user_script:1: attempt to call local 'x' (a number value)"
+  },
+  {
+    "src": "local x=nil return (false or x)()",
+    "want": "user_script:1: attempt to call local 'x' (a nil value)"
+  },
+  {
+    "src": "local t={} local x=nil return (t.x or x)()",
+    "want": "user_script:1: attempt to call a nil value"
   }
 ]

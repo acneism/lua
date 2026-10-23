@@ -4,7 +4,7 @@ The target is Redis 7.2.16 and its Lua 5.1 variant. A1 implements the interprete
 and base and coroutine libraries. EVAL, FUNCTION, host commands, A2 libraries,
 and C extensions are not implemented yet.
 
-Of 975 reference snippets, 732 execute in A1. The other 243 are listed explicitly
+Of 992 reference snippets, 749 execute in A1. The other 243 are listed explicitly
 in `testdata/pending.json`. Tests execute the original capture wrapper; its
 helper environment is separate from the snippet environment. Reference CI
 checks all recorded answers against Redis, including pending entries.

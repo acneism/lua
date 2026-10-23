@@ -30,6 +30,9 @@ func plainError(message string) *Error {
 }
 
 func chunkID(chunk string) string {
+	if zero := strings.IndexByte(chunk, 0); zero >= 0 {
+		chunk = chunk[:zero]
+	}
 	if strings.HasPrefix(chunk, "=") {
 		chunk = chunk[1:]
 		if len(chunk) > 59 {

@@ -13,6 +13,7 @@ type expression struct {
 	function *syntaxFunction
 	name     string
 	method   bool
+	endLine  int
 }
 
 type tableField struct {
@@ -23,6 +24,8 @@ type tableField struct {
 type statement struct {
 	kind     string
 	line     int
+	endLine  int
+	prepLine int
 	names    []token
 	values   []*expression
 	targets  []*expression
@@ -61,6 +64,13 @@ func (p *parser) advance() token {
 		p.current = p.lexer.next()
 	}
 	return old
+}
+
+func (p *parser) lastLine() int {
+	if p.previous.endLine > 0 {
+		return p.previous.endLine
+	}
+	return p.previous.line
 }
 
 func (p *parser) peek() token {
@@ -214,6 +224,7 @@ func (p *parser) statement() *statement {
 			s.values = p.expressionList()
 		}
 		p.expect("do")
+		s.prepLine = p.lastLine()
 		s.body = p.block()
 		p.close("end", "for", start.line)
 	case "return":
@@ -230,6 +241,7 @@ func (p *parser) statement() *statement {
 		if target.kind == "call" && p.current.kind != "=" && p.current.kind != "," {
 			s.kind = "call"
 			s.values = []*expression{target}
+			s.endLine = p.lastLine()
 			return s
 		}
 		s.kind = "assign"
@@ -245,6 +257,7 @@ func (p *parser) statement() *statement {
 		p.expect("=")
 		s.values = p.expressionList()
 	}
+	s.endLine = p.lastLine()
 	return s
 }
 
@@ -316,6 +329,7 @@ func (p *parser) expr(limit int) *expression {
 	for {
 		left, right := priority(p.current.kind)
 		if left <= limit {
+			value.endLine = p.lastLine()
 			return value
 		}
 		op := p.advance()
@@ -362,6 +376,7 @@ func (p *parser) suffix() *expression {
 		name := p.advance()
 		value = &expression{kind: "name", name: name.text, token: name}
 	}
+	value.endLine = p.lastLine()
 	for {
 		switch p.current.kind {
 		case ".":
@@ -384,6 +399,7 @@ func (p *parser) suffix() *expression {
 		default:
 			return value
 		}
+		value.endLine = p.lastLine()
 	}
 }
 
