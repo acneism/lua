@@ -73,7 +73,7 @@ func (s *State) optionalInt(args []Value, index, fallback int) int {
 	if index >= len(args) || args[index].IsNil() {
 		return fallback
 	}
-	return int(s.checkNumber(args, index))
+	return int(luaInteger(s.checkNumber(args, index)))
 }
 
 func (s *State) openBase() {

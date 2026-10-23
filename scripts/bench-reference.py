@@ -8,6 +8,10 @@ scripts = {
     "LuaCalls": "local function f(x) return x+1 end local n=0 for i=1,10000 do n=f(n) end return n",
     "TableInsert": "local t={} for i=1,1000000 do t[#t+1]=i end return #t",
     "TableHash": "local t={} for i=1,100000 do t['k'..i]=i end local n=0 for k,v in pairs(t) do n=n+v end return n",
+    "Sort": "local t={} for i=1,100000 do t[i]=100001-i end table.sort(t) return t[1]+t[100000]",
+    "GSub": "return #string.gsub(string.rep('abc ',262144),'%a+','x')",
+    "StringConcat": "local t={} for i=1,100000 do t[i]=tostring(i) end return #table.concat(t)",
+    "Metamethod": "local t=setmetatable({}, {__add=function(a,b) return b+1 end}) local n=0 for i=1,10000 do n=t+n end return n",
 }
 
 connection = socket.create_connection(("127.0.0.1", 6390))
@@ -43,7 +47,7 @@ for repeat in range(3):
         print(f"REDIS {name} {elapsed} ns answer={answer}", flush=True)
     subprocess.run(
         ["go", "test", ".", "-run", "^$", "-bench",
-         "^Benchmark(Loop|Fib27|LuaCalls|TableInsert|TableHash)$",
+         "^Benchmark(Loop|Fib27|LuaCalls|TableInsert|TableHash|Sort|GSub|StringConcat|Metamethod)$",
          "-benchtime=1x", "-count=1", "-benchmem"], check=True)
 subprocess.run(["go", "test", ".", "-run", "^$", "-bench",
                 "^BenchmarkNumberValue$", "-benchtime=100ms",

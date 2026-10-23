@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [FuzzCompile, FuzzRun]
+        target: [FuzzCompile, FuzzRun, FuzzPattern, FuzzFormat]
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-go@v7.0.0

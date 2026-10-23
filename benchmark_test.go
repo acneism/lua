@@ -52,6 +52,22 @@ func BenchmarkNumberValue(b *testing.B) {
 	}
 }
 
+func BenchmarkSort(b *testing.B) {
+	benchmarkScript(b, "local t={} for i=1,100000 do t[i]=100001-i end table.sort(t) return t[1]+t[100000]")
+}
+
+func BenchmarkGSub(b *testing.B) {
+	benchmarkScript(b, "return #string.gsub(string.rep('abc ',262144),'%a+','x')")
+}
+
+func BenchmarkStringConcat(b *testing.B) {
+	benchmarkScript(b, "local t={} for i=1,100000 do t[i]=tostring(i) end return #table.concat(t)")
+}
+
+func BenchmarkMetamethod(b *testing.B) {
+	benchmarkScript(b, "local t=setmetatable({}, {__add=function(a,b) return b+1 end}) local n=0 for i=1,10000 do n=t+n end return n")
+}
+
 func TestLuaCallsDoNotAllocatePerCall(t *testing.T) {
 	s := NewState(Options{})
 	measure := func(iterations string) float64 {

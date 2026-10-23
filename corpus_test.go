@@ -96,7 +96,9 @@ func captureEnvironment(s *State) *Table {
 	}))
 	s.globals.metatable = meta
 	s.globals.readonly = true
-	s.globals.RawGet(String("coroutine")).Table().readonly = true
+	for _, name := range []string{"coroutine", "string", "table", "math"} {
+		s.globals.RawGet(String(name)).Table().readonly = true
+	}
 	outer := s.NewTable(0, 32)
 	for key, value, _ := s.globals.Next(Nil()); !key.IsNil(); key, value, _ = s.globals.Next(key) {
 		outer.set(key, value)

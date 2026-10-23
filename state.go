@@ -80,15 +80,16 @@ type thread struct {
 }
 
 type State struct {
-	options    Options
-	globals    *Table
-	stringMeta *Table
-	main       *thread
-	current    *thread
-	threads    []*thread
-	nextID     uint64
-	steps      int
-	running    int
+	options     Options
+	globals     *Table
+	stringMeta  *Table
+	main        *thread
+	current     *thread
+	threads     []*thread
+	nextID      uint64
+	steps       int
+	running     int
+	randomState uint64
 }
 
 func NewState(options Options) *State {
@@ -108,6 +109,9 @@ func NewState(options Options) *State {
 	s.stringMeta.readonly = true
 	s.openBase()
 	s.openCoroutine()
+	s.openMath()
+	s.openTable()
+	s.openString()
 	return s
 }
 
