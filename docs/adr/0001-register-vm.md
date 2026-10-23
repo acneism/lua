@@ -23,9 +23,9 @@ for scopes with captured locals.
 ## Evidence
 
 On Azure Standard_B4as_v2, AMD EPYC 7763, Linux amd64, Go 1.27.0, the median of
-three interleaved runs was 237.407 ms for a ten-million-iteration loop versus
-84.321 ms in Redis 7.2.16: 2.82 times. Fibonacci 27 took 87.493 ms versus
-22.155 ms: 3.95 times. See [benchmarks](../benchmarks.md).
+three interleaved runs was 235.629 ms for a ten-million-iteration loop versus
+84.265 ms in Redis 7.2.16: 2.80 times. Fibonacci 27 took 86.919 ms versus
+22.125 ms: 3.93 times. See [benchmarks](../benchmarks.md).
 
 The loop allocates one 48-byte result slice per outer call and no memory per
 iteration. The 10,000-call workload allocates three objects per outer execution;
