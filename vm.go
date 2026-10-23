@@ -52,6 +52,9 @@ func (s *State) native(fn *function, args []Value, name nameInfo, method bool) [
 			panic(err)
 		}
 		if failure, ok := err.(*Error); ok {
+			if failure.cDepth == 0 {
+				failure.cDepth = t.cDepth
+			}
 			if failure.Line == 0 {
 				failure.Line = s.currentLine()
 			}
@@ -347,11 +350,7 @@ func (s *State) get(value, key Value, info nameInfo) Value {
 			s.typeError("index", value, info)
 		}
 		if meta.kind == TypeFunction {
-			values := s.invoke(meta, []Value{value, key})
-			if len(values) > 0 {
-				return values[0]
-			}
-			return Nil()
+			return s.invokeOne(meta, []Value{value, key})
 		}
 		value, info = meta, nameInfo{}
 	}
@@ -378,7 +377,7 @@ func (s *State) set(value, key, assigned Value, info nameInfo) {
 			s.typeError("index", value, info)
 		}
 		if meta.kind == TypeFunction {
-			s.invoke(meta, []Value{value, key, assigned})
+			s.invokeOne(meta, []Value{value, key, assigned})
 			return
 		}
 		value, info = meta, nameInfo{}
@@ -414,7 +413,7 @@ func (s *State) unary(operator string, value Value, info nameInfo) Value {
 			return Number(-number)
 		}
 		if method := s.meta(value, "__unm"); !method.IsNil() {
-			return first(s.invoke(method, []Value{value, value}))
+			return s.invokeOne(method, []Value{value, value})
 		}
 		s.typeError("perform arithmetic on", value, info)
 	}
@@ -435,7 +434,7 @@ func (s *State) binary(operator string, left, right Value, leftName, rightName n
 		if !equal && left.kind == right.kind && (left.kind == TypeTable || left.kind == TypeUserdata) {
 			method := s.meta(left, "__eq")
 			if !method.IsNil() && method.Equal(s.meta(right, "__eq")) {
-				equal = first(s.invoke(method, []Value{left, right})).Truth()
+				equal = s.invokeOne(method, []Value{left, right}).Truth()
 			}
 		}
 		if operator == "~=" {
@@ -462,7 +461,7 @@ func (s *State) binary(operator string, left, right Value, leftName, rightName n
 			method = s.meta(right, "__concat")
 		}
 		if !method.IsNil() {
-			return first(s.invoke(method, []Value{left, right}))
+			return s.invokeOne(method, []Value{left, right})
 		}
 		if !aok {
 			s.typeError("concatenate", left, leftName)
@@ -507,7 +506,7 @@ func (s *State) binary(operator string, left, right Value, leftName, rightName n
 			method = s.meta(right, name)
 		}
 		if !method.IsNil() {
-			return first(s.invoke(method, []Value{left, right}))
+			return s.invokeOne(method, []Value{left, right})
 		}
 		if !aok {
 			s.typeError("perform arithmetic on", left, leftName)
@@ -551,12 +550,12 @@ func (s *State) less(left, right Value, equal bool) bool {
 	}
 	method := s.meta(left, name)
 	if !method.IsNil() && method.Equal(s.meta(right, name)) {
-		return first(s.invoke(method, []Value{left, right})).Truth()
+		return s.invokeOne(method, []Value{left, right}).Truth()
 	}
 	if equal {
 		method = s.meta(left, "__lt")
 		if !method.IsNil() && method.Equal(s.meta(right, "__lt")) {
-			return !first(s.invoke(method, []Value{right, left})).Truth()
+			return !s.invokeOne(method, []Value{right, left}).Truth()
 		}
 	}
 	if left.kind == right.kind {

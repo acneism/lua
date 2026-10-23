@@ -47,7 +47,7 @@ func (s *State) openTable() {
 				if err != nil {
 					panic(plainError(err.Error()))
 				}
-				result := first(s.invoke(fn, []Value{key, value}))
+				result := s.invokeOne(fn, []Value{key, value})
 				if !result.IsNil() {
 					return []Value{result}, nil
 				}
@@ -58,7 +58,7 @@ func (s *State) openTable() {
 			table, fn := s.checkTable(args, 0), s.checkFunction(args, 1)
 			length := table.Len()
 			for index := 1; index <= length; index++ {
-				result := first(s.invoke(fn, []Value{Number(float64(index)), tableRead(table, index)}))
+				result := s.invokeOne(fn, []Value{Number(float64(index)), tableRead(table, index)})
 				if !result.IsNil() {
 					return []Value{result}, nil
 				}
@@ -137,7 +137,7 @@ func tableSort(s *State, args []Value) ([]Value, error) {
 		if fn.IsNil() {
 			return s.less(a, b, false)
 		}
-		return first(s.invoke(fn, []Value{a, b})).Truth()
+		return s.invokeOne(fn, []Value{a, b}).Truth()
 	}
 	swap := func(a, b int) {
 		left, right := tableRead(table, a), tableRead(table, b)

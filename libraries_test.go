@@ -60,3 +60,20 @@ func TestRandomStatesAreIndependent(t *testing.T) {
 		}
 	}
 }
+
+func TestLuaMetamethodCallsDoNotAllocatePerCall(t *testing.T) {
+	s := NewState(Options{})
+	measure := func(count string) float64 {
+		proto := compileTest(t, "local t=setmetatable({}, {__add=function(a,b) return b+1 end}) local n=0 for i=1,"+count+" do n=t+n end return n")
+		fn := s.Load(proto, nil)
+		var err error
+		allocations := testing.AllocsPerRun(3, func() { _, err = s.Call(fn) })
+		if err != nil {
+			t.Fatal(err)
+		}
+		return allocations
+	}
+	if small, large := measure("10"), measure("1000"); large > small {
+		t.Fatalf("Lua metamethod allocations grow with calls: %g -> %g", small, large)
+	}
+}

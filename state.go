@@ -239,6 +239,34 @@ func (s *State) invoke(fn Value, args []Value) []Value {
 	return values
 }
 
+func (s *State) invokeOne(fn Value, args []Value) Value {
+	t := s.current
+	cDepth := t.cDepth
+	t.cDepth++
+	t.boundary++
+	defer func() { t.cDepth = cDepth; t.boundary-- }()
+	if t.cDepth == 200 {
+		s.runtimeError("C stack overflow")
+	}
+	if t.cDepth >= 225 {
+		panic(plainError("error in error handling"))
+	}
+	if fn.kind != TypeFunction {
+		fn, args = s.callable(fn, args, nameInfo{})
+	}
+	if fn.object.function.native != nil {
+		return first(s.native(fn.object.function, append([]Value(nil), args...), nameInfo{}, false))
+	}
+	depth, used, top := len(t.frames), t.used, t.top
+	dest := max(used, top)
+	s.push(fn.object.function, args, dest, 1, nameInfo{}, false)
+	s.execute(depth)
+	value := t.stack[dest]
+	t.stack[dest] = Nil()
+	t.used, t.top = used, top
+	return value
+}
+
 func (s *State) cleanup() {
 	for _, t := range s.threads {
 		t.close(0)
@@ -314,6 +342,7 @@ func (s *State) raise(message string, level int) {
 		err = locatedError(t.frames[index].function.proto.chunk, t.frames[index].line, message)
 	}
 	err.Line = s.currentLine()
+	err.cDepth = t.cDepth
 	panic(err)
 }
 

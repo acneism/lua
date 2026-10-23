@@ -406,7 +406,7 @@ func stringGSub(s *State, args []Value) ([]Value, error) {
 			default:
 				var value Value
 				if replacement.kind == TypeFunction {
-					value = first(s.invoke(replacement, m.values(start, end, true)))
+					value = s.invokeOne(replacement, m.values(start, end, true))
 				} else {
 					value = s.get(replacement, m.capture(0, start, end), nameInfo{})
 				}
