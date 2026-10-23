@@ -66,9 +66,10 @@ func formatInteger(number float64, option byte, flags string, width, precision i
 		value = uint64(luaInteger(number-0x1p63)) ^ (uint64(1) << 63)
 	}
 	base := 10
-	if option == 'o' {
+	switch option {
+	case 'o':
 		base = 8
-	} else if option == 'x' || option == 'X' {
+	case 'x', 'X':
 		base = 16
 	}
 	digits := strconv.FormatUint(value, base)
