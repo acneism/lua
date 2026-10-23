@@ -2,6 +2,7 @@ package lua
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -154,7 +155,14 @@ func TestCorpus(t *testing.T) {
 		rule := normalizing[snippet.Src]
 		delete(normalizing, snippet.Src)
 		t.Run(fmt.Sprintf("%03d", index+1), func(t *testing.T) {
-			s := NewState(Options{})
+			steps := 0
+			s := NewState(Options{HookEvery: 1000, Hook: func() error {
+				steps += 1000
+				if steps > 1000000 {
+					return errors.New("corpus snippet exceeded one million steps")
+				}
+				return nil
+			}})
 			env := captureEnvironment(s)
 			proto, err := Compile([]byte(fmt.Sprintf(captureWrapper, quoteLua(snippet.Src))), "@capture")
 			if err != nil {

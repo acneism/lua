@@ -53,6 +53,7 @@ type parser struct {
 	lookahead *token
 	previous  token
 	depth     int
+	loops     int
 }
 
 func (p *parser) advance() token {
@@ -184,11 +185,15 @@ func (p *parser) statement() *statement {
 		p.advance()
 		s.values = []*expression{p.expr(0)}
 		p.expect("do")
+		p.loops++
 		s.body = p.block()
+		p.loops--
 		p.close("end", "while", start.line)
 	case "repeat":
 		p.advance()
+		p.loops++
 		s.body = p.block()
+		p.loops--
 		p.close("until", "repeat", start.line)
 		s.values = []*expression{p.expr(0)}
 	case "if":
@@ -208,8 +213,8 @@ func (p *parser) statement() *statement {
 		p.close("end", "if", start.line)
 	case "for":
 		p.advance()
-		s.names = p.names()
-		if len(s.names) == 1 && p.accept("=") {
+		s.names = []token{p.expect("<name>")}
+		if p.accept("=") {
 			s.kind = "fornum"
 			s.values = []*expression{p.expr(0)}
 			p.expect(",")
@@ -221,12 +226,20 @@ func (p *parser) statement() *statement {
 			}
 		} else {
 			s.kind = "forin"
+			if p.current.kind != "," && p.current.kind != "in" {
+				p.fail("'=' or 'in' expected")
+			}
+			for p.accept(",") {
+				s.names = append(s.names, p.expect("<name>"))
+			}
 			p.expect("in")
 			s.values = p.expressionList()
 		}
 		p.expect("do")
 		s.prepLine = p.lastLine()
+		p.loops++
 		s.body = p.block()
+		p.loops--
 		p.close("end", "for", start.line)
 	case "return":
 		p.advance()
@@ -237,6 +250,9 @@ func (p *parser) statement() *statement {
 		}
 	case "break":
 		p.advance()
+		if p.loops == 0 {
+			p.fail("no loop to break")
+		}
 	default:
 		target := p.suffix()
 		if target.kind == "call" && p.current.kind != "=" && p.current.kind != "," {
@@ -263,6 +279,9 @@ func (p *parser) statement() *statement {
 }
 
 func (p *parser) function(line int, method bool) *syntaxFunction {
+	loops := p.loops
+	p.loops = 0
+	defer func() { p.loops = loops }()
 	p.enter()
 	defer func() { p.depth-- }()
 	f := &syntaxFunction{line: line}
@@ -275,6 +294,9 @@ func (p *parser) function(line int, method bool) *syntaxFunction {
 			if p.accept("...") {
 				f.vararg = true
 				break
+			}
+			if p.current.kind != "<name>" {
+				p.fail("<name> or '...' expected")
 			}
 			f.params = append(f.params, p.expect("<name>"))
 			if !p.accept(",") {

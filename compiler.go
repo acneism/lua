@@ -593,9 +593,6 @@ func (c *compiler) statement(s *statement) {
 	case "while", "repeat", "fornum", "forin":
 		c.loop(s, base)
 	case "break":
-		if len(c.breaks) == 0 {
-			panic(syntaxError(c.proto.chunk, s.line, "no loop to break near '<eof>'"))
-		}
 		index := len(c.breaks) - 1
 		c.breaks[index] = append(c.breaks[index], c.emit(instruction{op: opJump, line: s.line}))
 	}

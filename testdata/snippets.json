@@ -5994,5 +5994,941 @@
   {
     "src": "local f,e=loadstring('local x=1 local function f(...) return select(\"#\",...) end return f(x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x)', '=limits') if f then return f() end return e",
     "want": "limits:1: function or expression too complex near 'x'"
+  },
+  {
+    "src": "local x = 1 x = x * 2 + x return x",
+    "want": "3"
+  },
+  {
+    "src": "local x = 1 x = (x + 1) + x return x",
+    "want": "3"
+  },
+  {
+    "src": "local x = 3 x = x * x - x return x",
+    "want": "6"
+  },
+  {
+    "src": "local x = 2 x = x .. 'a' .. x return x",
+    "want": "2a2"
+  },
+  {
+    "src": "local x = 'a' x = (x .. 'b') .. x return x",
+    "want": "aba"
+  },
+  {
+    "src": "local a, b = 1, 2 a = a + b + a return a, b",
+    "want": "4,2"
+  },
+  {
+    "src": "local a, b = 1, 2 a, b = b * 10 + a, a * 10 + b return a, b",
+    "want": "21,12"
+  },
+  {
+    "src": "local a, b = 1, 2 a, b = (a + b) * a, (a + b) * b return a, b",
+    "want": "3,6"
+  },
+  {
+    "src": "local x = 5 local y = x - 1 - x return y",
+    "want": "-1"
+  },
+  {
+    "src": "local x = 5 x = -x + x return x",
+    "want": "0"
+  },
+  {
+    "src": "local x = 5 x = (x - 1) - (x - 2) return x",
+    "want": "1"
+  },
+  {
+    "src": "local x = 2 x = x ^ 2 ^ x return x",
+    "want": "16"
+  },
+  {
+    "src": "local t = {v = 2} t.v = t.v * 3 + t.v return t.v",
+    "want": "8"
+  },
+  {
+    "src": "local x = 1 local function f() return x end x = (x + 10) + f() return x",
+    "want": "12"
+  },
+  {
+    "src": "local x = 1 local function g() x = 100 return 1 end x = (x + 1) + g() return x",
+    "want": "3"
+  },
+  {
+    "src": "local x = 1 x = x + 1 == x return x",
+    "want": "false"
+  },
+  {
+    "src": "local x = 1 x = (x + 1 < x) or x return x",
+    "want": "1"
+  },
+  {
+    "src": "local x = 7 x = x % 4 + x % 3 return x",
+    "want": "4"
+  },
+  {
+    "src": "local x = 1 local t = {x * 2 + x, x} return t[1], t[2]",
+    "want": "3,1"
+  },
+  {
+    "src": "local x = 1 local function f(...) return ... end return f(x * 2 + x, x)",
+    "want": "3,1"
+  },
+  {
+    "src": "local i = 1 for j = 1, 3 do i = i * 2 + i end return i",
+    "want": "27"
+  },
+  {
+    "src": "local x = 1 local y = x x = y * 2 + x y = x * 2 + y return x, y",
+    "want": "3,7"
+  },
+  {
+    "src": "local x = 10 do local x = x * 2 + x return x end",
+    "want": "30"
+  },
+  {
+    "src": "local function f(a) a = a * 2 + a return a end return f(3)",
+    "want": "9"
+  },
+  {
+    "src": "local function f(a, b) a = a .. b .. a return a end return f('x', 'y')",
+    "want": "xyx"
+  },
+  {
+    "src": "local x = 1 x = x and x + 1 or x return x",
+    "want": "2"
+  },
+  {
+    "src": "local x = 1 x = not x == x return x",
+    "want": "false"
+  },
+  {
+    "src": "local s = 'a' s = #s + #s return s",
+    "want": "2"
+  },
+  {
+    "src": "local x = 2 x = x * (x + x) return x",
+    "want": "8"
+  },
+  {
+    "src": "local x = 2 x = (x + x) * (x + x) return x",
+    "want": "16"
+  },
+  {
+    "src": "local t = {1, 2, 3} local i = 1 i = t[i] + t[i + 1] + i return i",
+    "want": "4"
+  },
+  {
+    "src": "local co = coroutine.wrap(function(a) a = a + coroutine.yield(a) + a return a end) co(1) return co(10)",
+    "want": "12"
+  },
+  {
+    "src": "local t = {} local k = 'x' return pcall(function() t[k](1) end)",
+    "want": "false,user_script:1: attempt to call field '?' (a nil value)"
+  },
+  {
+    "src": "local t = {} local k = 'x' return pcall(function() t[k]:m() end)",
+    "want": "false,user_script:1: attempt to index field '?' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() t['m'](t) end)",
+    "want": "false,user_script:1: attempt to call field 'm' (a nil value)"
+  },
+  {
+    "src": "local t = {f = {}} return pcall(function() t.f[1](t) end)",
+    "want": "false,user_script:1: attempt to call field '?' (a nil value)"
+  },
+  {
+    "src": "local t = {} local up = t return pcall(function() return up[1] .. 'x' end)",
+    "want": "false,user_script:1: attempt to concatenate field '?' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() return t[1] < 2 end)",
+    "want": "false,user_script:1: attempt to compare nil with number"
+  },
+  {
+    "src": "local t = {} return pcall(function() return #t[1] end)",
+    "want": "false,user_script:1: attempt to get length of field '?' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() return -t[1] end)",
+    "want": "false,user_script:1: attempt to perform arithmetic on field '?' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() for i = t[1], 2 do end end)",
+    "want": "false,user_script:1: 'for' initial value must be a number"
+  },
+  {
+    "src": "local t = {} return pcall(function() return t[1][2] end)",
+    "want": "false,user_script:1: attempt to index field '?' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() t[1][2] = 3 end)",
+    "want": "false,user_script:1: attempt to index field '?' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() local x = t[1] return x.y end)",
+    "want": "false,user_script:1: attempt to index local 'x' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() return t[1 + 1].y end)",
+    "want": "false,user_script:1: attempt to index field '?' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() return (t[1]).y end)",
+    "want": "false,user_script:1: attempt to index field '?' (a nil value)"
+  },
+  {
+    "src": "local t = {} return pcall(function() return t.a[1] + t.b end)",
+    "want": "false,user_script:1: attempt to index field 'a' (a nil value)"
+  },
+  {
+    "src": "local t = {a = 1} return pcall(function() return t.a + t.b end)",
+    "want": "false,user_script:1: attempt to perform arithmetic on field 'b' (a nil value)"
+  },
+  {
+    "src": "local t = {a = 1} return pcall(function() return t.a + t[2] end)",
+    "want": "false,user_script:1: attempt to perform arithmetic on field '?' (a nil value)"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'bottom' end local t = setmetatable({}, {__eq = function() return f(n - 1) end}) local u = setmetatable({}, getmetatable(t)) return t == u end return pcall(f, 300)",
+    "want": "false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'bottom' end return tostring(setmetatable({}, {__tostring = function() return f(n - 1) end})) end return pcall(f, 300)",
+    "want": "false,C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'bottom' end return tostring(setmetatable({}, {__tostring = function() return f(n - 1) end})) end return pcall(f, 90)",
+    "want": "true,bottom"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'bottom' end return select(2, xpcall(function() return f(n - 1) end, function(e) return e end)) end return f(300)",
+    "want": "C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'bottom' end return select(2, xpcall(function() return f(n - 1) end, function(e) return e end)) end return f(150)",
+    "want": "bottom"
+  },
+  {
+    "src": "local function f(n) if n == 0 then error('deep') end return select(2, xpcall(function() return f(n - 1) end, function(e) return e end)) end return f(150)",
+    "want": "user_script:1: deep"
+  },
+  {
+    "src": "local function f(n) if n == 0 then error('deep') end local ok, e = pcall(f, n - 1) error(e, 0) end return pcall(f, 197)",
+    "want": "false,C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n == 0 then error('deep') end local ok, e = pcall(f, n - 1) error(e, 0) end return pcall(f, 198)",
+    "want": "false,C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'bottom' end local ok, v = pcall(f, n - 1) return v end return f(196), f(197), f(198), f(199), f(200)",
+    "want": "bottom,bottom,C stack overflow,C stack overflow,C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'bottom' end local ok, v = coroutine.resume(coroutine.create(f), n - 1) return v end return f(196), f(197), f(198), f(199), f(200)",
+    "want": "bottom,bottom,bottom,C stack overflow,C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'bottom' end local ok, v = pcall(coroutine.wrap(f), n - 1) return v end return f(98), f(99), f(100), f(101)",
+    "want": "bottom,bottom,C stack overflow,C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'bottom' end local t = setmetatable({}, {__index = function() return f(n - 1) end}) return t.x end return pcall(f, 196), pcall(f, 197), pcall(f, 198), pcall(f, 199)",
+    "want": "true,false,false,false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local function f(n) if n == 0 then return 'bottom' end local r for v in function() if not r then r = f(n - 1) return r end end do end return r end return pcall(f, 196), pcall(f, 197), pcall(f, 198)",
+    "want": "true,false,false,user_script:1: C stack overflow"
+  },
+  {
+    "src": "local depth = 0 local function f() depth = depth + 1 pcall(f) end f() return depth",
+    "want": "198"
+  },
+  {
+    "src": "local depth = 0 local function f() depth = depth + 1 local co = coroutine.create(f) coroutine.resume(co) end f() return depth",
+    "want": "199"
+  },
+  {
+    "src": "local depth = 0 local t t = setmetatable({}, {__index = function() depth = depth + 1 return t.x end}) pcall(function() return t.y end) return depth",
+    "want": "196"
+  },
+  {
+    "src": "local depth = 0 local function f() depth = depth + 1 local ok, e = pcall(f) if not ok then return e end return e end local e = f() return depth, e",
+    "want": "198,C stack overflow"
+  },
+  {
+    "src": "local co = coroutine.create(function() local function f() return pcall(f) end return f() end) local r = {coroutine.resume(co)} return #r, r[#r]",
+    "want": "199,C stack overflow"
+  },
+  {
+    "src": "local function f() return pcall(f) end local r1 = {f()} local r2 = {f()} return #r1, #r2",
+    "want": "199,199"
+  },
+  {
+    "src": "local function f() return pcall(f) end f() local t = setmetatable({}, {__index = function() return 'ok' end}) return t.x",
+    "want": "ok"
+  },
+  {
+    "src": "local ok, e = pcall(function() local function f() return f() + 1 end return f() end) return e",
+    "want": "user_script:1: stack overflow"
+  },
+  {
+    "src": "local s = 'local x = 1 return {' for i = 1, 300 do s = s .. 'x, ' end s = s .. '}' local f, e = loadstring(s, '=c') if f then return #f() end return e",
+    "want": "300"
+  },
+  {
+    "src": "local s = 'local x = 1 return x' for i = 1, 3000 do s = s .. ' + x' end local f, e = loadstring(s, '=c') if f then return f() end return e",
+    "want": "3001"
+  },
+  {
+    "src": "local s = 'local x = 1 return x' for i = 1, 3000 do s = s .. ' .. x' end local f, e = loadstring(s, '=c') if f then return #f() end return e",
+    "want": "c:1: chunk has too many syntax levels"
+  },
+  {
+    "src": "local s = 'local x = 1 return ' for i = 1, 150 do s = s .. 'x + (' end s = s .. 'x' for i = 1, 150 do s = s .. ')' end local f, e = loadstring(s, '=c') if f then return f() end return e",
+    "want": "c:1: chunk has too many syntax levels"
+  },
+  {
+    "src": "local s = 'local x = 1 return ' for i = 1, 260 do s = s .. 'x + (' end s = s .. 'x' for i = 1, 260 do s = s .. ')' end local f, e = loadstring(s, '=c') if f then return f() end return e",
+    "want": "c:1: chunk has too many syntax levels"
+  },
+  {
+    "src": "local s = 'local x = 1 return f(' for i = 1, 260 do s = s .. 'x, ' end s = s .. 'x)' local f, e = loadstring(s, '=c') return e",
+    "want": "c:1: function or expression too complex near 'x'"
+  },
+  {
+    "src": "local s = 'local x = 1 return f(' for i = 1, 260 do s = s .. 'x, ' end s = s .. 'g(x))' local f, e = loadstring(s, '=c') return e",
+    "want": "c:1: function or expression too complex near 'x'"
+  },
+  {
+    "src": "local s = 'local t = {} return t:m(' for i = 1, 260 do s = s .. '1, ' end s = s .. '1)' local f, e = loadstring(s, '=c') return e",
+    "want": "c:1: function or expression too complex near '1'"
+  },
+  {
+    "src": "local s = 'return {' for i = 1, 300 do s = s .. '{' end for i = 1, 300 do s = s .. '}' end s = s .. '}' local f, e = loadstring(s, '=c') return e",
+    "want": "c:1: chunk has too many syntax levels"
+  },
+  {
+    "src": "local s = 'local a = 1 ' for i = 1, 199 do s = s .. 'local a' .. i .. ' = 1 ' end s = s .. 'return a + a1' local f, e = loadstring(s, '=c') if f then return f() end return e",
+    "want": "2"
+  },
+  {
+    "src": "local s = '' for i = 1, 240 do s = s .. 'local a' .. i .. ' = 1 ' end local f, e = loadstring(s, '=c') return e",
+    "want": "c:1: main function has more than 200 local variables"
+  },
+  {
+    "src": "local s = '' for i = 1, 190 do s = s .. 'local a' .. i .. ' = 1 ' end s = s .. 'return f(' for i = 1, 70 do s = s .. 'a1, ' end s = s .. 'a1)' local f, e = loadstring(s, '=c') return e",
+    "want": "c:1: function or expression too complex near 'a1'"
+  },
+  {
+    "src": "local s = '' for i = 1, 190 do s = s .. 'local a' .. i .. ' = 1 ' end s = s .. 'return a1' for i = 1, 70 do s = s .. ' + a1 * a2' end local f, e = loadstring(s, '=c') if f then return f() end return e",
+    "want": "71"
+  },
+  {
+    "src": "local s = '' for i = 1, 6 do s = s .. 'xxxxxxxxxx' end local f, e = loadstring('error(\"r\")', s) return select(2, pcall(f))",
+    "want": "[string \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...\"]:1: r"
+  },
+  {
+    "src": "local s = '' for i = 1, 6 do s = s .. 'xxxxxxxxxx' end local f, e = loadstring('local t = nil return t.x', '@' .. s) return select(2, pcall(f))",
+    "want": "...xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:1: attempt to index local 't' (a nil value)"
+  },
+  {
+    "src": "local s = '' for i = 1, 6 do s = s .. 'xxxxxxxxxx' end local f, e = loadstring('local t = nil return t.x', '=' .. s) return select(2, pcall(f))",
+    "want": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:1: attempt to index local 't' (a nil value)"
+  },
+  {
+    "src": "local s = '' for i = 1, 6 do s = s .. 'xxxxxxxxxx' end local f, e = loadstring('local t = nil return t.x', s) return select(2, pcall(f))",
+    "want": "[string \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...\"]:1: attempt to index local 't' (a nil value)"
+  },
+  {
+    "src": "local f, e = loadstring('local t = nil\\nreturn t.x') return select(2, pcall(f))",
+    "want": "[string \"local t = nil...\"]:2: attempt to index local 't' (a nil value)"
+  },
+  {
+    "src": "local f, e = loadstring('local t = nil return t.x') return select(2, pcall(f))",
+    "want": "[string \"local t = nil return t.x\"]:1: attempt to index local 't' (a nil value)"
+  },
+  {
+    "src": "local f, e = loadstring('x x\\r\\ny') return e",
+    "want": "[string \"x x...\"]:1: '=' expected near 'x'"
+  },
+  {
+    "src": "local f, e = loadstring('a\\rx x') return e",
+    "want": "[string \"a...\"]:2: '=' expected near 'x'"
+  },
+  {
+    "src": "local s = '' for i = 1, 7 do s = s .. 'xxxxxxxxxx' end local f, e = loadstring('x x', '@' .. s) return e",
+    "want": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:1: '=' expected near 'x'"
+  },
+  {
+    "src": "local s = '' for i = 1, 8 do s = s .. 'xxxxxxxxxx' end local f, e = loadstring('x x', '@' .. s) return e",
+    "want": "...xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:1: '=' expected near 'x'"
+  },
+  {
+    "src": "local s = '' for i = 1, 8 do s = s .. 'xxxxxxxxxx' end local f, e = loadstring('x x', '=' .. s) return e",
+    "want": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:1: '=' expected near 'x'"
+  },
+  {
+    "src": "local s = '' for i = 1, 7 do s = s .. 'xxxxxxxxxx' end local f, e = loadstring('x x', s) return e",
+    "want": "[string \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...\"]:1: '=' expected near 'x'"
+  },
+  {
+    "src": "local s = '' for i = 1, 6 do s = s .. 'xxxxxxxxxx' end return select(2, pcall(loadstring('error(\"r\", 1)', '@' .. s)))",
+    "want": "...xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:1: r"
+  },
+  {
+    "src": "local s = '' for i = 1, 6 do s = s .. 'xxxxxxxxxx' end return select(2, pcall(loadstring('local f = function() error(\"r\", 2) end f()', s)))",
+    "want": "[string \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...\"]:1: r"
+  },
+  {
+    "src": "local f, e = loadstring('return 1 +\\n\\n') return e",
+    "want": "[string \"return 1 +...\"]:3: unexpected symbol near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('return (\\n1') return e",
+    "want": "[string \"return (...\"]:2: ')' expected (to close '(' at line 1) near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('x = }') return e",
+    "want": "[string \"x = }\"]:1: unexpected symbol near '}'"
+  },
+  {
+    "src": "local f, e = loadstring('return \\'\\n\\'') return e",
+    "want": "[string \"return '...\"]:1: unfinished string near '''"
+  },
+  {
+    "src": "local f, e = loadstring('return [==[ ]=]') return e",
+    "want": "[string \"return [==[ ]=]\"]:1: unfinished long string near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('return 1e+') return e",
+    "want": "[string \"return 1e+\"]:1: malformed number near '1e+'"
+  },
+  {
+    "src": "local f, e = loadstring('local function f() return ... end') return e",
+    "want": "[string \"local function f() return ... end\"]:1: cannot use '...' outside a vararg function near '...'"
+  },
+  {
+    "src": "local f, e = loadstring('local t = {...} return #t') return e, f and f(1, 2)",
+    "want": "nil,2"
+  },
+  {
+    "src": "local f, e = loadstring('x.y:z = 1') return e",
+    "want": "[string \"x.y:z = 1\"]:1: function arguments expected near '='"
+  },
+  {
+    "src": "local f, e = loadstring('return f:g') return e",
+    "want": "[string \"return f:g\"]:1: function arguments expected near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('a, b() = 1') return e",
+    "want": "[string \"a, b() = 1\"]:1: syntax error near '='"
+  },
+  {
+    "src": "local f, e = loadstring('(a) = 1') return e",
+    "want": "[string \"(a) = 1\"]:1: syntax error near '='"
+  },
+  {
+    "src": "local f, e = loadstring('a.b = 1 a = ') return e",
+    "want": "[string \"a.b = 1 a = \"]:1: unexpected symbol near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('while true do') return e",
+    "want": "[string \"while true do\"]:1: 'end' expected near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('repeat until') return e",
+    "want": "[string \"repeat until\"]:1: unexpected symbol near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('function a.b:c.d() end') return e",
+    "want": "[string \"function a.b:c.d() end\"]:1: '(' expected near '.'"
+  },
+  {
+    "src": "local f, e = loadstring('return function(a, b,) end') return e",
+    "want": "[string \"return function(a, b,) end\"]:1: <name> or '...' expected near ')'"
+  },
+  {
+    "src": "local f, e = loadstring('return {a = }') return e",
+    "want": "[string \"return {a = }\"]:1: unexpected symbol near '}'"
+  },
+  {
+    "src": "local f, e = loadstring('local a, = 1') return e",
+    "want": "[string \"local a, = 1\"]:1: '<name>' expected near '='"
+  },
+  {
+    "src": "local f, e = loadstring('return 1 2') return e",
+    "want": "[string \"return 1 2\"]:1: '<eof>' expected near '2'"
+  },
+  {
+    "src": "local f, e = loadstring('return a.1') return e",
+    "want": "[string \"return a.1\"]:1: '<eof>' expected near '.1'"
+  },
+  {
+    "src": "local f, e = loadstring('return \"\\\\q\"') return e, f and f()",
+    "want": "nil,q"
+  },
+  {
+    "src": "local f, e = loadstring('return function(,) end') return e",
+    "want": "[string \"return function(,) end\"]:1: <name> or '...' expected near ','"
+  },
+  {
+    "src": "local f, e = loadstring('return function(a b) end') return e",
+    "want": "[string \"return function(a b) end\"]:1: ')' expected near 'b'"
+  },
+  {
+    "src": "local f, e = loadstring('return function(..., a) end') return e",
+    "want": "[string \"return function(..., a) end\"]:1: ')' expected near ','"
+  },
+  {
+    "src": "local f, e = loadstring('return function(1) end') return e",
+    "want": "[string \"return function(1) end\"]:1: <name> or '...' expected near '1'"
+  },
+  {
+    "src": "local f, e = loadstring('return function a() end') return e",
+    "want": "[string \"return function a() end\"]:1: '(' expected near 'a'"
+  },
+  {
+    "src": "local f, e = loadstring('function () end') return e",
+    "want": "[string \"function () end\"]:1: '<name>' expected near '('"
+  },
+  {
+    "src": "local f, e = loadstring('function a.() end') return e",
+    "want": "[string \"function a.() end\"]:1: '<name>' expected near '('"
+  },
+  {
+    "src": "local f, e = loadstring('function a:b:c() end') return e",
+    "want": "[string \"function a:b:c() end\"]:1: '(' expected near ':'"
+  },
+  {
+    "src": "local f, e = loadstring('local function a.b() end') return e",
+    "want": "[string \"local function a.b() end\"]:1: '(' expected near '.'"
+  },
+  {
+    "src": "local f, e = loadstring('local 1 = 2') return e",
+    "want": "[string \"local 1 = 2\"]:1: '<name>' expected near '1'"
+  },
+  {
+    "src": "local f, e = loadstring('local a b') return e",
+    "want": "[string \"local a b\"]:1: '=' expected near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('local a = 1,') return e",
+    "want": "[string \"local a = 1,\"]:1: unexpected symbol near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('for a.b = 1, 2 do end') return e",
+    "want": "[string \"for a.b = 1, 2 do end\"]:1: '=' or 'in' expected near '.'"
+  },
+  {
+    "src": "local f, e = loadstring('for a, b = 1, 2 do end') return e",
+    "want": "[string \"for a, b = 1, 2 do end\"]:1: 'in' expected near '='"
+  },
+  {
+    "src": "local f, e = loadstring('for a in do end') return e",
+    "want": "[string \"for a in do end\"]:1: unexpected symbol near 'do'"
+  },
+  {
+    "src": "local f, e = loadstring('for a = 1, 2, 3, 4 do end') return e",
+    "want": "[string \"for a = 1, 2, 3, 4 do end\"]:1: 'do' expected near ','"
+  },
+  {
+    "src": "local f, e = loadstring('for a = 1, 2 end') return e",
+    "want": "[string \"for a = 1, 2 end\"]:1: 'do' expected near 'end'"
+  },
+  {
+    "src": "local f, e = loadstring('for 1 = 1, 2 do end') return e",
+    "want": "[string \"for 1 = 1, 2 do end\"]:1: '<name>' expected near '1'"
+  },
+  {
+    "src": "local f, e = loadstring('for a do end') return e",
+    "want": "[string \"for a do end\"]:1: '=' or 'in' expected near 'do'"
+  },
+  {
+    "src": "local f, e = loadstring('if then end') return e",
+    "want": "[string \"if then end\"]:1: unexpected symbol near 'then'"
+  },
+  {
+    "src": "local f, e = loadstring('if x end') return e",
+    "want": "[string \"if x end\"]:1: 'then' expected near 'end'"
+  },
+  {
+    "src": "local f, e = loadstring('if x then else else end') return e",
+    "want": "[string \"if x then else else end\"]:1: 'end' expected near 'else'"
+  },
+  {
+    "src": "local f, e = loadstring('if x then elseif end') return e",
+    "want": "[string \"if x then elseif end\"]:1: unexpected symbol near 'end'"
+  },
+  {
+    "src": "local f, e = loadstring('while do end') return e",
+    "want": "[string \"while do end\"]:1: unexpected symbol near 'do'"
+  },
+  {
+    "src": "local f, e = loadstring('while x end') return e",
+    "want": "[string \"while x end\"]:1: 'do' expected near 'end'"
+  },
+  {
+    "src": "local f, e = loadstring('repeat') return e",
+    "want": "[string \"repeat\"]:1: 'until' expected near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('do') return e",
+    "want": "[string \"do\"]:1: 'end' expected near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('end') return e",
+    "want": "[string \"end\"]:1: '<eof>' expected near 'end'"
+  },
+  {
+    "src": "local f, e = loadstring('return end end') return e",
+    "want": "[string \"return end end\"]:1: '<eof>' expected near 'end'"
+  },
+  {
+    "src": "local f, e = loadstring('x()()') return e, f ~= nil",
+    "want": "nil,true"
+  },
+  {
+    "src": "local f, e = loadstring('x') return e",
+    "want": "[string \"x\"]:1: '=' expected near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('x.y') return e",
+    "want": "[string \"x.y\"]:1: '=' expected near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('x[1]') return e",
+    "want": "[string \"x[1]\"]:1: '=' expected near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('1') return e",
+    "want": "[string \"1\"]:1: unexpected symbol near '1'"
+  },
+  {
+    "src": "local f, e = loadstring('\"a\"') return e",
+    "want": "[string \"\"a\"\"]:1: unexpected symbol near '\"a\"'"
+  },
+  {
+    "src": "local f, e = loadstring('x = 1 2') return e",
+    "want": "[string \"x = 1 2\"]:1: unexpected symbol near '2'"
+  },
+  {
+    "src": "local f, e = loadstring('x, y') return e",
+    "want": "[string \"x, y\"]:1: '=' expected near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('x, y = ') return e",
+    "want": "[string \"x, y = \"]:1: unexpected symbol near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('x = y = 1') return e",
+    "want": "[string \"x = y = 1\"]:1: unexpected symbol near '='"
+  },
+  {
+    "src": "local f, e = loadstring('return x[') return e",
+    "want": "[string \"return x[\"]:1: unexpected symbol near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('return x[1') return e",
+    "want": "[string \"return x[1\"]:1: ']' expected near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('return x.') return e",
+    "want": "[string \"return x.\"]:1: '<name>' expected near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('return x:') return e",
+    "want": "[string \"return x:\"]:1: '<name>' expected near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('return x:y') return e",
+    "want": "[string \"return x:y\"]:1: function arguments expected near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('return x:y.z()') return e",
+    "want": "[string \"return x:y.z()\"]:1: function arguments expected near '.'"
+  },
+  {
+    "src": "local f, e = loadstring('return {1 2}') return e",
+    "want": "[string \"return {1 2}\"]:1: '}' expected near '2'"
+  },
+  {
+    "src": "local f, e = loadstring('return {[1] 2}') return e",
+    "want": "[string \"return {[1] 2}\"]:1: '=' expected near '2'"
+  },
+  {
+    "src": "local f, e = loadstring('return {[1] = }') return e",
+    "want": "[string \"return {[1] = }\"]:1: unexpected symbol near '}'"
+  },
+  {
+    "src": "local f, e = loadstring('return {,}') return e",
+    "want": "[string \"return {,}\"]:1: unexpected symbol near ','"
+  },
+  {
+    "src": "local f, e = loadstring('return {1,,2}') return e",
+    "want": "[string \"return {1,,2}\"]:1: unexpected symbol near ','"
+  },
+  {
+    "src": "local f, e = loadstring('return {1;;2}') return e",
+    "want": "[string \"return {1;;2}\"]:1: unexpected symbol near ';'"
+  },
+  {
+    "src": "local f, e = loadstring('return {1;2;}') return e, f and #f()",
+    "want": "nil,2"
+  },
+  {
+    "src": "local f, e = loadstring('return {a.b = 1}') return e",
+    "want": "[string \"return {a.b = 1}\"]:1: '}' expected near '='"
+  },
+  {
+    "src": "local f, e = loadstring('return (') return e",
+    "want": "[string \"return (\"]:1: unexpected symbol near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('return ()') return e",
+    "want": "[string \"return ()\"]:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f, e = loadstring('return (1,2)') return e",
+    "want": "[string \"return (1,2)\"]:1: ')' expected near ','"
+  },
+  {
+    "src": "local f, e = loadstring('return f(1,)') return e",
+    "want": "[string \"return f(1,)\"]:1: unexpected symbol near ')'"
+  },
+  {
+    "src": "local f, e = loadstring('return f(,1)') return e",
+    "want": "[string \"return f(,1)\"]:1: unexpected symbol near ','"
+  },
+  {
+    "src": "local f, e = loadstring('return f{1} {2}') return e, f ~= nil",
+    "want": "nil,true"
+  },
+  {
+    "src": "local f, e = loadstring('return f\"a\"\"b\"') return e, f ~= nil",
+    "want": "nil,true"
+  },
+  {
+    "src": "local f, e = loadstring('return f\\n(1)') return e",
+    "want": "[string \"return f...\"]:2: ambiguous syntax (function call x new statement) near '('"
+  },
+  {
+    "src": "local f, e = loadstring('return 1 + + 2') return e",
+    "want": "[string \"return 1 + + 2\"]:1: unexpected symbol near '+'"
+  },
+  {
+    "src": "local f, e = loadstring('return 1 and') return e",
+    "want": "[string \"return 1 and\"]:1: unexpected symbol near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('return not') return e",
+    "want": "[string \"return not\"]:1: unexpected symbol near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('return - -') return e",
+    "want": "[string \"return - -\"]:1: unexpected symbol near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('return #') return e",
+    "want": "[string \"return #\"]:1: unexpected symbol near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('return 1 .. ') return e",
+    "want": "[string \"return 1 .. \"]:1: unexpected symbol near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('return 1 == == 2') return e",
+    "want": "[string \"return 1 == == 2\"]:1: unexpected symbol near '=='"
+  },
+  {
+    "src": "local f, e = loadstring('return 1 ~ 2') return e",
+    "want": "[string \"return 1 ~ 2\"]:1: '<eof>' expected near '~'"
+  },
+  {
+    "src": "local f, e = loadstring('return 1 != 2') return e",
+    "want": "[string \"return 1 != 2\"]:1: '<eof>' expected near '!'"
+  },
+  {
+    "src": "local f, e = loadstring('return 1 & 2') return e",
+    "want": "[string \"return 1 & 2\"]:1: '<eof>' expected near '&'"
+  },
+  {
+    "src": "local f, e = loadstring('return a ? b : c') return e",
+    "want": "[string \"return a ? b : c\"]:1: '<eof>' expected near '?'"
+  },
+  {
+    "src": "local f, e = loadstring('return @') return e",
+    "want": "[string \"return @\"]:1: unexpected symbol near '@'"
+  },
+  {
+    "src": "local f, e = loadstring('return $') return e",
+    "want": "[string \"return $\"]:1: unexpected symbol near '$'"
+  },
+  {
+    "src": "local f, e = loadstring('return `x`') return e",
+    "want": "[string \"return `x`\"]:1: unexpected symbol near '`'"
+  },
+  {
+    "src": "local f, e = loadstring('return 0x1g') return e",
+    "want": "[string \"return 0x1g\"]:1: malformed number near '0x1g'"
+  },
+  {
+    "src": "local f, e = loadstring('return 1.2.3') return e",
+    "want": "[string \"return 1.2.3\"]:1: malformed number near '1.2.3'"
+  },
+  {
+    "src": "local f, e = loadstring('return 1e1e1') return e",
+    "want": "[string \"return 1e1e1\"]:1: malformed number near '1e1e1'"
+  },
+  {
+    "src": "local f, e = loadstring('return 08') return e, f and f()",
+    "want": "nil,8"
+  },
+  {
+    "src": "local f, e = loadstring('return 1__') return e",
+    "want": "[string \"return 1__\"]:1: malformed number near '1__'"
+  },
+  {
+    "src": "local f, e = loadstring('return \"\\\\9999\"') return e",
+    "want": "[string \"return \"\\9999\"\"]:1: escape sequence too large near '\"'"
+  },
+  {
+    "src": "local f, e = loadstring('return \"a\\nb\"') return e",
+    "want": "[string \"return \"a...\"]:1: unfinished string near '\"a'"
+  },
+  {
+    "src": "local f, e = loadstring('return [[a]] [[b]]') return e",
+    "want": "[string \"return [[a]] [[b]]\"]:1: '<eof>' expected near '[[b]]'"
+  },
+  {
+    "src": "local f, e = loadstring('return [=[a]]') return e",
+    "want": "[string \"return [=[a]]\"]:1: unfinished long string near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('return [==x') return e",
+    "want": "[string \"return [==x\"]:1: invalid long string delimiter near '[=='"
+  },
+  {
+    "src": "local f, e = loadstring('return [=') return e, f and f()",
+    "want": "[string \"return [=\"]:1: invalid long string delimiter near '[=',nil"
+  },
+  {
+    "src": "local f, e = loadstring('--[==[ unfinished') return e",
+    "want": "[string \"--[==[ unfinished\"]:1: unfinished long comment near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('return [[a [[b]] c]]') return e",
+    "want": "[string \"return [[a [[b]] c]]\"]:1: '<eof>' expected near 'c'"
+  },
+  {
+    "src": "local f, e = loadstring('local a <close> = 1') return e",
+    "want": "[string \"local a <close> = 1\"]:1: unexpected symbol near '<'"
+  },
+  {
+    "src": "local f, e = loadstring('::label::') return e",
+    "want": "[string \"::label::\"]:1: unexpected symbol near ':'"
+  },
+  {
+    "src": "local f, e = loadstring('return 1;') return e, f and f()",
+    "want": "nil,1"
+  },
+  {
+    "src": "local f, e = loadstring(';') return e",
+    "want": "[string \";\"]:1: unexpected symbol near ';'"
+  },
+  {
+    "src": "local f, e = loadstring('x = 1;; y = 2') return e",
+    "want": "[string \"x = 1;; y = 2\"]:1: unexpected symbol near ';'"
+  },
+  {
+    "src": "local f, e = loadstring('do end;') return e, f ~= nil",
+    "want": "nil,true"
+  },
+  {
+    "src": "local f, e = loadstring('return; x = 1') return e",
+    "want": "[string \"return; x = 1\"]:1: '<eof>' expected near 'x'"
+  },
+  {
+    "src": "local f, e = loadstring('break; x = 1') return e",
+    "want": "[string \"break; x = 1\"]:1: no loop to break near ';'"
+  },
+  {
+    "src": "local f, e = loadstring('while true do break x = 1 end') return e",
+    "want": "[string \"while true do break x = 1 end\"]:1: 'end' expected near 'x'"
+  },
+  {
+    "src": "local f, e = loadstring('while true do break; end') return e, f ~= nil",
+    "want": "nil,true"
+  },
+  {
+    "src": "local f, e = loadstring('while true do return 1 x = 2 end') return e",
+    "want": "[string \"while true do return 1 x = 2 end\"]:1: 'end' expected near 'x'"
+  },
+  {
+    "src": "local f, e = loadstring('local function f() return end end') return e",
+    "want": "[string \"local function f() return end end\"]:1: '<eof>' expected near 'end'"
+  },
+  {
+    "src": "local f, e = loadstring('return function() end()') return e",
+    "want": "[string \"return function() end()\"]:1: '<eof>' expected near '('"
+  },
+  {
+    "src": "local f, e = loadstring('return (function() end)()') return e, f ~= nil",
+    "want": "nil,true"
+  },
+  {
+    "src": "local f, e = loadstring('return \"x\":upper()') return e",
+    "want": "[string \"return \"x\":upper()\"]:1: '<eof>' expected near ':'"
+  },
+  {
+    "src": "local f, e = loadstring('return (\"x\"):upper()') return e, f ~= nil",
+    "want": "nil,true"
+  },
+  {
+    "src": "local f, e = loadstring('return {}.x') return e",
+    "want": "[string \"return {}.x\"]:1: '<eof>' expected near '.'"
+  },
+  {
+    "src": "local f, e = loadstring('return nil.x') return e",
+    "want": "[string \"return nil.x\"]:1: '<eof>' expected near '.'"
+  },
+  {
+    "src": "local f, e = loadstring('return 1()') return e",
+    "want": "[string \"return 1()\"]:1: '<eof>' expected near '('"
+  },
+  {
+    "src": "local f, e = loadstring('return ...()') return e",
+    "want": "[string \"return ...()\"]:1: '<eof>' expected near '('"
+  },
+  {
+    "src": "local f, e = loadstring('local t = {} t.x, t.y = 1') return e, f ~= nil",
+    "want": "nil,true"
+  },
+  {
+    "src": "local f, e = loadstring('a.b.c, d[e] = 1, 2, 3') return e, f ~= nil",
+    "want": "nil,true"
+  },
+  {
+    "src": "local f, e = loadstring('return a and or b') return e",
+    "want": "[string \"return a and or b\"]:1: unexpected symbol near 'or'"
+  },
+  {
+    "src": "local f, e = loadstring('return 2^') return e",
+    "want": "[string \"return 2^\"]:1: unexpected symbol near '<eof>'"
+  },
+  {
+    "src": "local f, e = loadstring('return 1 < 2 < 3') return e, f ~= nil",
+    "want": "nil,true"
+  },
+  {
+    "src": "local f, e = loadstring('if x then return 1 else return 2 end return 3') return e, f ~= nil",
+    "want": "nil,true"
+  },
+  {
+    "src": "local f, e = loadstring('if x then return 1 return 2 end') return e",
+    "want": "[string \"if x then return 1 return 2 end\"]:1: 'end' expected near 'return'"
   }
 ]
