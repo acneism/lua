@@ -15,6 +15,8 @@ handle coercion, metatables, and errors.
 Lua calls push explicit frames into reusable slices. Varargs precede registers
 in the value stack so expanding argument lists cannot overwrite saved varargs.
 Tail calls close open upvalues and replace the current frame.
+Left-associated binary chains reuse their result register, so temporary stack
+capacity does not grow with the number of operands.
 
 Open upvalues refer to a thread and register index. Closures that capture one
 local share its upvalue. Scope exit copies the value into the upvalue object.
@@ -38,6 +40,11 @@ result destination and suspends dispatch. No goroutine is created. Native,
 metamethod, and generic-iterator boundaries prohibit yielding. The outer Call
 closes unfinished coroutines, including after an abort.
 
+C-call depth follows Lua's luaD_call entries, including protected calls,
+metamethods, and generic iterators. Resumed coroutines inherit the caller's
+depth. Error handlers retain the failing depth and Lua's extra handling reserve.
+Native frame depth is tracked separately for yield boundaries.
+
 Error carries the Lua value, rendered message, innermost Lua line, abort cause,
 and internal-error flag. Protected calls catch Lua errors. Abort causes and
 internal failures propagate through protected calls and coroutines. The call
@@ -46,6 +53,8 @@ boundary converts Go panics into internal failures.
 Instructions carry operand names and source lines. Native argument errors use
 the call-site name. Go frames count toward caller levels. The hook polls after
 the configured number of steps; long source-reader loops poll it too.
+Syntax errors render chunk names with llex.c's 80-byte buffer; runtime errors
+use LUA_IDSIZE, 60 bytes. Both apply Redis's luaO_chunkid rules.
 
 ## Reference infrastructure
 

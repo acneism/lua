@@ -27,3 +27,10 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 ### Removed
 
 - The A0 validation report from docs; reports belong in PRs and the journal.
+
+### Fixed
+
+- C-call depth for metamethods, generic iterators, protected calls, and coroutines.
+- Dynamic field names in runtime errors and token locations in register errors.
+- Temporary-register growth in long left-associated binary expressions.
+- Separate syntax/runtime chunk-name limits and fractional-power NaN signs.

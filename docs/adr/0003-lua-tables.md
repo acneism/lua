@@ -21,8 +21,8 @@ boundaries at 49, 50, 51, 100, and 251 fields. A seeded model checks values,
 complete terminating traversal, and valid length boundaries against a Go map.
 
 On the Azure machine, one million sequential insertions took a median
-287.782 ms versus 122.725 ms in Redis. Filling and traversing 100,000 string
-keys took 73.325 ms versus 60.411 ms. See [benchmarks](../benchmarks.md).
+299.749 ms versus 136.725 ms in Redis. Filling and traversing 100,000 string
+keys took 99.382 ms versus 60.411 ms. See [benchmarks](../benchmarks.md).
 
 ## Consequences
 

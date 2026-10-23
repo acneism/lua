@@ -14,7 +14,7 @@ identity. Metamethod equality is a separate operation.
 
 ## Evidence
 
-The number-value benchmark measured a median 3.748 ns/op and zero allocations.
+The number-value benchmark measured a median 4.391 ns/op and zero allocations.
 The ten-million-iteration Lua loop allocated only its outer return slice.
 The Lua-call allocation test compares ten and one thousand calls after warmup
 and rejects allocation growth. Measurements are in [benchmarks](../benchmarks.md).

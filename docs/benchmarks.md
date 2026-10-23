@@ -14,21 +14,21 @@ the Go execution benchmark.
 
 | Workload | Redis | Go | Ratio | Go allocations per outer call |
 | --- | ---: | ---: | ---: | ---: |
-| Sum loop, 10 million iterations | 84.265 ms | 235.629 ms | 2.80 | 1 |
-| Fibonacci 27 | 22.125 ms | 86.919 ms | 3.93 | 5 |
-| 10,000 ordinary Lua calls | 0.383 ms | 1.046 ms | 2.73 | 3 |
-| Sequential table insertion, 1 million entries | 122.725 ms | 287.782 ms | 2.34 | 23 |
-| Fill and traverse 100,000 string keys | 60.411 ms | 73.325 ms | 1.21 | 400,015 |
+| Sum loop, 10 million iterations | 84.739 ms | 288.347 ms | 3.40 | 1 |
+| Fibonacci 27 | 22.488 ms | 96.041 ms | 4.27 | 5 |
+| 10,000 ordinary Lua calls | 0.396 ms | 1.179 ms | 2.98 | 3 |
+| Sequential table insertion, 1 million entries | 136.725 ms | 299.749 ms | 2.19 | 23 |
+| Fill and traverse 100,000 string keys | 65.942 ms | 99.382 ms | 1.51 | 400,015 |
 
 The loop's 48 bytes belong to its outer result slice, not iterations. Lua
 calls reuse frames and registers. The call-allocation regression compares
 different iteration counts after warmup. Hash workloads allocate strings for
 keys; table resizes allocate capacity in batches.
 
-The number-value microbenchmark measured a median 3.748 ns/op, zero bytes,
+The number-value microbenchmark measured a median 4.391 ns/op, zero bytes,
 and zero allocations. It used three 100 ms runs.
 
-The initial dispatch measured 1,181.210 ms for the sum loop and 175.406 ms for
+The initial dispatch measured 1,181.030 ms for the sum loop and 175.406 ms for
 Fibonacci. Register operands, direct numeric dispatch, instruction references,
 and omission of unnecessary close instructions explain the chosen VM design.
 

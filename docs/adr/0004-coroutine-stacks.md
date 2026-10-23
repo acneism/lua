@@ -12,6 +12,11 @@ Track native-call nesting and protected/metamethod boundaries. Reject yielding
 across those boundaries. Returning from a tail-position yield completes the
 saved return when the coroutine resumes.
 
+Count C reentry at protected calls, metamethod calls, and generic iterators,
+rather than at every native function frame. Resume inherits the parent's count
+and adds one entry. Keep Lua's overflow reserve for error handlers, which retain
+the depth of the failure. Native depth remains separate from this counter.
+
 Close unfinished coroutine stacks at the outer call boundary. Propagate aborts
 and internal errors to the caller, through resume and protected calls.
 

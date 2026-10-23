@@ -17,7 +17,8 @@ varargs, error frames, coroutine boundaries, and parser and call limits.
 
 Three sources have explicit nan-sign rules in testdata/normalization.json for
 platform-dependent NaN generation. It changes no recorded answer, and only
-paired nan/-nan fields can compare equal on arm64; amd64 compares exactly. Modulo results are not normalized.
+paired nan/-nan fields can compare equal on arm64; amd64 compares exactly.
+Finite modulo results are not normalized.
 
 The command uses the specification's wrapper unchanged:
 
