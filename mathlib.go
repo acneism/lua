@@ -33,9 +33,9 @@ func (s *State) openMath() {
 		functions[name] = func(s *State, args []Value) ([]Value, error) {
 			input := s.checkNumber(args, 0)
 			value := operation(input)
-			if math.IsNaN(value) && !math.IsNaN(input) {
+			if name != "log10" && math.IsNaN(value) && !math.IsNaN(input) {
 				sign := -1.0
-				if name == "acos" || name == "asin" || name == "log10" {
+				if name == "acos" || name == "asin" {
 					sign = 1
 				}
 				value = math.Copysign(value, sign)
