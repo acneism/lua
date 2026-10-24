@@ -1,0 +1,6 @@
+[
+  {
+    "src": "local function handle(e) local r={} for n=190,196 do local f,err=loadstring('return '..string.rep('(',n)..'1'..string.rep(')',n)) r[#r+1]=n..':'..(f and 'ok' or err) end return table.concat(r,',') end local ok,e=xpcall(function() return missing_a3_global end,handle) return ok,e",
+    "want": "false,190:ok,191:ok,192:ok,193:ok,194:[string \"return ((((((((((((((((((((((((((((((((((((((((((((((((((((((((...\"]:1: chunk has too many syntax levels,195:[string \"return ((((((((((((((((((((((((((((((((((((((((((((((((((((((((...\"]:1: chunk has too many syntax levels,196:[string \"return ((((((((((((((((((((((((((((((((((((((((((((((((((((((((...\"]:1: chunk has too many syntax levels"
+  }
+]

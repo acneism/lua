@@ -160,7 +160,11 @@ func environment(t *testing.T, s *lua.State) *lua.Table {
 	meta := s.NewTable(0, 1)
 	set(t, meta, "__index", s.Function("", func(s *lua.State, args []lua.Value) ([]lua.Value, error) {
 		message := lua.String("Script attempted to access nonexistent global variable '" + args[1].String() + "'")
-		return s.Call(globals.RawGet(lua.String("error")), message, lua.Number(2))
+		_, err := s.Call(globals.RawGet(lua.String("error")), message, lua.Number(2))
+		if failure, ok := err.(*lua.Error); ok {
+			return nil, &lua.Error{Message: failure.Message, Value: failure.Value, Line: failure.Line, Abort: failure.Abort, Internal: failure.Internal}
+		}
+		return nil, err
 	}))
 	if err := globals.SetMetatable(meta); err != nil {
 		t.Fatal(err)

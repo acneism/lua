@@ -109,11 +109,11 @@ jobs:
           cache: false
       - run: mkdir -p work
       - name: Capture reference evidence
-        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -out work/reference-captured.json testdata/snippets.json testdata/libm.json
+        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -out work/reference-captured.json testdata/snippets.json testdata/libm.json luatest/testdata/environment.json
       - uses: actions/upload-artifact@v7
         with:
           name: reference-captured
           path: work/reference-captured.json
           retention-days: 7
       - name: Verify every recorded answer
-        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -verify testdata/snippets.json testdata/libm.json
+        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -verify testdata/snippets.json testdata/libm.json luatest/testdata/environment.json
