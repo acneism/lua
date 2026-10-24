@@ -39,7 +39,10 @@ when no local in that scope was captured.
 Tables port the array/hash layout, rehash sizing, collision chains, backward
 free-slot search, traversal, and length boundary search from Lua 5.1.5 in Redis.
 String and number hashes follow the source. Object keys use stable state IDs.
-Deleted hash keys remain available to `next`.
+Deleted hash keys remain available to `next`. A proven dense sequence retains
+its exact length across sequential writes. Gaps, interior deletion, positive
+integral hash entries, and bulk writes invalidate this shortcut; sparse tables
+keep Lua's original boundary search.
 
 Constructors use Lua's floating-byte capacities and `SETLIST` batches of 50.
 The final call or vararg expression can expand the last batch.

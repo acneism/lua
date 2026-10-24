@@ -1,6 +1,6 @@
 # 7. Compact values and interpreter execution
 
-Status: implementation in progress for stage P.
+Status: implemented for stage P; final validation is recorded in the pull request.
 
 ## Decision
 
@@ -78,22 +78,46 @@ native functions, varargs, callable objects, and large constants use the
 general paths. The combinations inspect bytecode patterns, never script names
 or benchmark identities.
 
-The latest intermediate run uses Go 1.27.0 on Linux amd64, four CPUs. It takes
-five alternating samples without CPU profiling:
+A focused TableInsert profile attributed 14.81% of sampled CPU to Table.Len
+before the sequence shortcut. Direct array writes alone did not meet the limit.
+
+Table lengths avoid repeated binary search only while the array is known to
+contain exactly a dense non-nil prefix, with no positive integral hash keys.
+A private sequence length starts at zero. Array writes extend or shorten its
+last element; gaps, interior deletion, integral hash entries, and bulk writes
+invalidate it. Invalidated tables retain the original Lua boundary search.
+Resizing preserves the invariant or invalidates it before migration. Empty
+constructor batches leave it intact. This preserves hole behavior and traversal
+order while making repeated append length queries constant-time.
+
+The final production measurement uses Go 1.27.0 on Linux amd64, four CPUs, on
+an AMD EPYC 7763 Azure Standard_B4as_v2. Five alternating samples run without
+CPU profiling or concurrent validation workloads. Every Redis median exceeds
+20 ms; the command rejects shorter measurements. The raw samples are retained
+with the validation evidence.
 
 | Scenario | Redis median ms | Go median ms | Go / Redis |
 | --- | ---: | ---: | ---: |
-| Loop | 78.11 | 75.26 | 0.96 |
-| Fib27 | 22.24 | 31.57 | 1.42 |
-| LuaCalls | 29.42 | 40.80 | 1.39 |
-| TableInsert | 120.12 | 184.68 | 1.54 |
-| TableHash | 62.50 | 69.17 | 1.11 |
-| Sort | 39.92 | 42.90 | 1.07 |
-| GSub | 26.45 | 36.35 | 1.37 |
-| StringConcat | 43.81 | 31.90 | 0.73 |
-| Metamethod | 39.52 | 53.31 | 1.35 |
+| Loop | 78.135 | 80.744 | 1.033 |
+| Fib27 | 21.886 | 31.964 | 1.460 |
+| LuaCalls | 29.458 | 40.133 | 1.362 |
+| TableInsert | 112.407 | 124.712 | 1.109 |
+| TableHash | 62.066 | 69.164 | 1.114 |
+| Sort | 39.930 | 42.250 | 1.058 |
+| GSub | 26.470 | 37.078 | 1.401 |
+| StringConcat | 45.712 | 29.783 | 0.652 |
+| Metamethod | 39.244 | 53.859 | 1.372 |
 
-These figures are intermediate, not acceptance results. TableInsert remains
-above the 1.5 limit. Exact raw samples are retained in the local evidence
-archive; Final race, integration, mutation and ten-minute fuzz runs
-have not been performed for this production version.
+All nine scenarios meet the 1.5 limit. The seven additional dense/sparse length
+regressions were captured from the actual Redis reference. They cover growth,
+trailing and interior deletion, hash capacity, large numeric keys, constructor
+holes, legacy varargs, and a deterministic sequence of random writes. The
+complete corpus has 4185 ordinary and 36 exact libm snippets.
+
+An additional cloud `go test . -run '^$' -bench . -benchtime=1x -benchmem`
+checks the allocation figures. Loop uses 24 B/op and one allocation;
+LuaCalls uses 152 B/op and three allocations for one million Lua calls;
+Metamethod uses 560 B/op and seven allocations. NumberValue uses zero bytes
+and allocations. The loop and call regression tests separately verify that
+these counts do not grow with iteration count. This allocation-only run
+briefly overlapped race checking; its timings are not performance evidence.
