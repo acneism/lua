@@ -1,5 +1,11 @@
 # Benchmarks
 
+These are historical A2 measurements, accepted under the former 6x limit.
+The current requirement is at most 1.5x Redis on every scenario. Stage P will
+measure Redis 7.2.16 with jemalloc on the same VM, using medians of five
+alternating rounds and Redis times of at least 20 ms. Function and metamethod
+workloads use one million repetitions. A3 makes no performance acceptance claim.
+
 ## A2 interpreter and libraries
 
 Machine: Azure Standard_B4as_v2, AMD EPYC 7763, four vCPUs, 16 GiB RAM.
@@ -23,8 +29,8 @@ compilation is excluded from the Go execution benchmark.
 | Convert and concatenate 100,000 numbers | 39.417 ms | 50.799 ms | 1.29 | 200,042 |
 | 10,000 Lua arithmetic metamethod calls | 0.453 ms | 2.089 ms | 4.61 | 7 |
 
-All scenarios satisfy the acceptance limit of six times Redis. Fibonacci and
-metamethod calls exceed the four-times target and remain optimization opportunities.
+All scenarios satisfied the former A2 acceptance limit of six times Redis.
+These results do not satisfy the current stage P requirement.
 
 The loop's 48 bytes are its outer result slice. Neither iterations nor ordinary
 Lua calls allocate after warmup. Lua metamethod calls also reuse result slots:
