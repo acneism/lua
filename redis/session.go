@@ -19,6 +19,13 @@ type session struct {
 	raise  lua.Value
 }
 
+const (
+	luaMaxStack        = 8000
+	luaReplyBaseSlots  = 2
+	luaReplySpareSlots = 4
+	luaReplyStackLimit = luaMaxStack - luaReplyBaseSlots - luaReplySpareSlots + 1
+)
+
 func newSession(engine *Engine) *session {
 	s := &session{engine: engine}
 	s.state = lua.NewState(lua.Options{Math: engine.config.Math, HookEvery: engine.config.HookEvery, Memory: lua.NewBudget(engine.config.MemoryLimit), Hook: func() error {
@@ -354,7 +361,7 @@ func (s *session) command(args []lua.Value, raise, acl bool) ([]lua.Value, error
 }
 
 func (s *session) fromLua(value lua.Value, depth int) Reply {
-	if depth > 128 {
+	if depth >= luaReplyStackLimit {
 		return Error("ERR reached lua stack limit")
 	}
 	switch value.Type() {
@@ -398,14 +405,14 @@ func (s *session) fromLua(value lua.Value, depth int) Reply {
 		if object := table.RawGet(lua.String("map")).Table(); object != nil {
 			result := Map()
 			for key, item, err := object.Next(lua.Nil()); !key.IsNil() && err == nil; key, item, err = object.Next(key) {
-				result.Pairs = append(result.Pairs, Pair{s.fromLua(key, depth+1), s.fromLua(item, depth+1)})
+				result.Pairs = append(result.Pairs, Pair{s.fromLua(key, depth+4), s.fromLua(item, depth+3)})
 			}
 			return result
 		}
 		if object := table.RawGet(lua.String("set")).Table(); object != nil {
 			result := Set()
 			for key, _, err := object.Next(lua.Nil()); !key.IsNil() && err == nil; key, _, err = object.Next(key) {
-				result.Elements = append(result.Elements, s.fromLua(key, depth+1))
+				result.Elements = append(result.Elements, s.fromLua(key, depth+3))
 			}
 			return result
 		}
@@ -424,7 +431,7 @@ func (s *session) fromLua(value lua.Value, depth int) Reply {
 }
 
 func (s *session) toLua(reply Reply, depth int) lua.Value {
-	if depth > 128 {
+	if depth >= luaReplyStackLimit {
 		return lua.Nil()
 	}
 	switch reply.Type {

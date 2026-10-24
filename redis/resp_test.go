@@ -45,7 +45,7 @@ func TestCapturedRESPFrames(t *testing.T) {
 }
 
 func TestMalformedRESP(t *testing.T) {
-	for _, input := range []string{"", "\r\n", "?bad\r\n", "+x\n", ":no\r\n", ",no\r\n", "#yes\r\n", "_x\r\n", "(\r\n", "(-\r\n", "(1-2\r\n", "(a\r\n", "$-2\r\n", "$536870913\r\n", "$x\r\n", "$3\r\nhi", "$1\r\nx!!", "=-1\r\n", "=2\r\nab\r\n", "=4\r\nabcx\r\n", "*1048577\r\n", "*-2\r\n", "%-1\r\n", "*1\r\n", "%1\r\n+a\r\n", strings.Repeat("*1\r\n", 130) + "+end\r\n", "+" + strings.Repeat("x", 1<<20) + "\r\n"} {
+	for _, input := range []string{"", "\r\n", "?bad\r\n", "+x\n", ":no\r\n", ",no\r\n", "#yes\r\n", "_x\r\n", "(\r\n", "(-\r\n", "(1-2\r\n", "(a\r\n", "$-2\r\n", "$536870913\r\n", "$x\r\n", "$3\r\nhi", "$1\r\nx!!", "=-1\r\n", "=2\r\nab\r\n", "=4\r\nabcx\r\n", "*1048577\r\n", "*-2\r\n", "%-1\r\n", "*1\r\n", "%1\r\n+a\r\n", strings.Repeat("*1\r\n", 10002) + "+end\r\n", "+" + strings.Repeat("x", 1<<20) + "\r\n"} {
 		if _, _, err := redis.ParseRESP([]byte(input)); err == nil {
 			t.Fatalf("malformed frame accepted: %.100q", input)
 		}

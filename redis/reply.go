@@ -8,6 +8,8 @@ import (
 
 type ReplyType uint8
 
+const maxRESPDepth = 10000
+
 const (
 	BulkReply ReplyType = iota
 	StatusReply
@@ -93,7 +95,7 @@ func (r Reply) AppendRESP(dst []byte, proto int) []byte {
 }
 
 func (r Reply) appendRESP(dst []byte, proto, depth int) []byte {
-	if depth > 128 {
+	if depth > maxRESPDepth {
 		return appendLine(dst, '-', "ERR reply nesting exceeds limit")
 	}
 	switch r.Type {

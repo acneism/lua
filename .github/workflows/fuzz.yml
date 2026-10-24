@@ -23,7 +23,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [FuzzCompile, FuzzRun, FuzzPattern, FuzzFormat]
+        include:
+          - target: FuzzCompile
+            pkg: .
+          - target: FuzzRun
+            pkg: .
+          - target: FuzzPattern
+            pkg: .
+          - target: FuzzFormat
+            pkg: .
+          - target: FuzzRESP
+            pkg: ./redis
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-go@v7.0.0
@@ -33,4 +43,4 @@ jobs:
       - name: Fuzz
         env:
           FUZZ_TIME: ${{ github.event_name == 'schedule' && '10m' || '30s' }}
-        run: go test . -run '^$' -fuzz '^${{ matrix.target }}$' -fuzztime="$FUZZ_TIME" -parallel=2
+        run: go test ${{ matrix.pkg }} -run '^$' -fuzz '^${{ matrix.target }}$' -fuzztime="$FUZZ_TIME" -parallel=2
