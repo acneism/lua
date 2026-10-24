@@ -204,7 +204,7 @@ func (s *State) execute(stop int) (result []Value) {
 					t.stack[a] = Number(x * y)
 					continue
 				case "/":
-					t.stack[a] = Number(x / y)
+					t.stack[a] = Number(luaDivide(x, y))
 					continue
 				case "%":
 					t.stack[a] = Number(luaModulo(x, y))
@@ -479,7 +479,7 @@ func (s *State) binary(operator string, left, right Value, leftName, rightName n
 			case "*":
 				return Number(a * b)
 			case "/":
-				return Number(a / b)
+				return Number(luaDivide(a, b))
 			case "%":
 				return Number(luaModulo(a, b))
 			case "^":
@@ -519,6 +519,14 @@ func (s *State) binary(operator string, left, right Value, leftName, rightName n
 func luaModulo(left, right float64) float64 {
 	product := float64(math.Floor(left/right) * right)
 	return left - product
+}
+
+func luaDivide(left, right float64) float64 {
+	value := left / right
+	if math.IsNaN(value) && !math.IsNaN(left) && !math.IsNaN(right) {
+		return math.Copysign(value, -1)
+	}
+	return value
 }
 
 func luaPower(left, right float64) float64 {

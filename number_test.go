@@ -24,6 +24,15 @@ func TestLuaModuloRounding(t *testing.T) {
 	checkReference(t, "return 1e100 % 3.5", Options{})
 }
 
+func TestDivisionNaNSign(t *testing.T) {
+	for _, source := range []string{
+		"return string.format('[%f][%5.1f][%-8f][%+f][%08f][%08f][%e][%G]', 1/0, 0/0, -1/0, 1/0, 1/0, -(0/0), -1/0, 0/0)",
+		"return tostring(math.fmod(1, 0)), tostring(math.fmod(0, 0)), tostring(math.fmod(1/0, 1)), tostring(math.fmod(0/0, 1))",
+	} {
+		checkReference(t, source, Options{})
+	}
+}
+
 func TestNaNNormalizationIsNarrow(t *testing.T) {
 	for _, test := range []struct {
 		got, want string
