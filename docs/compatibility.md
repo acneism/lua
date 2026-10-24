@@ -1,5 +1,18 @@
 # Compatibility
 
+## Redis engine implementation status
+
+B1 is under development. EVAL-only cache entries use an LRU of 500 by default;
+SCRIPT LOAD entries remain pinned until SCRIPT FLUSH. Redis 7.2 does not evict
+EVAL entries; this bounded cache is the specified intentional difference.
+KillWriters permits hosts with rollback support to interrupt writers, while the
+default retains Redis's refusal. Memory-limited runs use fresh states because
+Budget accounting cannot be reset through the current interpreter API.
+Extension-library names are present but their implementations belong to C.
+The reference-crashing error-table case and direct error-handler frame metadata
+are pending agreement in the journal. Reply conversion currently bounds nesting
+at 128; deep-reply compatibility still needs reference validation.
+
 The target is Redis 7.2.16 and its Lua 5.1 variant. A2 implements the interpreter
 and base, coroutine, string, table, and math libraries. EVAL, FUNCTION, host commands,
 and C extensions are not implemented yet.

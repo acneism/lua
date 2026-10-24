@@ -81,6 +81,19 @@ on the reference VM and preserve every previous source and answer.
 
 ## Pull requests
 
+Engine fixtures preserve raw RESP bytes as JSON base64 byte fields. Capture
+them with `go run ./internal/cmd/redis-capture -addr 127.0.0.1:6393 -out
+work/engine.json work/inputs.json`. Verify committed engine and protocol
+fixtures with `-verify redis/testdata/engine.json redis/testdata/protocol.json`.
+Use a dedicated reference Redis: the command clears its selected database.
+Command traces are captured within transactions so blocking commands retain
+their nonblocking script behavior.
+
+Differential tests require REDIS_REF_ADDR. LUA_DIFF_SEED selects a seed and
+LUA_DIFF_STEPS selects the number of scenarios. With no seed override they run
+five fixed seeds; CI uses 2,000 steps and acceptance uses 50,000. Run long
+comparisons and fuzzing on the reference VM.
+
 Branch from current `main`, update README, docs, and the Unreleased changelog,
 and include test results and mutation evidence in the PR report. The reviewer
 merges PRs. Do not merge your own work.

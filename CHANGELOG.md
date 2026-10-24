@@ -11,6 +11,10 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 - State.CallWithHandler with an error handler before stack unwinding.
 - Explicit Lua weak-table collection and State.Retain for external host roots.
 - Full weak-table collection with a true result for every collectgarbage("step").
+- Redis Engine, Host, Reply, script cache, sandbox, EVAL/EVALSHA, and SCRIPT methods.
+- RESP wire parsing and rendering, actual-wire capture, and offline command traces.
+- Engine lifecycle, concurrent execution, abort, memory, and kill-policy tests.
+- Script and Lua differential tests with Redis snapshots.
 - Go module, Apache-2.0 license, upstream notices, and repository scaffold.
 - A standard-library tool to capture and verify Redis 7.2.16 reference answers.
 - An immutable register program, lexer, parser, compiler, and Lua VM.

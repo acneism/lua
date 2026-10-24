@@ -21,7 +21,9 @@ trigonometric functions through `Options.Math`. Without it, Go math provides
 them; acos uses asin near the endpoints. The 36 exact trigonometric probes in
 `testdata/libm.json` are reserved for the separate lua-libm module.
 
-The Redis engine, host interface, EVAL, and FUNCTION API belong to later stages.
+The redis package is implementing B1: host callbacks, RESP replies, the EVAL
+sandbox, EVAL/EVALSHA, and SCRIPT methods. Its acceptance checks are in
+progress. FUNCTION and the Redis extension libraries belong to later stages.
 
 `State.Frame` exposes Lua, native, and lost tail-call levels. `CallWithHandler`
 runs an error handler at the original failure point before unwinding; xpcall

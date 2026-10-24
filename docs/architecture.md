@@ -1,5 +1,15 @@
 # Architecture
 
+## Redis engine
+
+The redis package owns the scripting environment and Host boundary. Engine
+serializes cache changes and lends exclusive Lua states to concurrent runs.
+Pinned SCRIPT LOAD entries and evictable EVAL entries have separate lifetimes.
+Running metadata is copied under the engine mutex; kill flags are atomic.
+Uncatchable host aborts retain their original Reply. The environment uses the
+existing interpreter API and read-only library tables. See
+[decision 8](adr/0008-redis-engine.md).
+
 ## Interpreter
 
 The lexer and parser build a temporary syntax tree. The compiler resolves locals

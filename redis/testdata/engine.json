@@ -1,0 +1,1570 @@
+[
+  {
+    "name": "nil",
+    "src": "return nil",
+    "want": "JC0xDQo="
+  },
+  {
+    "name": "true",
+    "src": "return true",
+    "want": "OjENCg=="
+  },
+  {
+    "name": "false",
+    "src": "return false",
+    "want": "JC0xDQo="
+  },
+  {
+    "name": "fraction",
+    "src": "return 3.99",
+    "want": "OjMNCg=="
+  },
+  {
+    "name": "negative fraction",
+    "src": "return -3.99",
+    "want": "Oi0zDQo="
+  },
+  {
+    "name": "infinity",
+    "src": "return 1/0",
+    "want": "Oi05MjIzMzcyMDM2ODU0Nzc1ODA4DQo="
+  },
+  {
+    "name": "nan",
+    "src": "return 0/0",
+    "want": "Oi05MjIzMzcyMDM2ODU0Nzc1ODA4DQo="
+  },
+  {
+    "name": "large integer",
+    "src": "return 2^53",
+    "want": "OjkwMDcxOTkyNTQ3NDA5OTINCg=="
+  },
+  {
+    "name": "too large",
+    "src": "return 1e100",
+    "want": "Oi05MjIzMzcyMDM2ODU0Nzc1ODA4DQo="
+  },
+  {
+    "name": "empty table",
+    "src": "return {}",
+    "want": "KjANCg=="
+  },
+  {
+    "name": "hash table",
+    "src": "return {a=1}",
+    "want": "KjANCg=="
+  },
+  {
+    "name": "array holes",
+    "src": "return {1,2,nil,4}",
+    "want": "KjINCjoxDQo6Mg0K"
+  },
+  {
+    "name": "nested array",
+    "src": "return {1,{2,\"a\",{true,false}},3.5}",
+    "want": "KjMNCjoxDQoqMw0KOjINCiQxDQphDQoqMg0KOjENCiQtMQ0KOjMNCg=="
+  },
+  {
+    "name": "binary",
+    "src": "return \"a\\0b\\255\"",
+    "want": "JDQNCmEAYv8NCg=="
+  },
+  {
+    "name": "multiple results",
+    "src": "return 1,2,3",
+    "want": "OjENCg=="
+  },
+  {
+    "name": "status",
+    "src": "return {ok=\"FINE\"}",
+    "want": "K0ZJTkUNCg=="
+  },
+  {
+    "name": "error",
+    "src": "return {err=\"BAD\"}",
+    "want": "LUJBRA0K"
+  },
+  {
+    "name": "nonstring status",
+    "src": "return {ok=3,1,2}",
+    "want": "KjINCjoxDQo6Mg0K"
+  },
+  {
+    "name": "nonstring error",
+    "src": "return {err=true,1,2}",
+    "want": "KjINCjoxDQo6Mg0K"
+  },
+  {
+    "name": "status newline",
+    "src": "return {ok=\"a\\r\\nb\\0c\"}",
+    "want": "K2EgIGINCg=="
+  },
+  {
+    "name": "error newline",
+    "src": "return {err=\"a\\r\\nb\\0c\"}",
+    "want": "LWEgIGINCg=="
+  },
+  {
+    "name": "arithmetic nil",
+    "src": "return 1+nil",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBhdHRlbXB0IHRvIHBlcmZvcm0gYXJpdGhtZXRpYyBvbiBhIG5pbCB2YWx1ZSBzY3JpcHQ6IDQ0M2M2MjU3MzU4NGY3MTgyNDA1OGY3Y2QyNzczOTczNDcyYzczNWIsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "error string",
+    "src": "error('boom')",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBib29tIHNjcmlwdDogODI5MDNhMDQzNGYxNTAzZTE1MmY4OWMwM2M5YWNkODgxYTBlODE1MCwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "error table",
+    "src": "error({err='MY err'})",
+    "want": "LU1ZIGVyciBzY3JpcHQ6IDY0OGM2NGEwZjc2ZDcwMzY0ZDhkNjgwYjQ4YjFjMmYyODJlYjg2MDAsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "error numeric",
+    "src": "error(42)",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiA0MiBzY3JpcHQ6IGFjYzcxNDJhNTNkODQwODQ2NDQ5YTBhOGM2MDU1ZjVhNjc0ODA5ZmQsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "error empty",
+    "src": "error()",
+    "want": "LUVSUiBuaWwgc2NyaXB0OiBhY2E5MGQ5MTQ1MTlmZGI5ODI1MzUyYmRjMGJlZmI1OWY3Yzg1MTBmLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "error nolevel",
+    "src": "error('nolevel',0)",
+    "want": "LUVSUiBub2xldmVsIHNjcmlwdDogNmVhOTY0YzRmOTkxYWNkYTY3NzAyY2Q1NmFiZDM3MjE1NWQ1Y2ZjNCwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "error boolean",
+    "src": "error(true)",
+    "want": "LUVSUiB0cnVlIHNjcmlwdDogNGZhZmUyMTQ5ZjY4YTE2MThhM2VlZjQwYWVlZjU1ZjVhZjY5NTFkYSwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "error reraised",
+    "src": "local ok,e=pcall(function() error('inner') end)\nerror(e,0)",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBpbm5lciBzY3JpcHQ6IDczODBiNTkzMjhlMmM4ZTNlODY1OWE1MTgwZmNkMGRlMDRiY2Y5NmMsIG9uIEB1c2VyX3NjcmlwdDoyLg0K"
+  },
+  {
+    "name": "error position",
+    "src": "local n=0\nn=n+1\nerror(\"third\")",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDozOiB0aGlyZCBzY3JpcHQ6IGI4YjJhMjYxYWNlOTM1ZDUxOTY1ZTE2NjQ0MzQ4N2ZlNmYxNzAzOTgsIG9uIEB1c2VyX3NjcmlwdDozLg0K"
+  },
+  {
+    "name": "syntax",
+    "src": "return +",
+    "want": "LUVSUiBFcnJvciBjb21waWxpbmcgc2NyaXB0IChuZXcgZnVuY3Rpb24pOiB1c2VyX3NjcmlwdDoxOiB1bmV4cGVjdGVkIHN5bWJvbCBuZWFyICcrJw0K"
+  },
+  {
+    "name": "unknown global",
+    "src": "return undefined_name",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBTY3JpcHQgYXR0ZW1wdGVkIHRvIGFjY2VzcyBub25leGlzdGVudCBnbG9iYWwgdmFyaWFibGUgJ3VuZGVmaW5lZF9uYW1lJyBzY3JpcHQ6IDFkZWQwM2E3YzEyY2VhMmNhY2ZjZjQ4YWRjMTczZTAzODMxN2MzOGYsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "unknown nested",
+    "src": "local n=1\n\nreturn os",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDozOiBTY3JpcHQgYXR0ZW1wdGVkIHRvIGFjY2VzcyBub25leGlzdGVudCBnbG9iYWwgdmFyaWFibGUgJ29zJyBzY3JpcHQ6IGQ0MTliOTAyOGFlZTJhYzJlMGVmMjdjODk0YTkzNDBmMjA4Y2I5NmIsIG9uIEB1c2VyX3NjcmlwdDozLg0K"
+  },
+  {
+    "name": "write global",
+    "src": "x=1",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBBdHRlbXB0IHRvIG1vZGlmeSBhIHJlYWRvbmx5IHRhYmxlIHNjcmlwdDogN2NhZjYwNTY5MTM1MDRmMDUwOGM2NWZhZjJkYzNmOTRmZjY1YmNmZCwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "write library",
+    "src": "string.foo=1",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBBdHRlbXB0IHRvIG1vZGlmeSBhIHJlYWRvbmx5IHRhYmxlIHNjcmlwdDogNDMwZTU4ZjgyZDEwZmI5YzIwYzE2NzAxMmMzOTY1MDcwNTg1NjA3MCwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "write redis",
+    "src": "redis.call=nil",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBBdHRlbXB0IHRvIG1vZGlmeSBhIHJlYWRvbmx5IHRhYmxlIHNjcmlwdDogNmMyMzQ2NTZlMTA5MjJjYTA2ZDM3MTIxZGE4ZGU1NTlhNjdhODM4Nywgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "write string meta",
+    "src": "getmetatable(\"\").__index=nil",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBBdHRlbXB0IHRvIG1vZGlmeSBhIHJlYWRvbmx5IHRhYmxlIHNjcmlwdDogMWZkMzAwYWQ0MjZiZjQwODUzNjk5YjVmZTg0ZmUxZTZkYWUyN2Q4Yywgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "rawset globals",
+    "src": "rawset(_G,\"x\",1)",
+    "want": "LUVSUiBBdHRlbXB0IHRvIG1vZGlmeSBhIHJlYWRvbmx5IHRhYmxlIHNjcmlwdDogNTE3MDM3Y2YyNzVlN2U3MmI1ODc5MTc0MjE3YzZlYzNkNTZmYjEwNywgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "metatable globals",
+    "src": "setmetatable(_G,nil)",
+    "want": "LUVSUiBBdHRlbXB0IHRvIG1vZGlmeSBhIHJlYWRvbmx5IHRhYmxlIHNjcmlwdDogMzYzY2Q3NTZkYzIwZjU4YTlmNGExZDkyZjQ1ZWM3YTVmMTRmYmFlZCwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "setresp wrong",
+    "src": "redis.setresp(4)",
+    "want": "LUVSUiBSRVNQIHZlcnNpb24gbXVzdCBiZSAyIG9yIDMuIHNjcmlwdDogNjhlNzJlNGQ4YTQyOGI5ZjU5OWRjZTQ5MjMxNWYyNDU1YTQyNWE4Miwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "setresp missing",
+    "src": "redis.setresp()",
+    "want": "LUVSUiByZWRpcy5zZXRyZXNwKCkgcmVxdWlyZXMgb25lIGFyZ3VtZW50LiBzY3JpcHQ6IDQyYWFjYWY1ODA3NTllNTljOTdlOGIxOTc0ZDA4YTYyZjk2MDAxNGYsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "setresp type",
+    "src": "redis.setresp({})",
+    "want": "LUVSUiBSRVNQIHZlcnNpb24gbXVzdCBiZSAyIG9yIDMuIHNjcmlwdDogNmNkZWYyODQ0YjFkMGY5YjM1YmRjYzA0NTgwMmYzYTFmNGI4MjUxYiwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "setresp numeric string",
+    "src": "redis.setresp(\"2\") return true",
+    "want": "OjENCg=="
+  },
+  {
+    "name": "setresp fractional",
+    "src": "redis.setresp(2.9) return true",
+    "want": "OjENCg=="
+  },
+  {
+    "name": "setrepl wrong",
+    "src": "redis.set_repl(99)",
+    "want": "LUVSUiBJbnZhbGlkIHJlcGxpY2F0aW9uIGZsYWdzLiBVc2UgUkVQTF9BT0YsIFJFUExfUkVQTElDQSwgUkVQTF9BTEwgb3IgUkVQTF9OT05FLiBzY3JpcHQ6IGQ3NzFjZTU5NDVkODk2NmJhN2IyNTI3ZTI5NzA3MGVmNDM5ZmIwYjgsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "setrepl missing",
+    "src": "redis.set_repl()",
+    "want": "LUVSUiByZWRpcy5zZXRfcmVwbCgpIHJlcXVpcmVzIG9uZSBhcmd1bWVudC4gc2NyaXB0OiBlMzliNDdmZDhlMGQ1ZGMxYzcxNTViYmFmY2VmYWY0OGNmMTYzZjgyLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "setrepl type",
+    "src": "redis.set_repl({}) return 1",
+    "want": "OjENCg=="
+  },
+  {
+    "name": "logging missing",
+    "src": "redis.log()",
+    "want": "LUVSUiByZWRpcy5sb2coKSByZXF1aXJlcyB0d28gYXJndW1lbnRzIG9yIG1vcmUuIHNjcmlwdDogODMyYjQ0ZWFmZjg3NDM0MTNkN2EzNzFkZjFjMDM4ODcxMjc4NTE1YSwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "logging type",
+    "src": "redis.log({},\"x\")",
+    "want": "LUVSUiBGaXJzdCBhcmd1bWVudCBtdXN0IGJlIGEgbnVtYmVyIChsb2cgbGV2ZWwpLiBzY3JpcHQ6IDgyYTY4ZGQ2ZGZlY2JlZjY0YWE4Y2ZhNWRlNjUzOWFhZTdjZjhlOTcsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "logging invalid",
+    "src": "redis.log(99,\"x\")",
+    "want": "LUVSUiBJbnZhbGlkIGRlYnVnIGxldmVsLiBzY3JpcHQ6IDViZDU5NmYxOWE2NzAyODg4ZWI4Mzc4N2I3YWQ5MDZiMGM1OWJhYjIsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "logging fraction",
+    "src": "redis.log(-0.1,\"x\") return 1",
+    "want": "OjENCg=="
+  },
+  {
+    "name": "logging mixed",
+    "src": "redis.log(redis.LOG_WARNING,{},\"x\",7,false,\"z\") return 1",
+    "want": "OjENCg=="
+  },
+  {
+    "name": "replicate",
+    "src": "return redis.replicate_commands()",
+    "want": "OjENCg=="
+  },
+  {
+    "name": "debug",
+    "src": "return redis.debug(1)",
+    "want": "JC0xDQo="
+  },
+  {
+    "name": "breakpoint",
+    "src": "return redis.breakpoint()",
+    "want": "JC0xDQo="
+  },
+  {
+    "name": "sha1 empty",
+    "src": "return redis.sha1hex(\"\")",
+    "want": "JDQwDQpkYTM5YTNlZTVlNmI0YjBkMzI1NWJmZWY5NTYwMTg5MGFmZDgwNzA5DQo="
+  },
+  {
+    "name": "sha1 number",
+    "src": "return redis.sha1hex(1/3)",
+    "want": "JDQwDQo4NDkxMGRjM2RjN2UwZDcyNTJjNzJlMTgxNzRhMWJlZTZkMjA3N2I4DQo="
+  },
+  {
+    "name": "sha1 table",
+    "src": "return redis.sha1hex({})",
+    "want": "JDQwDQpkYTM5YTNlZTVlNmI0YjBkMzI1NWJmZWY5NTYwMTg5MGFmZDgwNzA5DQo="
+  },
+  {
+    "name": "sha1 nil",
+    "src": "return redis.sha1hex(nil)",
+    "want": "JDQwDQpkYTM5YTNlZTVlNmI0YjBkMzI1NWJmZWY5NTYwMTg5MGFmZDgwNzA5DQo="
+  },
+  {
+    "name": "sha1 missing",
+    "src": "return redis.sha1hex()",
+    "want": "LUVSUiB3cm9uZyBudW1iZXIgb2YgYXJndW1lbnRzIHNjcmlwdDogM2M3Y2U5NDdhZTc0YTgzNWNjNTc1YjZlZTg3ZmIyNzUwM2NiN2JhNCwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "error reply noargs",
+    "src": "return redis.error_reply()",
+    "want": "LUVSUiB3cm9uZyBudW1iZXIgb3IgdHlwZSBvZiBhcmd1bWVudHMNCg=="
+  },
+  {
+    "name": "error reply type",
+    "src": "return redis.error_reply(3)",
+    "want": "LUVSUiB3cm9uZyBudW1iZXIgb3IgdHlwZSBvZiBhcmd1bWVudHMNCg=="
+  },
+  {
+    "name": "error reply one",
+    "src": "return redis.error_reply(\"BAD\")",
+    "want": "LUVSUiBCQUQNCg=="
+  },
+  {
+    "name": "error reply text",
+    "src": "return redis.error_reply(\"bad thing\")",
+    "want": "LWJhZCB0aGluZw0K"
+  },
+  {
+    "name": "error reply code",
+    "src": "return redis.error_reply(\"MY bad\")",
+    "want": "LU1ZIGJhZA0K"
+  },
+  {
+    "name": "status reply type",
+    "src": "return redis.status_reply(3)",
+    "want": "LUVSUiB3cm9uZyBudW1iZXIgb3IgdHlwZSBvZiBhcmd1bWVudHMNCg=="
+  },
+  {
+    "name": "status reply missing",
+    "src": "return redis.status_reply()",
+    "want": "LUVSUiB3cm9uZyBudW1iZXIgb3IgdHlwZSBvZiBhcmd1bWVudHMNCg=="
+  },
+  {
+    "name": "status reply text",
+    "src": "return redis.status_reply(\"FINE\")",
+    "want": "K0ZJTkUNCg=="
+  },
+  {
+    "name": "shebang",
+    "src": "#!lua\nreturn 1",
+    "want": "OjENCg=="
+  },
+  {
+    "name": "shebang no newline",
+    "src": "#!lua",
+    "want": "LUVSUiBJbnZhbGlkIHNjcmlwdCBzaGViYW5nDQo="
+  },
+  {
+    "name": "shebang wrong engine",
+    "src": "#!python\nreturn 1",
+    "want": "LUVSUiBVbmV4cGVjdGVkIGVuZ2luZSBpbiBzY3JpcHQgc2hlYmFuZzogIyFweXRob24NCg=="
+  },
+  {
+    "name": "shebang unknown option",
+    "src": "#!lua name=x\nreturn 1",
+    "want": "LUVSUiBVbmtub3duIGx1YSBzaGViYW5nIG9wdGlvbjogbmFtZT14DQo="
+  },
+  {
+    "name": "shebang bad flag",
+    "src": "#!lua flags=bogus\nreturn 1",
+    "want": "LUVSUiBVbmV4cGVjdGVkIGZsYWcgaW4gc2NyaXB0IHNoZWJhbmc6IGJvZ3VzDQo="
+  },
+  {
+    "name": "shebang empty flags",
+    "src": "#!lua flags=\nreturn 1",
+    "want": "OjENCg=="
+  },
+  {
+    "name": "shebang duplicate flags",
+    "src": "#!lua flags=no-writes flags=allow-oom\nreturn 1",
+    "want": "OjENCg=="
+  },
+  {
+    "name": "shebang quote",
+    "src": "#!lua flags=\"no-writes\"\nreturn 1",
+    "want": "OjENCg=="
+  },
+  {
+    "name": "shebang badquote",
+    "src": "#!lua flags=\"no-writes\nreturn 1",
+    "want": "LUVSUiBJbnZhbGlkIGVuZ2luZSBpbiBzY3JpcHQgc2hlYmFuZw0K"
+  },
+  {
+    "name": "shebang position",
+    "src": "#!lua flags=no-writes\nerror(\"second\")",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoyOiBzZWNvbmQgc2NyaXB0OiA1YzYwMDM1YjBjMDdmMDFmYWY2YmFlMzhkOWYxMDliZGJmM2NlNzU1LCBvbiBAdXNlcl9zY3JpcHQ6Mi4NCg=="
+  },
+  {
+    "name": "shebang nilsyntax",
+    "src": "#!lua\nreturn +",
+    "want": "LUVSUiBFcnJvciBjb21waWxpbmcgc2NyaXB0IChuZXcgZnVuY3Rpb24pOiB1c2VyX3NjcmlwdDoyOiB1bmV4cGVjdGVkIHN5bWJvbCBuZWFyICcrJw0K"
+  },
+  {
+    "name": "call empty",
+    "src": "return redis.call()",
+    "want": "LUVSUiBQbGVhc2Ugc3BlY2lmeSBhdCBsZWFzdCBvbmUgYXJndW1lbnQgZm9yIHRoaXMgcmVkaXMgbGliIGNhbGwgc2NyaXB0OiAwYTkwN2UxNDI5MjIxYTRkODU1MTZjYWI3ZmQyMTlhODJhOTQzOWQ4LCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "pcall empty",
+    "src": "return redis.pcall()",
+    "want": "LUVSUiBQbGVhc2Ugc3BlY2lmeSBhdCBsZWFzdCBvbmUgYXJndW1lbnQgZm9yIHRoaXMgcmVkaXMgbGliIGNhbGwNCg=="
+  },
+  {
+    "name": "call type",
+    "src": "return redis.call(\"GET\",true)",
+    "want": "LUVSUiBMdWEgcmVkaXMgbGliIGNvbW1hbmQgYXJndW1lbnRzIG11c3QgYmUgc3RyaW5ncyBvciBpbnRlZ2VycyBzY3JpcHQ6IDhkMTgxZDIzMjZlZWZhMzk0NDJlMmUyZDAzZDU4NmIxOTkwZDZkYjUsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "call nil",
+    "src": "return redis.call(\"GET\",nil)",
+    "want": "LUVSUiBMdWEgcmVkaXMgbGliIGNvbW1hbmQgYXJndW1lbnRzIG11c3QgYmUgc3RyaW5ncyBvciBpbnRlZ2VycyBzY3JpcHQ6IDA0YzdmOGMyOTM5MTkxZTdkOGMxNTAxZjBlOTNhOGVmYTNmZWQ0ZGUsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "pcall type",
+    "src": "return redis.pcall(\"GET\",{})",
+    "want": "LUVSUiBMdWEgcmVkaXMgbGliIGNvbW1hbmQgYXJndW1lbnRzIG11c3QgYmUgc3RyaW5ncyBvciBpbnRlZ2Vycw0K"
+  },
+  {
+    "name": "acl noargs",
+    "src": "return redis.acl_check_cmd()",
+    "want": "LUVSUiBQbGVhc2Ugc3BlY2lmeSBhdCBsZWFzdCBvbmUgYXJndW1lbnQgZm9yIHRoaXMgcmVkaXMgbGliIGNhbGwgc2NyaXB0OiAxMTI0ZjMzYWQ2NmU3ODY2YjRlMGMxNDk5YTRjMjBmYjVlYjljMTgwLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "acl type",
+    "src": "return redis.acl_check_cmd({})",
+    "want": "LUVSUiBMdWEgcmVkaXMgbGliIGNvbW1hbmQgYXJndW1lbnRzIG11c3QgYmUgc3RyaW5ncyBvciBpbnRlZ2VycyBzY3JpcHQ6IDhiM2QyMzNjYzIzM2QxNTUzOGI3NDNlZGQzYmM0NjAzNTA5ZTQzMjUsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "env names",
+    "src": "local t={} for k,v in pairs(_G) do t[#t+1]=k..\":\"..type(v) end table.sort(t) return t",
+    "want": "KjM1DQokMTANCkFSR1Y6dGFibGUNCiQxMA0KS0VZUzp0YWJsZQ0KJDgNCl9HOnRhYmxlDQokMTUNCl9WRVJTSU9OOnN0cmluZw0KJDMwDQpfX3JlZGlzX19lcnJfX2hhbmRsZXI6ZnVuY3Rpb24NCiQxNQ0KYXNzZXJ0OmZ1bmN0aW9uDQokOQ0KYml0OnRhYmxlDQokMTENCmNqc29uOnRhYmxlDQokMTQNCmNtc2dwYWNrOnRhYmxlDQokMjMNCmNvbGxlY3RnYXJiYWdlOmZ1bmN0aW9uDQokMTUNCmNvcm91dGluZTp0YWJsZQ0KJDE0DQplcnJvcjpmdW5jdGlvbg0KJDE1DQpnY2luZm86ZnVuY3Rpb24NCiQyMQ0KZ2V0bWV0YXRhYmxlOmZ1bmN0aW9uDQokMTUNCmlwYWlyczpmdW5jdGlvbg0KJDEzDQpsb2FkOmZ1bmN0aW9uDQokMTkNCmxvYWRzdHJpbmc6ZnVuY3Rpb24NCiQxMA0KbWF0aDp0YWJsZQ0KJDEzDQpuZXh0OmZ1bmN0aW9uDQokMTQNCnBhaXJzOmZ1bmN0aW9uDQokMTQNCnBjYWxsOmZ1bmN0aW9uDQokMTcNCnJhd2VxdWFsOmZ1bmN0aW9uDQokMTUNCnJhd2dldDpmdW5jdGlvbg0KJDE1DQpyYXdzZXQ6ZnVuY3Rpb24NCiQxMQ0KcmVkaXM6dGFibGUNCiQxNQ0Kc2VsZWN0OmZ1bmN0aW9uDQokMjENCnNldG1ldGF0YWJsZTpmdW5jdGlvbg0KJDEyDQpzdHJpbmc6dGFibGUNCiQxMg0Kc3RydWN0OnRhYmxlDQokMTENCnRhYmxlOnRhYmxlDQokMTcNCnRvbnVtYmVyOmZ1bmN0aW9uDQokMTcNCnRvc3RyaW5nOmZ1bmN0aW9uDQokMTMNCnR5cGU6ZnVuY3Rpb24NCiQxNQ0KdW5wYWNrOmZ1bmN0aW9uDQokMTUNCnhwY2FsbDpmdW5jdGlvbg0K"
+  },
+  {
+    "name": "redis names",
+    "src": "local t={} for k,v in pairs(redis) do t[#t+1]=k..\":\"..type(v) end table.sort(t) return t",
+    "want": "KjIzDQokMTYNCkxPR19ERUJVRzpudW1iZXINCiQxNw0KTE9HX05PVElDRTpudW1iZXINCiQxOA0KTE9HX1ZFUkJPU0U6bnVtYmVyDQokMTgNCkxPR19XQVJOSU5HOm51bWJlcg0KJDIwDQpSRURJU19WRVJTSU9OOnN0cmluZw0KJDI0DQpSRURJU19WRVJTSU9OX05VTTpudW1iZXINCiQxNQ0KUkVQTF9BTEw6bnVtYmVyDQokMTUNClJFUExfQU9GOm51bWJlcg0KJDE2DQpSRVBMX05PTkU6bnVtYmVyDQokMTkNClJFUExfUkVQTElDQTpudW1iZXINCiQxNw0KUkVQTF9TTEFWRTpudW1iZXINCiQyMg0KYWNsX2NoZWNrX2NtZDpmdW5jdGlvbg0KJDE5DQpicmVha3BvaW50OmZ1bmN0aW9uDQokMTMNCmNhbGw6ZnVuY3Rpb24NCiQxNA0KZGVidWc6ZnVuY3Rpb24NCiQyMA0KZXJyb3JfcmVwbHk6ZnVuY3Rpb24NCiQxMg0KbG9nOmZ1bmN0aW9uDQokMTQNCnBjYWxsOmZ1bmN0aW9uDQokMjcNCnJlcGxpY2F0ZV9jb21tYW5kczpmdW5jdGlvbg0KJDE3DQpzZXRfcmVwbDpmdW5jdGlvbg0KJDE2DQpzZXRyZXNwOmZ1bmN0aW9uDQokMTYNCnNoYTFoZXg6ZnVuY3Rpb24NCiQyMQ0Kc3RhdHVzX3JlcGx5OmZ1bmN0aW9uDQo="
+  },
+  {
+    "name": "constants",
+    "src": "return {redis.REDIS_VERSION,redis.REDIS_VERSION_NUM,redis.LOG_DEBUG,redis.LOG_VERBOSE,redis.LOG_NOTICE,redis.LOG_WARNING,redis.REPL_NONE,redis.REPL_AOF,redis.REPL_SLAVE,redis.REPL_REPLICA,redis.REPL_ALL}",
+    "want": "KjExDQokNg0KNy4yLjE2DQo6NDU5MjgwDQo6MA0KOjENCjoyDQo6Mw0KOjANCjoxDQo6Mg0KOjINCjozDQo="
+  },
+  {
+    "name": "keys args",
+    "src": "return {KEYS,ARGV}",
+    "keys": [
+      "a",
+      "b\u0000c"
+    ],
+    "args": [
+      "1",
+      "z\u0000q"
+    ],
+    "want": "KjINCioyDQokMQ0KYQ0KJDMNCmIAYw0KKjINCiQxDQoxDQokMw0KegBxDQo="
+  },
+  {
+    "name": "keys writable",
+    "src": "KEYS[1]=\"mutated\" ARGV[2]=\"x\" return {KEYS,ARGV}",
+    "keys": [
+      "old"
+    ],
+    "args": [
+      "one",
+      "two"
+    ],
+    "want": "KjINCioxDQokNw0KbXV0YXRlZA0KKjINCiQzDQpvbmUNCiQxDQp4DQo="
+  },
+  {
+    "name": "unknown command",
+    "src": "return redis.call(\"NOPE\")",
+    "want": "LUVSUiBVbmtub3duIFJlZGlzIGNvbW1hbmQgY2FsbGVkIGZyb20gc2NyaXB0IHNjcmlwdDogYmJlZjVjMWY0NjlkOGVjNjRkY2U0Yjk5ZDI1MTkxODNkYzE5YWU4OCwgb24gQHVzZXJfc2NyaXB0OjEuDQo=",
+    "trace": [
+      {
+        "argv": [
+          "NOPE"
+        ],
+        "command": {
+          "Name": "",
+          "Arity": 0,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": false
+      }
+    ]
+  },
+  {
+    "name": "pcall unknown",
+    "src": "return redis.pcall(\"NOPE\")",
+    "want": "LUVSUiBVbmtub3duIFJlZGlzIGNvbW1hbmQgY2FsbGVkIGZyb20gc2NyaXB0DQo=",
+    "trace": [
+      {
+        "argv": [
+          "NOPE"
+        ],
+        "command": {
+          "Name": "",
+          "Arity": 0,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": false
+      }
+    ]
+  },
+  {
+    "name": "numeric command",
+    "src": "return redis.call(1)",
+    "want": "LUVSUiBVbmtub3duIFJlZGlzIGNvbW1hbmQgY2FsbGVkIGZyb20gc2NyaXB0IHNjcmlwdDogOWJkZmMwNTU3ZTY4ZDc2YTZhMTBjODVmNDU1ZGUwZjkzZWU0OTVhNywgb24gQHVzZXJfc2NyaXB0OjEuDQo=",
+    "trace": [
+      {
+        "argv": [
+          "1"
+        ],
+        "command": {
+          "Name": "",
+          "Arity": 0,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": false
+      }
+    ]
+  },
+  {
+    "name": "arity",
+    "src": "return redis.call(\"GET\")",
+    "want": "LUVSUiBXcm9uZyBudW1iZXIgb2YgYXJncyBjYWxsaW5nIFJlZGlzIGNvbW1hbmQgZnJvbSBzY3JpcHQgc2NyaXB0OiA0YzEyYmI1MzJmZDVjYWUwNGEwMzFmYzc1YmYxYThmZjNmMWQ1N2IwLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg==",
+    "trace": [
+      {
+        "argv": [
+          "GET"
+        ],
+        "command": {
+          "Name": "get",
+          "Arity": 2,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true
+      }
+    ]
+  },
+  {
+    "name": "arity before noscript",
+    "src": "return redis.call(\"MULTI\",\"extra\")",
+    "want": "LUVSUiBXcm9uZyBudW1iZXIgb2YgYXJncyBjYWxsaW5nIFJlZGlzIGNvbW1hbmQgZnJvbSBzY3JpcHQgc2NyaXB0OiAwZTQ2ZTk4MzYwNGJmOTg4MGNmYWUzY2E0MTA3ZDQ5YmZlZDBlOWVhLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg==",
+    "trace": [
+      {
+        "argv": [
+          "MULTI",
+          "extra"
+        ],
+        "command": {
+          "Name": "multi",
+          "Arity": 1,
+          "Write": false,
+          "NoScript": true
+        },
+        "found": true
+      }
+    ]
+  },
+  {
+    "name": "noscript",
+    "src": "return redis.call(\"MULTI\")",
+    "want": "LUVSUiBUaGlzIFJlZGlzIGNvbW1hbmQgaXMgbm90IGFsbG93ZWQgZnJvbSBzY3JpcHQgc2NyaXB0OiA0MjVjMjRmNmM0ZWNhYjMxMDQ5MmFmYTM4MjYyYzFmZjc5ZWZlM2FhLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg==",
+    "trace": [
+      {
+        "argv": [
+          "MULTI"
+        ],
+        "command": {
+          "Name": "multi",
+          "Arity": 1,
+          "Write": false,
+          "NoScript": true
+        },
+        "found": true
+      }
+    ]
+  },
+  {
+    "name": "subscribe",
+    "src": "return redis.call(\"SUBSCRIBE\",\"c\")",
+    "want": "LUVSUiBUaGlzIFJlZGlzIGNvbW1hbmQgaXMgbm90IGFsbG93ZWQgZnJvbSBzY3JpcHQgc2NyaXB0OiA2NTJmMDM5Y2ZmM2FhMmZlYzZkZWJjNTgyOTM1OWUyMGI0N2Y1MDgxLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg==",
+    "trace": [
+      {
+        "argv": [
+          "SUBSCRIBE",
+          "c"
+        ],
+        "command": {
+          "Name": "subscribe",
+          "Arity": -2,
+          "Write": false,
+          "NoScript": true
+        },
+        "found": true
+      }
+    ]
+  },
+  {
+    "name": "acl invalid",
+    "src": "return redis.acl_check_cmd(\"NOPE\")",
+    "want": "LUVSUiBJbnZhbGlkIGNvbW1hbmQgcGFzc2VkIHRvIHJlZGlzLmFjbF9jaGVja19jbWQoKSBzY3JpcHQ6IDNmMDUxN2VhYzAzYjQzZWU4NDI5NGNmYTNmOWM4MmRiZjNhZDZkZDksIG9uIEB1c2VyX3NjcmlwdDoxLg0K",
+    "trace": [
+      {
+        "argv": [
+          "NOPE"
+        ],
+        "command": {
+          "Name": "",
+          "Arity": 0,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": false
+      }
+    ]
+  },
+  {
+    "name": "acl arity",
+    "src": "return redis.acl_check_cmd(\"GET\")",
+    "want": "LUVSUiBXcm9uZyBudW1iZXIgb2YgYXJncyBmb3IgcmVkaXMuYWNsX2NoZWNrX2NtZCgpIHNjcmlwdDogYTIzYjI3MTYwNDRiMjg0YTQ1ZmU1MmI3N2FhMjg4NjhjNmVjZjBmMSwgb24gQHVzZXJfc2NyaXB0OjEuDQo=",
+    "trace": [
+      {
+        "argv": [
+          "GET"
+        ],
+        "command": {
+          "Name": "get",
+          "Arity": 2,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true
+      }
+    ]
+  },
+  {
+    "name": "acl allowed",
+    "src": "return redis.acl_check_cmd(\"GET\",\"k\")",
+    "want": "OjENCg==",
+    "trace": [
+      {
+        "argv": [
+          "GET",
+          "k"
+        ],
+        "command": {
+          "Name": "get",
+          "Arity": 2,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true
+      }
+    ]
+  },
+  {
+    "name": "number argument 3.0",
+    "src": "return redis.call(\"ECHO\",3.0)",
+    "want": "JDENCjMNCg==",
+    "trace": [
+      {
+        "argv": [
+          "ECHO",
+          "3"
+        ],
+        "call": true,
+        "command": {
+          "Name": "echo",
+          "Arity": 2,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JDENCjMNCg=="
+      }
+    ]
+  },
+  {
+    "name": "number argument -0.0",
+    "src": "return redis.call(\"ECHO\",-0.0)",
+    "want": "JDENCjANCg==",
+    "trace": [
+      {
+        "argv": [
+          "ECHO",
+          "0"
+        ],
+        "call": true,
+        "command": {
+          "Name": "echo",
+          "Arity": 2,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JDENCjANCg=="
+      }
+    ]
+  },
+  {
+    "name": "number argument 2^53",
+    "src": "return redis.call(\"ECHO\",2^53)",
+    "want": "JDE2DQo5MDA3MTk5MjU0NzQwOTkyDQo=",
+    "trace": [
+      {
+        "argv": [
+          "ECHO",
+          "9007199254740992"
+        ],
+        "call": true,
+        "command": {
+          "Name": "echo",
+          "Arity": 2,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JDE2DQo5MDA3MTk5MjU0NzQwOTkyDQo="
+      }
+    ]
+  },
+  {
+    "name": "number argument 1e20",
+    "src": "return redis.call(\"ECHO\",1e20)",
+    "want": "JDUNCjFlKzIwDQo=",
+    "trace": [
+      {
+        "argv": [
+          "ECHO",
+          "1e+20"
+        ],
+        "call": true,
+        "command": {
+          "Name": "echo",
+          "Arity": 2,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JDUNCjFlKzIwDQo="
+      }
+    ]
+  },
+  {
+    "name": "number argument 1/3",
+    "src": "return redis.call(\"ECHO\",1/3)",
+    "want": "JDE4DQowLjMzMzMzMzMzMzMzMzMzMzMNCg==",
+    "trace": [
+      {
+        "argv": [
+          "ECHO",
+          "0.3333333333333333"
+        ],
+        "call": true,
+        "command": {
+          "Name": "echo",
+          "Arity": 2,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JDE4DQowLjMzMzMzMzMzMzMzMzMzMzMNCg=="
+      }
+    ]
+  },
+  {
+    "name": "number argument 1e300",
+    "src": "return redis.call(\"ECHO\",1e300)",
+    "want": "JDYNCjFlKzMwMA0K",
+    "trace": [
+      {
+        "argv": [
+          "ECHO",
+          "1e+300"
+        ],
+        "call": true,
+        "command": {
+          "Name": "echo",
+          "Arity": 2,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JDYNCjFlKzMwMA0K"
+      }
+    ]
+  },
+  {
+    "name": "number argument 0.000001",
+    "src": "return redis.call(\"ECHO\",0.000001)",
+    "want": "JDgNCjAuMDAwMDAxDQo=",
+    "trace": [
+      {
+        "argv": [
+          "ECHO",
+          "0.000001"
+        ],
+        "call": true,
+        "command": {
+          "Name": "echo",
+          "Arity": 2,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JDgNCjAuMDAwMDAxDQo="
+      }
+    ]
+  },
+  {
+    "name": "number argument 0.0000001",
+    "src": "return redis.call(\"ECHO\",0.0000001)",
+    "want": "JDQNCjFlLTcNCg==",
+    "trace": [
+      {
+        "argv": [
+          "ECHO",
+          "1e-7"
+        ],
+        "call": true,
+        "command": {
+          "Name": "echo",
+          "Arity": 2,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JDQNCjFlLTcNCg=="
+      }
+    ]
+  },
+  {
+    "name": "number argument -1/0",
+    "src": "return redis.call(\"ECHO\",-1/0)",
+    "want": "JDQNCi1pbmYNCg==",
+    "trace": [
+      {
+        "argv": [
+          "ECHO",
+          "-inf"
+        ],
+        "call": true,
+        "command": {
+          "Name": "echo",
+          "Arity": 2,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JDQNCi1pbmYNCg=="
+      }
+    ]
+  },
+  {
+    "name": "number argument 0/0",
+    "src": "return redis.call(\"ECHO\",0/0)",
+    "want": "JDQNCi1uYW4NCg==",
+    "trace": [
+      {
+        "argv": [
+          "ECHO",
+          "-nan"
+        ],
+        "call": true,
+        "command": {
+          "Name": "echo",
+          "Arity": 2,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JDQNCi1uYW4NCg=="
+      }
+    ]
+  },
+  {
+    "name": "number argument -(0/0)",
+    "src": "return redis.call(\"ECHO\",-(0/0))",
+    "want": "JDMNCm5hbg0K",
+    "trace": [
+      {
+        "argv": [
+          "ECHO",
+          "nan"
+        ],
+        "call": true,
+        "command": {
+          "Name": "echo",
+          "Arity": 2,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JDMNCm5hbg0K"
+      }
+    ]
+  },
+  {
+    "name": "number argument 1e-20",
+    "src": "return redis.call(\"ECHO\",1e-20)",
+    "want": "JDUNCjFlLTIwDQo=",
+    "trace": [
+      {
+        "argv": [
+          "ECHO",
+          "1e-20"
+        ],
+        "call": true,
+        "command": {
+          "Name": "echo",
+          "Arity": 2,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JDUNCjFlLTIwDQo="
+      }
+    ]
+  },
+  {
+    "name": "ping",
+    "src": "return redis.call(\"PING\")",
+    "want": "K1BPTkcNCg==",
+    "trace": [
+      {
+        "argv": [
+          "PING"
+        ],
+        "call": true,
+        "command": {
+          "Name": "ping",
+          "Arity": -1,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "K1BPTkcNCg=="
+      }
+    ]
+  },
+  {
+    "name": "missing key",
+    "src": "local v=redis.call(\"GET\",\"missing\") return {type(v),v}",
+    "want": "KjINCiQ3DQpib29sZWFuDQokLTENCg==",
+    "trace": [
+      {
+        "argv": [
+          "GET",
+          "missing"
+        ],
+        "call": true,
+        "command": {
+          "Name": "get",
+          "Arity": 2,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JC0xDQo="
+      }
+    ]
+  },
+  {
+    "name": "set get",
+    "src": "return {redis.call(\"SET\",\"k\",\"v\"),redis.call(\"GET\",\"k\")}",
+    "want": "KjINCitPSw0KJDENCnYNCg==",
+    "trace": [
+      {
+        "argv": [
+          "SET",
+          "k",
+          "v"
+        ],
+        "call": true,
+        "command": {
+          "Name": "set",
+          "Arity": -3,
+          "Write": true,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "K09LDQo="
+      },
+      {
+        "argv": [
+          "GET",
+          "k"
+        ],
+        "call": true,
+        "command": {
+          "Name": "get",
+          "Arity": 2,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JDENCnYNCg=="
+      }
+    ]
+  },
+  {
+    "name": "integer response",
+    "src": "return redis.call(\"INCR\",\"counter\")",
+    "want": "OjENCg==",
+    "trace": [
+      {
+        "argv": [
+          "INCR",
+          "counter"
+        ],
+        "call": true,
+        "command": {
+          "Name": "incr",
+          "Arity": 2,
+          "Write": true,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "OjENCg=="
+      }
+    ]
+  },
+  {
+    "name": "command error",
+    "src": "return redis.call(\"INCR\",\"s\")",
+    "setup": [
+      [
+        "SET",
+        "s",
+        "hello"
+      ]
+    ],
+    "want": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2Ugc2NyaXB0OiBmMDQ5ZDU0NjVlMzBkYzllMzg3NGY0ODhmNzY0ZDgzYjRlMzJhNGJjLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg==",
+    "trace": [
+      {
+        "argv": [
+          "INCR",
+          "s"
+        ],
+        "call": true,
+        "command": {
+          "Name": "incr",
+          "Arity": 2,
+          "Write": true,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2UNCg=="
+      }
+    ]
+  },
+  {
+    "name": "pcall command error",
+    "src": "return redis.pcall(\"INCR\",\"s\")",
+    "setup": [
+      [
+        "SET",
+        "s",
+        "hello"
+      ]
+    ],
+    "want": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2UNCg==",
+    "trace": [
+      {
+        "argv": [
+          "INCR",
+          "s"
+        ],
+        "call": true,
+        "command": {
+          "Name": "incr",
+          "Arity": 2,
+          "Write": true,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2UNCg=="
+      }
+    ]
+  },
+  {
+    "name": "lua pcall error",
+    "src": "return {pcall(redis.call,\"INCR\",\"s\")}",
+    "setup": [
+      [
+        "SET",
+        "s",
+        "hello"
+      ]
+    ],
+    "want": "KjINCiQtMQ0KJDQzDQpFUlIgdmFsdWUgaXMgbm90IGFuIGludGVnZXIgb3Igb3V0IG9mIHJhbmdlDQo=",
+    "trace": [
+      {
+        "argv": [
+          "INCR",
+          "s"
+        ],
+        "call": true,
+        "command": {
+          "Name": "incr",
+          "Arity": 2,
+          "Write": true,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2UNCg=="
+      }
+    ]
+  },
+  {
+    "name": "nested command error",
+    "src": "local function f()\nreturn redis.call(\"INCR\",\"s\")\nend\nreturn f()",
+    "setup": [
+      [
+        "SET",
+        "s",
+        "hello"
+      ]
+    ],
+    "want": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2Ugc2NyaXB0OiA0YjA0N2FlYTBjOGVmZTk3NGQzYTU5NzdiZmM3MDFhYzVhNTBhYTFiLCBvbiBAdXNlcl9zY3JpcHQ6Mi4NCg==",
+    "trace": [
+      {
+        "argv": [
+          "INCR",
+          "s"
+        ],
+        "call": true,
+        "command": {
+          "Name": "incr",
+          "Arity": 2,
+          "Write": true,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2UNCg=="
+      }
+    ]
+  },
+  {
+    "name": "wrong type",
+    "src": "return redis.call(\"GET\",\"l\")",
+    "setup": [
+      [
+        "RPUSH",
+        "l",
+        "a",
+        "b"
+      ]
+    ],
+    "want": "LVdST05HVFlQRSBPcGVyYXRpb24gYWdhaW5zdCBhIGtleSBob2xkaW5nIHRoZSB3cm9uZyBraW5kIG9mIHZhbHVlIHNjcmlwdDogZDg4YzhjMzNlNTM2NWYxMzg1ZTY5NTJlOTMzZGMwMDU5NmQ5ZmM2MCwgb24gQHVzZXJfc2NyaXB0OjEuDQo=",
+    "trace": [
+      {
+        "argv": [
+          "GET",
+          "l"
+        ],
+        "call": true,
+        "command": {
+          "Name": "get",
+          "Arity": 2,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "LVdST05HVFlQRSBPcGVyYXRpb24gYWdhaW5zdCBhIGtleSBob2xkaW5nIHRoZSB3cm9uZyBraW5kIG9mIHZhbHVlDQo="
+      }
+    ]
+  },
+  {
+    "name": "array response",
+    "src": "return redis.call(\"LRANGE\",\"l\",0,-1)",
+    "setup": [
+      [
+        "RPUSH",
+        "l",
+        "a",
+        "b"
+      ]
+    ],
+    "want": "KjINCiQxDQphDQokMQ0KYg0K",
+    "trace": [
+      {
+        "argv": [
+          "LRANGE",
+          "l",
+          "0",
+          "-1"
+        ],
+        "call": true,
+        "command": {
+          "Name": "lrange",
+          "Arity": 4,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "KjINCiQxDQphDQokMQ0KYg0K"
+      }
+    ]
+  },
+  {
+    "name": "null array",
+    "src": "return redis.call(\"BLPOP\",\"missing\",0)",
+    "want": "JC0xDQo=",
+    "trace": [
+      {
+        "argv": [
+          "BLPOP",
+          "missing",
+          "0"
+        ],
+        "call": true,
+        "command": {
+          "Name": "blpop",
+          "Arity": -3,
+          "Write": true,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "Ki0xDQo="
+      }
+    ]
+  },
+  {
+    "name": "readonly",
+    "src": "return redis.call(\"SET\",\"k\",\"v\")",
+    "readonly": true,
+    "want": "LUVSUiBXcml0ZSBjb21tYW5kcyBhcmUgbm90IGFsbG93ZWQgZnJvbSByZWFkLW9ubHkgc2NyaXB0cy4gc2NyaXB0OiBmYzBhZjhkODY4MDg1YzdmNjkxYzU5Mjk0OGIxMDE0Y2VkZmE2NmFmLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg==",
+    "trace": [
+      {
+        "argv": [
+          "SET",
+          "k",
+          "v"
+        ],
+        "command": {
+          "Name": "set",
+          "Arity": -3,
+          "Write": true,
+          "NoScript": false
+        },
+        "found": true
+      }
+    ]
+  },
+  {
+    "name": "no writes flag",
+    "src": "#!lua flags=no-writes\nreturn redis.call(\"SET\",\"k\",\"v\")",
+    "want": "LUVSUiBXcml0ZSBjb21tYW5kcyBhcmUgbm90IGFsbG93ZWQgZnJvbSByZWFkLW9ubHkgc2NyaXB0cy4gc2NyaXB0OiBhNDU4MjNmNWZkMmZhNzlhOTE5MWUwZmMyYTAxYzgyMmY4ZjUxMGUwLCBvbiBAdXNlcl9zY3JpcHQ6Mi4NCg==",
+    "trace": [
+      {
+        "argv": [
+          "SET",
+          "k",
+          "v"
+        ],
+        "command": {
+          "Name": "set",
+          "Arity": -3,
+          "Write": true,
+          "NoScript": false
+        },
+        "found": true
+      }
+    ]
+  },
+  {
+    "name": "read only read",
+    "src": "return redis.call(\"GET\",\"k\")",
+    "setup": [
+      [
+        "SET",
+        "k",
+        "v"
+      ]
+    ],
+    "readonly": true,
+    "want": "JDENCnYNCg==",
+    "trace": [
+      {
+        "argv": [
+          "GET",
+          "k"
+        ],
+        "call": true,
+        "command": {
+          "Name": "get",
+          "Arity": 2,
+          "Write": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JDENCnYNCg=="
+      }
+    ]
+  },
+  {
+    "name": "load script",
+    "src": "",
+    "want": "JDQwDQozYjE5MTE1YTI3Mzg3YTc4ZTAxY2ExNzMyY2JjYWRmYzQzZmM3YjkzDQo=",
+    "request": [
+      "SCRIPT",
+      "LOAD",
+      "return 73"
+    ]
+  },
+  {
+    "name": "exists lower",
+    "src": "",
+    "setup": [
+      [
+        "SCRIPT",
+        "LOAD",
+        "return 73"
+      ]
+    ],
+    "want": "KjENCjoxDQo=",
+    "request": [
+      "SCRIPT",
+      "EXISTS",
+      "3b19115a27387a78e01ca1732cbcadfc43fc7b93"
+    ]
+  },
+  {
+    "name": "exists upper",
+    "src": "",
+    "setup": [
+      [
+        "SCRIPT",
+        "LOAD",
+        "return 73"
+      ]
+    ],
+    "want": "KjENCjoxDQo=",
+    "request": [
+      "SCRIPT",
+      "EXISTS",
+      "3B19115A27387A78E01CA1732CBCADFC43FC7B93"
+    ]
+  },
+  {
+    "name": "exists missing",
+    "src": "",
+    "want": "KjENCjowDQo=",
+    "request": [
+      "SCRIPT",
+      "EXISTS",
+      "missing"
+    ]
+  },
+  {
+    "name": "evalsha upper",
+    "src": "",
+    "setup": [
+      [
+        "SCRIPT",
+        "LOAD",
+        "return 73"
+      ]
+    ],
+    "want": "OjczDQo=",
+    "request": [
+      "EVALSHA",
+      "3B19115A27387A78E01CA1732CBCADFC43FC7B93",
+      "0"
+    ]
+  },
+  {
+    "name": "evalsha missing",
+    "src": "",
+    "want": "LU5PU0NSSVBUIE5vIG1hdGNoaW5nIHNjcmlwdC4gUGxlYXNlIHVzZSBFVkFMLg0K",
+    "request": [
+      "EVALSHA",
+      "missing",
+      "0"
+    ]
+  },
+  {
+    "name": "numkeys before compile",
+    "src": "",
+    "want": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2UNCg==",
+    "request": [
+      "EVAL",
+      "return +",
+      "x"
+    ]
+  },
+  {
+    "name": "numkeys before sha",
+    "src": "",
+    "want": "LU5PU0NSSVBUIE5vIG1hdGNoaW5nIHNjcmlwdC4gUGxlYXNlIHVzZSBFVkFMLg0K",
+    "request": [
+      "EVALSHA",
+      "missing",
+      "x"
+    ]
+  },
+  {
+    "name": "negative numkeys",
+    "src": "",
+    "want": "LUVSUiBOdW1iZXIgb2Yga2V5cyBjYW4ndCBiZSBuZWdhdGl2ZQ0K",
+    "request": [
+      "EVAL",
+      "return 1",
+      "-1"
+    ]
+  },
+  {
+    "name": "too many keys",
+    "src": "",
+    "want": "LUVSUiBOdW1iZXIgb2Yga2V5cyBjYW4ndCBiZSBncmVhdGVyIHRoYW4gbnVtYmVyIG9mIGFyZ3MNCg==",
+    "request": [
+      "EVAL",
+      "return 1",
+      "2",
+      "one"
+    ]
+  },
+  {
+    "name": "plus numkeys",
+    "src": "",
+    "want": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2UNCg==",
+    "request": [
+      "EVAL",
+      "return 1",
+      "+0"
+    ]
+  },
+  {
+    "name": "leading zero numkeys",
+    "src": "",
+    "want": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2UNCg==",
+    "request": [
+      "EVAL",
+      "return 1",
+      "00"
+    ]
+  },
+  {
+    "name": "minus zero numkeys",
+    "src": "",
+    "want": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2UNCg==",
+    "request": [
+      "EVAL",
+      "return 1",
+      "-0"
+    ]
+  },
+  {
+    "name": "overflow numkeys",
+    "src": "",
+    "want": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2UNCg==",
+    "request": [
+      "EVAL",
+      "return 1",
+      "9223372036854775808"
+    ]
+  },
+  {
+    "name": "empty numkeys",
+    "src": "",
+    "want": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2UNCg==",
+    "request": [
+      "EVAL",
+      "return 1",
+      ""
+    ]
+  },
+  {
+    "name": "flush scripts",
+    "src": "",
+    "want": "K09LDQo=",
+    "request": [
+      "SCRIPT",
+      "FLUSH"
+    ]
+  },
+  {
+    "name": "flush invalid",
+    "src": "",
+    "want": "LUVSUiBTQ1JJUFQgRkxVU0ggb25seSBzdXBwb3J0IFNZTkN8QVNZTkMgb3B0aW9uDQo=",
+    "request": [
+      "SCRIPT",
+      "FLUSH",
+      "invalid"
+    ]
+  },
+  {
+    "name": "flush sync",
+    "src": "",
+    "want": "K09LDQo=",
+    "request": [
+      "SCRIPT",
+      "FLUSH",
+      "sync"
+    ]
+  },
+  {
+    "name": "script wrong",
+    "src": "",
+    "want": "LUVSUiB3cm9uZyBudW1iZXIgb2YgYXJndW1lbnRzIGZvciAnc2NyaXB0JyBjb21tYW5kDQo=",
+    "request": [
+      "SCRIPT"
+    ]
+  },
+  {
+    "name": "script unknown",
+    "src": "",
+    "want": "LUVSUiB1bmtub3duIHN1YmNvbW1hbmQgJ1VOS05PV04nLiBUcnkgU0NSSVBUIEhFTFAuDQo=",
+    "request": [
+      "SCRIPT",
+      "UNKNOWN"
+    ]
+  },
+  {
+    "name": "exists arity",
+    "src": "",
+    "want": "LUVSUiB3cm9uZyBudW1iZXIgb2YgYXJndW1lbnRzIGZvciAnc2NyaXB0fGV4aXN0cycgY29tbWFuZA0K",
+    "request": [
+      "SCRIPT",
+      "EXISTS"
+    ]
+  },
+  {
+    "name": "load arity",
+    "src": "",
+    "want": "LUVSUiB3cm9uZyBudW1iZXIgb2YgYXJndW1lbnRzIGZvciAnc2NyaXB0fGxvYWQnIGNvbW1hbmQNCg==",
+    "request": [
+      "SCRIPT",
+      "LOAD"
+    ]
+  },
+  {
+    "name": "eval arity",
+    "src": "",
+    "want": "LUVSUiB3cm9uZyBudW1iZXIgb2YgYXJndW1lbnRzIGZvciAnZXZhbCcgY29tbWFuZA0K",
+    "request": [
+      "EVAL",
+      "x"
+    ]
+  },
+  {
+    "name": "kill empty",
+    "src": "",
+    "want": "LU5PVEJVU1kgTm8gc2NyaXB0cyBpbiBleGVjdXRpb24gcmlnaHQgbm93Lg0K",
+    "request": [
+      "SCRIPT",
+      "KILL"
+    ]
+  },
+  {
+    "name": "kill arity",
+    "src": "",
+    "want": "LUVSUiB3cm9uZyBudW1iZXIgb2YgYXJndW1lbnRzIGZvciAnc2NyaXB0fGtpbGwnIGNvbW1hbmQNCg==",
+    "request": [
+      "SCRIPT",
+      "KILL",
+      "x"
+    ]
+  }
+]

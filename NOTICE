@@ -62,3 +62,8 @@ License: BSD-3-Clause; full terms in LICENSES/Redis-eval.txt.
 
 frame_test.go compiles the original EVAL error-handler Lua source from eval.c
 to verify observable error locations and recursive handler behavior.
+
+The redis package follows script caching, shebang parsing, and EVAL behavior
+from src/eval.c, and command validation and execution behavior from
+src/script_lua.c and src/script.c. The latter retain the Redis Ltd. notice
+and BSD-3-Clause terms listed above.
