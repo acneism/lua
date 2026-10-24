@@ -38,7 +38,9 @@ func TestPatternRecursiveHook(t *testing.T) {
 
 func TestPatternDepthLimit(t *testing.T) {
 	if os.Getenv("LUA_PATTERN_DEPTH_CHILD") != "1" {
-		cmd := exec.Command(os.Args[0], "-test.run=^TestPatternDepthLimit$")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=^TestPatternDepthLimit$")
 		cmd.Env = append(os.Environ(), "LUA_PATTERN_DEPTH_CHILD=1")
 		if output, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("pattern subprocess: %v\n%s", err, output)
@@ -50,6 +52,21 @@ func TestPatternDepthLimit(t *testing.T) {
 	_, err := s.Call(fn, String(strings.Repeat("a", 5000000)), String(strings.Repeat("a?", 5000000)))
 	if err == nil || !strings.Contains(err.Error(), "pattern too complex") {
 		t.Fatalf("missing depth limit: %v", err)
+	}
+}
+
+func TestReferenceMath(t *testing.T) {
+	corpus := readCorpus(t)
+	for _, name := range []string{"exp", "log", "log10", "pow", "sinh", "cosh", "tanh"} {
+		t.Run(name, func(t *testing.T) {
+			for _, item := range corpus {
+				if strings.Contains(item.Src, "for i = 0, 199") && strings.Contains(item.Src, "math."+name+"(") {
+					checkReference(t, item.Src, Options{})
+					return
+				}
+			}
+			t.Fatal("reference math grid missing")
+		})
 	}
 }
 
