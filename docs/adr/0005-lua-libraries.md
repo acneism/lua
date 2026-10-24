@@ -25,7 +25,7 @@ before creating native functions, keeping state identities deterministic.
 
 ## Evidence
 
-The 4158-entry main reference corpus includes supplied and reviewer core probes,
+At A3 acceptance, the 4158-entry main reference corpus includes supplied and reviewer core probes,
 per-function argument errors, all byte classes, formatting flag/precision
 combinations, replacement functions and tables, and invalid comparators.
 All execute; no entry remains pending A2. FuzzPattern and FuzzFormat check

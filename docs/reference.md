@@ -12,7 +12,10 @@ of 4158. The original 707 sources and answers remain unchanged. The new cases
 cover coercion, arithmetic, table traversal, constructor batches, closures,
 varargs, error frames, coroutine boundaries, and parser and call limits.
 
-All 4158 main entries execute; `testdata/pending.json` is empty.
+P adds 27 further Redis captures covering compact operand modes, direct calls,
+metamethod continuation and cache invalidation, source locations, and dense and
+sparse sequence lengths. All 4185 main entries execute;
+`testdata/pending.json` is empty.
 Reference verification always checks the complete file. Each execution has a
 one-million-instruction hook budget, so a broken limit fails its own subtest.
 Three million-operation reviewer snippets have explicit two-million-step
