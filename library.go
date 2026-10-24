@@ -46,7 +46,7 @@ func (s *State) optionalText(args []Value, index int, fallback string) string {
 
 func (s *State) checkFunction(args []Value, index int) Value {
 	value := argument(args, index)
-	if value.kind != TypeFunction {
+	if value.Type() != TypeFunction {
 		s.expected(args, index, "function")
 	}
 	return value

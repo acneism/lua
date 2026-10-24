@@ -15,6 +15,7 @@ type tableNode struct {
 
 type Table struct {
 	object    object
+	version   uint64
 	array     []Value
 	nodes     []tableNode
 	lastFree  int
@@ -25,12 +26,12 @@ type Table struct {
 
 func NewTable(arraySize, hashSize int) *Table {
 	t := &Table{}
-	t.object.table = t
+	t.object.kind, t.object.table = TypeTable, t
 	t.resize(arraySize, hashSize)
 	return t
 }
 
-func (t *Table) Value() Value              { return Value{kind: TypeTable, object: &t.object} }
+func (t *Table) Value() Value              { return Value{object: &t.object} }
 func (t *Table) ReadOnly() bool            { return t.readonly }
 func (t *Table) SetReadOnly(readonly bool) { t.readonly = readonly }
 func (t *Table) Metatable() *Table         { return t.metatable }
@@ -44,7 +45,7 @@ func (t *Table) SetMetatable(meta *Table) error {
 }
 
 func arrayIndex(key Value) int {
-	if key.kind == TypeNumber && key.number >= 1 && key.number <= 1<<maxTableBits && key.number == math.Trunc(key.number) {
+	if key.Type() == TypeNumber && key.number >= 1 && key.number <= 1<<maxTableBits && key.number == math.Trunc(key.number) {
 		return int(key.number)
 	}
 	return -1
@@ -63,9 +64,9 @@ func (t *Table) mainPosition(key Value) int {
 	if len(t.nodes) == 0 {
 		return -1
 	}
-	switch key.kind {
+	switch key.Type() {
 	case TypeString:
-		return int(stringHash(key.text) & uint32(len(t.nodes)-1))
+		return int(stringHash(key.Text()) & uint32(len(t.nodes)-1))
 	case TypeBoolean:
 		return int(key.number) & (len(t.nodes) - 1)
 	case TypeNumber:
@@ -112,7 +113,7 @@ func (t *Table) RawSet(key, value Value) error {
 	if key.IsNil() {
 		return plainError("table index is nil")
 	}
-	if key.kind == TypeNumber && math.IsNaN(key.number) {
+	if key.Type() == TypeNumber && math.IsNaN(key.number) {
 		return plainError("table index is NaN")
 	}
 	t.set(key, value)
@@ -124,6 +125,7 @@ func (t *Table) set(key, value Value) {
 		t.array[index-1] = value
 		return
 	}
+	t.version++
 	if index := t.find(key); index >= 0 {
 		t.nodes[index].value = value
 		return

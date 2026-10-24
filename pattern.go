@@ -370,7 +370,7 @@ func stringGSub(s *State, args []Value) ([]Value, error) {
 	source, pattern := s.checkText(args, 0), s.checkText(args, 1)
 	replacement := argument(args, 2)
 	limit := s.optionalInt32(args, 3, len(source)+1)
-	if replacement.kind != TypeString && replacement.kind != TypeNumber && replacement.kind != TypeFunction && replacement.kind != TypeTable {
+	if replacement.Type() != TypeString && replacement.Type() != TypeNumber && replacement.Type() != TypeFunction && replacement.Type() != TypeTable {
 		s.argError(3, "string/function/table expected")
 	}
 	m := patternMatcher{state: s, source: source, pattern: pattern}
@@ -390,7 +390,7 @@ func stringGSub(s *State, args []Value) ([]Value, error) {
 		end := m.match(start, position)
 		if end >= 0 {
 			count++
-			switch replacement.kind {
+			switch replacement.Type() {
 			case TypeNumber, TypeString:
 				text, _ := replacement.toString()
 				for index := 0; index < len(text); index++ {
@@ -411,7 +411,7 @@ func stringGSub(s *State, args []Value) ([]Value, error) {
 				}
 			default:
 				var value Value
-				if replacement.kind == TypeFunction {
+				if replacement.Type() == TypeFunction {
 					value = s.invokeOne(replacement, m.values(start, end, true))
 				} else {
 					value = s.get(replacement, m.capture(0, start, end), nameInfo{})
@@ -421,7 +421,7 @@ func stringGSub(s *State, args []Value) ([]Value, error) {
 				} else if text, ok := value.toString(); ok {
 					add(text)
 				} else {
-					s.raise("invalid replacement value (a "+value.kind.String()+")", 1)
+					s.raise("invalid replacement value (a "+value.Type().String()+")", 1)
 				}
 			}
 		}

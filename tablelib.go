@@ -31,7 +31,7 @@ func (s *State) openTable() {
 					panic(plainError(err.Error()))
 				}
 				s.tick()
-				if key.kind == TypeNumber && key.number > result {
+				if key.Type() == TypeNumber && key.number > result {
 					result = key.number
 				}
 			}
@@ -114,7 +114,7 @@ func tableConcat(s *State, args []Value) ([]Value, error) {
 		s.tick()
 		text, ok := tableRead(table, index).toString()
 		if !ok {
-			s.raise(fmt.Sprintf("invalid value (%s) at index %d in table for 'concat'", tableRead(table, index).kind, index), 1)
+			s.raise(fmt.Sprintf("invalid value (%s) at index %d in table for 'concat'", tableRead(table, index).Type(), index), 1)
 		}
 		if index != start {
 			s.checkString(out.Len() + len(separator))

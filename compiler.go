@@ -29,6 +29,7 @@ const (
 	opForPrep
 	opForLoop
 	opForCall
+	opPoll
 )
 
 type nameInfo struct {
@@ -52,7 +53,10 @@ type upvalueDescriptor struct {
 }
 
 type Proto struct {
-	code         []instruction
+	code         []uint64
+	sites        []uint32
+	metadata     []instruction
+	lines        []int32
 	constants    []Value
 	children     []*Proto
 	upvalues     []upvalueDescriptor
@@ -72,14 +76,16 @@ type localVariable struct {
 }
 
 type compiler struct {
-	proto     *Proto
-	parent    *compiler
-	constants map[Value]int
-	captured  map[int]bool
-	locals    []localVariable
-	next      int
-	breaks    [][]int
-	position  token
+	code            []instruction
+	proto           *Proto
+	parent          *compiler
+	constants       map[Value]int
+	stringConstants map[string]int
+	captured        map[int]bool
+	locals          []localVariable
+	next            int
+	breaks          [][]int
+	position        token
 }
 
 func Compile(source []byte, chunk string) (*Proto, error) {
@@ -124,11 +130,26 @@ func (c *compiler) reserve(next int) {
 func (c *compiler) temp() int { index := c.next; c.reserve(index + 1); return index }
 
 func (c *compiler) emit(i instruction) int {
-	c.proto.code = append(c.proto.code, i)
-	return len(c.proto.code) - 1
+	if len(c.code) > 0 && len(c.code)%vmPollStride == 0 {
+		c.code = append(c.code, instruction{op: opPoll, line: i.line})
+	}
+	c.code = append(c.code, i)
+	return len(c.code) - 1
 }
 
 func (c *compiler) constant(value Value) int {
+	if value.Type() == TypeString {
+		if c.stringConstants == nil {
+			c.stringConstants = make(map[string]int)
+		}
+		if index, exists := c.stringConstants[value.Text()]; exists {
+			return index
+		}
+		index := len(c.proto.constants)
+		c.proto.constants = append(c.proto.constants, value)
+		c.stringConstants[value.Text()] = index
+		return index
+	}
 	if c.constants == nil {
 		c.constants = make(map[Value]int)
 	}
@@ -223,8 +244,8 @@ func (c *compiler) name(e *expression) nameInfo {
 		}
 		if e.kind == "index" {
 			name := "?"
-			if e.right.kind == "literal" && e.right.value.kind == TypeString {
-				name = e.right.value.text
+			if e.right.kind == "literal" && e.right.value.Type() == TypeString {
+				name = e.right.value.Text()
 			}
 			return nameInfo{kind: "field", name: name}
 		}
@@ -280,6 +301,7 @@ func (c *compiler) compileFunction(f *syntaxFunction) {
 	if c.proto.maxRegisters < 2 {
 		c.proto.maxRegisters = 2
 	}
+	c.freeze()
 }
 
 func (c *compiler) block(body []*statement, scoped bool) {
@@ -361,7 +383,7 @@ func (c *compiler) expression(e *expression, dest, want int) {
 		if e.endLine > 0 {
 			i.line = e.endLine
 		}
-		if e.name == "-" && e.left.kind == "literal" && e.left.value.kind == TypeNumber {
+		if e.name == "-" && e.left.kind == "literal" && e.left.value.Type() == TypeNumber {
 			i.op = opConstant
 			i.b = c.constant(Number(-e.left.value.number))
 			c.emit(i)
@@ -483,7 +505,7 @@ func (c *compiler) chain(e *expression, dest, want int, tail bool) {
 				}
 				jump := c.emit(i)
 				c.expression(link.right, dest, 1)
-				c.proto.code[jump].b = len(c.proto.code)
+				c.code[jump].b = len(c.code)
 			} else {
 				i.op, i.text = opBinary, link.name
 				i.left, i.right = c.name(link.left), c.name(link.right)
@@ -635,11 +657,11 @@ func (c *compiler) statement(s *statement) {
 			c.next = base
 			c.block(branch.body, true)
 			ends = append(ends, c.emit(instruction{op: opJump}))
-			c.proto.code[jump].b = len(c.proto.code)
+			c.code[jump].b = len(c.code)
 		}
 		c.block(s.body, true)
 		for _, end := range ends {
-			c.proto.code[end].b = len(c.proto.code)
+			c.code[end].b = len(c.code)
 		}
 	case "while", "repeat", "fornum", "forin":
 		c.loop(s, base)
@@ -653,7 +675,7 @@ func (c *compiler) statement(s *statement) {
 func (c *compiler) loop(s *statement, base int) {
 	c.breaks = append(c.breaks, nil)
 	localCount := len(c.locals)
-	start := len(c.proto.code)
+	start := len(c.code)
 	var exit int
 	switch s.kind {
 	case "while":
@@ -677,10 +699,10 @@ func (c *compiler) loop(s *statement, base int) {
 		}
 		variable := c.addLocal(s.names[0])
 		prep := c.emit(instruction{op: opForPrep, a: base, line: s.prepLine})
-		start = len(c.proto.code)
+		start = len(c.code)
 		c.block(s.body, true)
 		c.close(variable, s.line)
-		c.proto.code[prep].b = len(c.proto.code)
+		c.code[prep].b = len(c.code)
 		c.emit(instruction{op: opForLoop, a: base, b: start, line: s.line})
 		exit = -1
 	case "forin":
@@ -693,21 +715,21 @@ func (c *compiler) loop(s *statement, base int) {
 			c.addLocal(name)
 		}
 		jump := c.emit(instruction{op: opJump, line: s.line})
-		start = len(c.proto.code)
+		start = len(c.code)
 		c.block(s.body, true)
 		c.close(base+3, s.line)
-		c.proto.code[jump].b = len(c.proto.code)
+		c.code[jump].b = len(c.code)
 		c.emit(instruction{op: opForCall, a: base, b: start, c: len(s.names), line: s.line})
 		exit = -1
 	}
 	if exit >= 0 {
-		c.proto.code[exit].b = len(c.proto.code)
+		c.code[exit].b = len(c.code)
 	}
-	end := len(c.proto.code)
+	end := len(c.code)
 	c.close(base, s.line)
 	for _, jump := range c.breaks[len(c.breaks)-1] {
-		c.proto.code[jump].b = end
-		c.proto.code[jump].a = base + 1
+		c.code[jump].b = end
+		c.code[jump].a = base + 1
 	}
 	c.breaks = c.breaks[:len(c.breaks)-1]
 	c.locals = c.locals[:localCount]

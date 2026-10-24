@@ -2,6 +2,9 @@
 
 Status: proposed for A1 review.
 
+The stage P representation supersedes this layout; see
+[compact values and interpreter execution](0007-vm-performance.md).
+
 ## Decision
 
 Represent a value with a type tag, a float64 field, a string field, and a pointer
