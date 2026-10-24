@@ -215,6 +215,7 @@ func (s *State) execute(stop int) (result []Value) {
 						method = s.binaryTableMethod(*right, index)
 					}
 					if method.Type() == TypeFunction && method.object.function.proto != nil {
+						arguments := [2]Value{*left, *right}
 						t.frames[frameIndex].pc = int32(pc)
 						remaining -= vmCallWeight
 						if remaining <= 0 {
@@ -232,7 +233,6 @@ func (s *State) execute(stop int) (result []Value) {
 						}
 						previousTop := t.top
 						callee := method.object.function
-						arguments := [2]Value{*left, *right}
 						s.push(callee, arguments[:], base+int(register), 1, nil)
 						t.boundary++
 						frameIndex++
@@ -257,6 +257,47 @@ func (s *State) execute(stop int) (result []Value) {
 					remaining = s.options.HookEvery - s.steps
 				}
 
+				continue
+
+			case opCallDirect, opCallDirectUpvalue, opCallDirectConstant, opCallDirectUpvalueConstant:
+				mode := op - opCallDirect
+				value := registers[uint8(word>>16)]
+				if mode&1 != 0 {
+					value = f.function.upvalues[uint8(word>>16)].get()
+				}
+				argument := registers[uint8(word>>24)]
+				if mode&2 != 0 {
+					argument = constants[uint16(word>>24)]
+				}
+				start := max(t.used, t.top)
+				if value.Type() == TypeFunction && value.object.function.proto != nil && !value.object.function.proto.vararg && len(t.frames) < 20000 && start+256 <= len(t.stack) && (argument.Type() != TypeString || len(argument.Text()) <= s.options.MaxString) {
+					pc += 2
+					remaining -= vmCallWeight
+					if remaining <= 0 {
+						t.frames[frameIndex].pc = int32(pc)
+						s.pollHook()
+						f = &t.frames[frameIndex]
+						registers = (*[256]Value)(t.stack[base : base+256])
+						remaining = s.options.HookEvery - s.steps
+					}
+					t.frames[frameIndex].pc = int32(pc)
+					callee := value.object.function
+					parameters := callee.proto.parameters
+					if parameters > 0 {
+						t.stack[start] = argument
+						clear(t.stack[start+1 : start+parameters])
+					}
+					t.frames = append(t.frames, frame{function: callee, base: int32(start), start: int32(start), returnDest: int32(base + int(uint8(word>>40))), want: int32(int16(word >> 48))})
+					t.used, t.top = start+callee.proto.maxRegisters, start+parameters
+					frameIndex++
+					f = &t.frames[frameIndex]
+					p = callee.proto
+					base, pc = start, 0
+					code, constants = p.code, p.constants
+					registers = (*[256]Value)(t.stack[base : base+256])
+					continue
+				}
+				registers[register] = value
 				continue
 			case opCall:
 				remaining -= vmCallWeight
@@ -450,7 +491,7 @@ func (s *State) execute(stop int) (result []Value) {
 					t.close(base + int(register))
 				}
 				continue
-			case opForLoop:
+			case opForLoop, opForAccumulate:
 				remaining -= vmCallWeight
 				if remaining <= 0 {
 					t.frames[frameIndex].pc = int32(pc)
@@ -466,6 +507,13 @@ func (s *State) execute(stop int) (result []Value) {
 					registers[register] = Number(next)
 					registers[register+3] = Number(next)
 					pc = int(uint32(word >> 16))
+					if op == opForAccumulate {
+						sum := &registers[uint8(word>>48)]
+						if sum.object == &numberMarker {
+							*sum = Number(luaNaN(sum.number+next, sum.number, next))
+							pc++
+						}
+					}
 				}
 				continue
 			}
@@ -556,47 +604,6 @@ func (s *State) execute(stop int) (result []Value) {
 					t.boundary++
 					t.frames[len(t.frames)-1].metacallTop = int32(previousTop + 1)
 					break
-				}
-				if left.Type() == TypeNumber && right.Type() == TypeNumber {
-					x, y := left.number, right.number
-					switch i.text {
-					case "+":
-						t.stack[a] = Number(luaNaN(x+y, x, y))
-						continue
-					case "-":
-						t.stack[a] = Number(luaNaN(x-y, x, y))
-						continue
-					case "*":
-						t.stack[a] = Number(luaNaN(x*y, x, y))
-						continue
-					case "/":
-						t.stack[a] = Number(luaDivide(x, y))
-						continue
-					case "%":
-						t.stack[a] = Number(luaModulo(x, y))
-						continue
-					case "^":
-						t.stack[a] = Number(luaPower(x, y))
-						continue
-					case "<":
-						t.stack[a] = Bool(x < y)
-						continue
-					case "<=":
-						t.stack[a] = Bool(x <= y)
-						continue
-					case ">":
-						t.stack[a] = Bool(x > y)
-						continue
-					case ">=":
-						t.stack[a] = Bool(x >= y)
-						continue
-					case "==":
-						t.stack[a] = Bool(x == y)
-						continue
-					case "~=":
-						t.stack[a] = Bool(x != y)
-						continue
-					}
 				}
 				t.stack[a] = s.binary(i.text, left, right, i.left, i.right)
 			case opCall, opTailCall:

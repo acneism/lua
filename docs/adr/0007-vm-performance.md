@@ -71,7 +71,29 @@ callees. The baseline and isolated 24-byte value measurements are:
 | StringConcat | 1.14 | 0.82 |
 | Metamethod | 5.21 | 3.22 |
 
-These are intermediate measurements, not acceptance results. Further dispatch,
-call and cache changes are being measured separately. The final gate remains
-at most 1.5 times Redis for every scenario. Final raw samples, CPU profiles,
-allocation checks and validation results will be recorded before submission.
+Two additional combinations fuse a numeric accumulator with its for-loop step
+and fuse a function load plus one argument load with a Lua call. The original
+instructions remain available as fallback entries. Non-numeric accumulation,
+native functions, varargs, callable objects, and large constants use the
+general paths. The combinations inspect bytecode patterns, never script names
+or benchmark identities.
+
+The latest intermediate run uses Go 1.27.0 on Linux amd64, four CPUs. It takes
+five alternating samples without CPU profiling:
+
+| Scenario | Redis median ms | Go median ms | Go / Redis |
+| --- | ---: | ---: | ---: |
+| Loop | 78.11 | 75.26 | 0.96 |
+| Fib27 | 22.24 | 31.57 | 1.42 |
+| LuaCalls | 29.42 | 40.80 | 1.39 |
+| TableInsert | 120.12 | 184.68 | 1.54 |
+| TableHash | 62.50 | 69.17 | 1.11 |
+| Sort | 39.92 | 42.90 | 1.07 |
+| GSub | 26.45 | 36.35 | 1.37 |
+| StringConcat | 43.81 | 31.90 | 0.73 |
+| Metamethod | 39.52 | 53.31 | 1.35 |
+
+These figures are intermediate, not acceptance results. TableInsert remains
+above the 1.5 limit. Exact raw samples are retained in the local evidence
+archive; Final race, integration, mutation and ten-minute fuzz runs
+have not been performed for this production version.

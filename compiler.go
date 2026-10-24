@@ -30,6 +30,11 @@ const (
 	opForLoop
 	opForCall
 	opPoll
+	opForAccumulate
+	opCallDirect
+	opCallDirectUpvalue
+	opCallDirectConstant
+	opCallDirectUpvalueConstant
 )
 
 type nameInfo struct {
