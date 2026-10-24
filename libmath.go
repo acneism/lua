@@ -78,8 +78,8 @@ func armLog(x float64) float64 {
 		p := math.FMA(r3, b(10), math.FMA(r2, b(9), math.FMA(r, b(8), b(7))))
 		p = math.FMA(r3, p, math.FMA(r2, b(6), math.FMA(r, b(5), b(4))))
 		p = math.FMA(r3, p, math.FMA(r2, b(3), math.FMA(r, b(2), b(1))))
-		w := float64(r * 0x1p27)
-		rhi := r + w - w
+		rhi := math.FMA(r, 0x1p27, r)
+		rhi = math.FMA(-r, 0x1p27, rhi)
 		rlo := r - rhi
 		square := float64(rhi * rhi)
 		hi := math.FMA(square, b(0), r)
@@ -381,7 +381,7 @@ func fdCosh(x float64) float64 {
 	}
 	if high < 0x40360000 {
 		t := armExp(math.Abs(x))
-		return math.FMA(0.5, t, 0.5/t)
+		return float64(0.5*t) + 0.5/t
 	}
 	if high < 0x40862e42 {
 		return 0.5 * armExp(math.Abs(x))

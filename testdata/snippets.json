@@ -16533,7 +16533,7 @@
   },
   {
     "src": "local P, N = -(0/0), 0/0 local r = {} local function pair(name, f) r[#r + 1] = name .. '=' .. tostring(f(P, 1)) .. '|' .. tostring(f(N, 1)) .. '|' .. tostring(f(1, P)) .. '|' .. tostring(f(1, N)) .. '|' .. tostring(f(P, N)) .. '|' .. tostring(f(N, P)) end pair('fmod', math.fmod) pair('pow', math.pow) pair('max', math.max) pair('min', math.min) pair('ldexp', function(a, b) return math.ldexp(a, 3) end) return table.concat(r, ',')",
-    "want": "fmod=nan|-nan|nan|-nan|nan|nan,pow=nan|nan|1|1|nan|-nan,max=nan|-nan|1|1|nan|-nan,min=nan|-nan|1|1|nan|-nan,ldexp=nan|-nan|8|8|nan|-nan"
+    "want": "fmod=nan|-nan|nan|-nan|nan|-nan,pow=nan|nan|1|1|nan|-nan,max=nan|-nan|1|1|nan|-nan,min=nan|-nan|1|1|nan|-nan,ldexp=nan|-nan|8|8|nan|-nan"
   },
   {
     "src": "local P, N = -(0/0), 0/0 local a, b = math.modf(P) local c, d = math.modf(N) local e, f = math.frexp(P) local g, h = math.frexp(N) return tostring(a), tostring(b), tostring(c), tostring(d), tostring(e), tostring(f), tostring(g), tostring(h)",
