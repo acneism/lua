@@ -81,9 +81,9 @@ func armLog(x float64) float64 {
 		w := float64(r * 0x1p27)
 		rhi := r + w - w
 		rlo := r - rhi
-		w = float64(float64(rhi*rhi) * b(0))
-		hi := r + w
-		lo := r - hi + w
+		square := float64(rhi * rhi)
+		hi := math.FMA(square, b(0), r)
+		lo := math.FMA(square, b(0), r-hi)
 		lo = math.FMA(float64(b(0)*rlo), rhi+r, lo)
 		return math.FMA(r3, p, lo) + hi
 	}
@@ -135,8 +135,7 @@ func armPowLog(ix uint64) (float64, float64) {
 	lo4 := t2 - hi + ar2
 	p := math.FMA(ar2, math.FMA(r, armPowPoly(6), armPowPoly(5)), math.FMA(r, armPowPoly(4), armPowPoly(3)))
 	p = math.FMA(ar2, p, math.FMA(r, armPowPoly(2), armPowPoly(1)))
-	p = float64(ar3 * p)
-	lo := lo1 + lo2 + lo3 + lo4 + p
+	lo := math.FMA(ar3, p, lo1+lo2+lo3+lo4)
 	y := hi + lo
 	return y, hi - y + lo
 }

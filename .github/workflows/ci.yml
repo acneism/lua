@@ -107,6 +107,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
+      - run: mkdir -p work
       - name: Capture reference evidence
         run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -out work/reference-captured.json testdata/snippets.json testdata/libm.json
       - uses: actions/upload-artifact@v7
