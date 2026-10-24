@@ -7,11 +7,17 @@ import (
 
 type GoFunction func(s *State, args []Value) ([]Value, error)
 
+type Math struct {
+	Sin, Cos, Tan, Asin, Acos, Atan func(float64) float64
+	Atan2                           func(y, x float64) float64
+}
+
 type Options struct {
 	Hook      func() error
 	HookEvery int
 	MaxString int
 	Memory    *Budget
+	Math      *Math
 }
 
 type function struct {

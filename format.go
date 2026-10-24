@@ -217,7 +217,7 @@ func stringFormat(s *State, args []Value) ([]Value, error) {
 			spec += "." + strconv.Itoa(precision) + string(option)
 			add(fmt.Sprintf(spec, number))
 		default:
-			s.raise("invalid option '%"+string([]byte{option})+"' to 'format'", 1)
+			s.raise("invalid option '%"+cString(string([]byte{option}))+"' to 'format'", 1)
 		}
 	}
 	return []Value{String(out.String())}, nil

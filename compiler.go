@@ -206,26 +206,30 @@ func (c *compiler) resolve(name string) (opcode, int, nameInfo) {
 }
 
 func (c *compiler) name(e *expression) nameInfo {
-	if e.kind == "binary" && e.left.kind == "literal" {
-		if e.name == "and" && e.left.value.Truth() || e.name == "or" && !e.left.value.Truth() {
-			return c.name(e.right)
+	for {
+		if e.kind == "binary" && e.left.kind == "literal" {
+			if e.name == "and" && e.left.value.Truth() || e.name == "or" && !e.left.value.Truth() {
+				e = e.right
+				continue
+			}
 		}
-	}
-	if e.kind == "name" {
-		_, _, info := c.resolve(e.name)
-		return info
-	}
-	if e.kind == "index" {
-		name := "?"
-		if e.right.kind == "literal" && e.right.value.kind == TypeString {
-			name = e.right.value.text
+		if e.kind == "name" {
+			_, _, info := c.resolve(e.name)
+			return info
 		}
-		return nameInfo{kind: "field", name: name}
+		if e.kind == "index" {
+			name := "?"
+			if e.right.kind == "literal" && e.right.value.kind == TypeString {
+				name = e.right.value.text
+			}
+			return nameInfo{kind: "field", name: name}
+		}
+		if e.kind == "paren" {
+			e = e.left
+			continue
+		}
+		return nameInfo{}
 	}
-	if e.kind == "paren" {
-		return c.name(e.left)
-	}
-	return nameInfo{}
 }
 
 func (c *compiler) pure(e *expression) bool {
@@ -332,16 +336,7 @@ func (c *compiler) expression(e *expression, dest, want int) {
 	case "paren":
 		c.expression(e.left, dest, 1)
 	case "index":
-		if e.endLine > 0 {
-			i.line = e.endLine
-		}
-		i.op = opGetTable
-		i.b = c.temp()
-		i.c = c.temp()
-		i.left = c.name(e.left)
-		c.expression(e.left, i.b, 1)
-		c.expression(e.right, i.c, 1)
-		c.emit(i)
+		c.chain(e, dest, 1, false)
 	case "function":
 		child := &compiler{parent: c, proto: &Proto{chunk: c.proto.chunk, argRegister: -1}}
 		child.compileFunction(e.function)
@@ -375,32 +370,7 @@ func (c *compiler) expression(e *expression, dest, want int) {
 		c.expression(e.left, i.b, 1)
 		c.emit(i)
 	case "binary":
-		if e.endLine > 0 {
-			i.line = e.endLine
-		}
-		if e.name == "and" || e.name == "or" {
-			c.expression(e.left, dest, 1)
-			i.op = opJumpFalse
-			if e.name == "or" {
-				i.op = opJumpTrue
-			}
-			jump := c.emit(i)
-			c.expression(e.right, dest, 1)
-			c.proto.code[jump].b = len(c.proto.code)
-		} else {
-			i.op = opBinary
-			i.text = e.name
-			i.left = c.name(e.left)
-			i.right = c.name(e.right)
-			if c.pure(e.left) && c.pure(e.right) {
-				i.b = c.operand(e.left, true)
-			} else {
-				c.expression(e.left, dest, 1)
-				i.b = dest
-			}
-			i.c = c.operand(e.right, true)
-			c.emit(i)
-		}
+		c.chain(e, dest, 1, false)
 	case "call":
 		c.call(e, dest, want, false)
 		return
@@ -466,12 +436,85 @@ func floatingSize(size int) int {
 }
 
 func (c *compiler) call(e *expression, dest, want int, tail bool) {
+	c.chain(e, dest, want, tail)
+}
+
+func (c *compiler) chain(e *expression, dest, want int, tail bool) {
+	var links []*expression
+	root := e
+	for root.kind == "binary" || root.kind == "index" || root.kind == "call" {
+		links = append(links, root)
+		if root.kind == "call" && root.method {
+			root = root.left.left
+		} else {
+			root = root.left
+		}
+	}
+	first := links[len(links)-1]
+	if len(links) == 1 && first.kind == "call" {
+		c.callLink(first, dest, want, tail, false)
+		return
+	}
+	before := c.next
+	c.reserve(dest + max(1, want))
+	base := c.next
+	direct := first.kind == "binary" && first.name != "and" && first.name != "or" && c.pure(first.left) && c.pure(first.right)
+	if first.kind != "call" && !direct {
+		c.expression(root, dest, 1)
+	}
+	for index := len(links) - 1; index >= 0; index-- {
+		link := links[index]
+		c.next = base
+		c.position = link.token
+		i := instruction{a: dest, b: dest, line: link.token.line}
+		if link.endLine > 0 {
+			i.line = link.endLine
+		}
+		switch link.kind {
+		case "binary":
+			if link.name == "and" || link.name == "or" {
+				i.op = opJumpFalse
+				if link.name == "or" {
+					i.op = opJumpTrue
+				}
+				jump := c.emit(i)
+				c.expression(link.right, dest, 1)
+				c.proto.code[jump].b = len(c.proto.code)
+			} else {
+				i.op, i.text = opBinary, link.name
+				i.left, i.right = c.name(link.left), c.name(link.right)
+				if index == len(links)-1 && direct {
+					i.b = c.operand(link.left, true)
+				}
+				i.c = c.operand(link.right, true)
+				c.emit(i)
+			}
+		case "index":
+			i.op, i.left = opGetTable, c.name(link.left)
+			i.c = c.operand(link.right, false)
+			c.emit(i)
+		case "call":
+			count := 1
+			if index == 0 {
+				count = want
+			}
+			c.callLink(link, dest, count, tail && index == 0, index != len(links)-1)
+		}
+	}
+	c.next = max(before, dest+max(1, want))
+}
+
+func (c *compiler) callLink(e *expression, dest, want int, tail, prepared bool) {
 	base := c.temp()
 	info := c.name(e.left)
 	argCount := len(e.args)
 	if e.method {
 		c.reserve(base + 2)
-		c.expression(e.left.left, base+1, 1)
+		if prepared {
+			c.emit(instruction{op: opMove, a: base + 1, b: dest, line: e.token.line})
+		} else {
+			c.expression(e.left.left, base+1, 1)
+		}
 		key := c.temp()
 		c.expression(e.left.right, key, 1)
 		c.emit(instruction{op: opGetTable, a: base, b: base + 1, c: key, line: e.token.line, left: c.name(e.left.left)})
@@ -479,7 +522,11 @@ func (c *compiler) call(e *expression, dest, want int, tail bool) {
 		argCount++
 	} else {
 		c.reserve(base + 1)
-		c.expression(e.left, base, 1)
+		if prepared {
+			c.emit(instruction{op: opMove, a: base, b: dest, line: e.token.line})
+		} else {
+			c.expression(e.left, base, 1)
+		}
 	}
 	argBase := base + 1
 	if e.method {

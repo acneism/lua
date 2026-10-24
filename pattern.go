@@ -8,6 +8,7 @@ type patternMatcher struct {
 	state           *State
 	source, pattern string
 	level           int
+	depth           int
 	captures        [32]patternCapture
 }
 
@@ -125,6 +126,11 @@ func (m *patternMatcher) single(value byte, start, end int) bool {
 }
 
 func (m *patternMatcher) match(source, pattern int) int {
+	if m.depth >= 200000 {
+		m.fail("pattern too complex")
+	}
+	m.depth++
+	defer func() { m.depth-- }()
 	for {
 		m.state.tick()
 		switch m.char(pattern) {

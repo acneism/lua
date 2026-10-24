@@ -522,7 +522,7 @@ func luaModulo(left, right float64) float64 {
 }
 
 func luaPower(left, right float64) float64 {
-	value := math.Pow(left, right)
+	value := armPow(left, right)
 	if math.IsNaN(value) && !math.IsNaN(left) && !math.IsNaN(right) {
 		return math.Copysign(value, -1)
 	}

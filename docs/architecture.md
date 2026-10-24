@@ -74,6 +74,8 @@ incomplete, and stale entries if later-stage cases are added.
 
 ## Remaining stages
 
+L supplies exact glibc trigonometry through Options.Math in the separate
+lua-libm module. No production dependency is added to lua.
 B adds Redis environments, hosts,
 replies, EVAL, and SCRIPT. C adds extension libraries. D adds FUNCTION, FCALL,
 and DUMP/RESTORE. E completes engine resource controls and final measurements.

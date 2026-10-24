@@ -9,11 +9,15 @@ Commit code and tests with LF line endings.
 ```sh
 go test ./...
 go test -race ./...
+LUA_STRESS=1 go test . -run 'TestLongBinaryChains|TestLongSuffixChains'
 ```
 
 CI tests Linux, Windows, and macOS. Race detection runs on Linux. Tests for the
 capture tool use an isolated local TCP listener and do not need Redis. A separate
 reference job verifies every corpus entry against `redis:7.2.16`.
+Three reviewer million-operation snippets use explicit step budgets in
+testdata/limits.json. Exact trigonometric probes live in testdata/libm.json
+for lua-libm integration; reference CI verifies their recorded answers too.
 
 The root corpus runner executes the original wrapper and reads the explicit
 pending list from `testdata/pending.json`. Do not defer a core-language failure
@@ -46,7 +50,7 @@ its data or scripting state. The tool checks that the server reports version
 `-timeout` overrides it. The tool does not flush or stop the server.
 
 ```sh
-go run ./internal/cmd/capture -addr 127.0.0.1:6390 -verify testdata/snippets.json
+go run ./internal/cmd/capture -addr 127.0.0.1:6390 -verify testdata/snippets.json testdata/libm.json
 ```
 
 Verification compares every answer byte for byte, reports mismatches, and exits
@@ -70,6 +74,10 @@ Capture rejects invalid UTF-8 output because JSON would replace its bytes.
 Encode binary results as hexadecimal inside the snippet before capturing them.
 
 See [reference provenance](docs/reference.md) for the exact wrapper convention.
+
+Generate the deterministic math grid inputs with `python scripts/math-grids.py`.
+It writes work/a2-math-grid-input.json without expected answers. Capture them
+on the reference VM and preserve every previous source and answer.
 
 ## Pull requests
 

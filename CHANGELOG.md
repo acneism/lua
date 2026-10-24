@@ -13,7 +13,7 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 - Tagged values and Lua array/hash tables, metatables, and read-only support.
 - Closures, shared upvalues, varargs, multiple results, loops, and tail calls.
 - Base and coroutine libraries, native callbacks, hooks, and panic isolation.
-- A 3105-entry reference corpus with no pending A2 entries.
+- A 4129-entry main corpus, 16 separate libm probes, and no pending A2 entries.
 - Lua string patterns and formatting, table manipulation and auxsort, math and rand48.
 - Pattern and format fuzz targets, interruption and callback-allocation regressions.
 - Model, lifecycle, allocation, and semantic regression tests.
@@ -38,3 +38,5 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 - Separate syntax/runtime chunk-name limits and fractional-power NaN signs.
 - Parameter, for-loop, and break diagnostics; bounded individual corpus runs.
 - Per-call allocations and recover boundaries for Lua metamethod callbacks.
+- Iterative binary/suffix compilation, bounded pattern recursion, and rep hook polling.
+- Redis FMA math algorithms, injectable trigonometry, and NUL-free format diagnostics.

@@ -108,4 +108,4 @@ jobs:
           go-version-file: go.mod
           cache: false
       - name: Verify every recorded answer
-        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -verify testdata/snippets.json
+        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -verify testdata/snippets.json testdata/libm.json

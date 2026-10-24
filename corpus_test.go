@@ -2,7 +2,6 @@ package lua
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -35,6 +34,11 @@ type pendingSnippet struct {
 type corpusNormalization struct {
 	Src  string `json:"src"`
 	Rule string `json:"rule"`
+}
+
+type corpusLimit struct {
+	Src   string `json:"src"`
+	Steps int    `json:"steps"`
 }
 
 func equalNaNFields(got, want string) bool {
@@ -117,6 +121,21 @@ func captureEnvironment(s *State) *Table {
 }
 
 func TestCorpus(t *testing.T) {
+	limitData, err := os.ReadFile("testdata/limits.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var limits []corpusLimit
+	if err = json.Unmarshal(limitData, &limits); err != nil {
+		t.Fatal(err)
+	}
+	limiting := make(map[string]int)
+	for _, item := range limits {
+		if _, duplicate := limiting[item.Src]; duplicate || item.Steps <= 1000000 || item.Steps > 10000000 {
+			t.Fatalf("invalid corpus limit: %+v", item)
+		}
+		limiting[item.Src] = item.Steps
+	}
 	normalizationData, err := os.ReadFile("testdata/normalization.json")
 	if err != nil {
 		t.Fatal(err)
@@ -156,12 +175,17 @@ func TestCorpus(t *testing.T) {
 		ran++
 		rule := normalizing[snippet.Src]
 		delete(normalizing, snippet.Src)
+		limit := 1000000
+		if specific, ok := limiting[snippet.Src]; ok {
+			limit = specific
+			delete(limiting, snippet.Src)
+		}
 		t.Run(fmt.Sprintf("%03d", index+1), func(t *testing.T) {
 			steps := 0
 			s := NewState(Options{HookEvery: 1000, Hook: func() error {
 				steps += 1000
-				if steps > 1000000 {
-					return errors.New("corpus snippet exceeded one million steps")
+				if steps > limit {
+					return fmt.Errorf("corpus snippet exceeded %d steps", limit)
 				}
 				return nil
 			}})
@@ -191,6 +215,9 @@ func TestCorpus(t *testing.T) {
 	}
 	if len(normalizing) > 0 {
 		t.Fatalf("%d normalization entries did not execute", len(normalizing))
+	}
+	if len(limiting) > 0 {
+		t.Fatalf("%d corpus limits did not execute", len(limiting))
 	}
 	if ran == 0 {
 		t.Fatal("no corpus entries executed")

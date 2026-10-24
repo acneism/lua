@@ -4,12 +4,29 @@ import "math"
 
 func (s *State) openMath() {
 	s.randomState = 0x1234abcd330e
+	trig := Math{Sin: math.Sin, Cos: math.Cos, Tan: math.Tan, Asin: math.Asin, Acos: defaultAcos, Atan: math.Atan, Atan2: math.Atan2}
+	if custom := s.options.Math; custom != nil {
+		for _, pair := range []struct {
+			target *func(float64) float64
+			source func(float64) float64
+		}{
+			{&trig.Sin, custom.Sin}, {&trig.Cos, custom.Cos}, {&trig.Tan, custom.Tan},
+			{&trig.Asin, custom.Asin}, {&trig.Acos, custom.Acos}, {&trig.Atan, custom.Atan},
+		} {
+			if pair.source != nil {
+				*pair.target = pair.source
+			}
+		}
+		if custom.Atan2 != nil {
+			trig.Atan2 = custom.Atan2
+		}
+	}
 	functions := make(map[string]GoFunction)
 	for name, operation := range map[string]func(float64) float64{
-		"abs": math.Abs, "acos": math.Acos, "asin": math.Asin, "atan": math.Atan,
-		"ceil": math.Ceil, "cos": math.Cos, "cosh": math.Cosh, "exp": math.Exp,
-		"floor": math.Floor, "log": math.Log, "log10": math.Log10,
-		"sin": math.Sin, "sinh": math.Sinh, "sqrt": math.Sqrt, "tan": math.Tan, "tanh": math.Tanh,
+		"abs": math.Abs, "acos": trig.Acos, "asin": trig.Asin, "atan": trig.Atan,
+		"ceil": math.Ceil, "cos": trig.Cos, "cosh": fdCosh, "exp": armExp,
+		"floor": math.Floor, "log": armLog, "log10": fdLog10,
+		"sin": trig.Sin, "sinh": fdSinh, "sqrt": math.Sqrt, "tan": trig.Tan, "tanh": fdTanh,
 		"deg": func(x float64) float64 { return x / (math.Pi / 180) },
 		"rad": func(x float64) float64 { return x * (math.Pi / 180) },
 	} {
@@ -28,12 +45,17 @@ func (s *State) openMath() {
 	}
 	functions["atan2"] = func(s *State, args []Value) ([]Value, error) {
 		right := s.checkNumber(args, 1)
-		return []Value{Number(math.Atan2(s.checkNumber(args, 0), right))}, nil
+		return []Value{Number(trig.Atan2(s.checkNumber(args, 0), right))}, nil
 	}
 	functions["fmod"] = func(s *State, args []Value) ([]Value, error) {
 		b := s.checkNumber(args, 1)
 		a := s.checkNumber(args, 0)
 		value := math.Mod(a, b)
+		if math.IsNaN(a) {
+			value = a
+		} else if math.IsNaN(b) {
+			value = b
+		}
 		if math.IsNaN(value) && !math.IsNaN(a) && !math.IsNaN(b) {
 			value = math.Copysign(value, -1)
 		}
@@ -103,4 +125,14 @@ func (s *State) openMath() {
 	table.set(String("mod"), table.RawGet(String("fmod")))
 	table.set(String("pi"), Number(math.Pi))
 	table.set(String("huge"), Number(math.Inf(1)))
+}
+
+func defaultAcos(x float64) float64 {
+	if x > 0.5 && x <= 1 {
+		return 2 * math.Asin(math.Sqrt(float64((1-x)*0.5)))
+	}
+	if x < -0.5 && x >= -1 {
+		return math.Pi - 2*math.Asin(math.Sqrt(float64((1+x)*0.5)))
+	}
+	return math.Acos(x)
 }

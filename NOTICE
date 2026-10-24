@@ -34,3 +34,23 @@ implementations listed above.
 
 No bit, struct, cjson, cmsgpack, fpconv, CRC64, or LZF implementation is included
 in A2. Add notices from the exact upstream source headers when porting them.
+
+ARM optimized-routines, release v21.02
+Copyright (c) 2018-2020, Arm Limited.
+License: MIT; full terms in LICENSES/ARM-optimized-routines.txt.
+
+libmath.go and libmath_data.go adapt math/exp.c, log.c, pow.c, exp_data.c,
+log_data.c, and pow_log_data.c. Immutable bit tables retain the upstream
+constants. Explicit FMA and rounding follow the Redis x86-64 glibc reference.
+Source: https://github.com/ARM-software/optimized-routines/tree/v21.02/math
+
+fdlibm, e_log10.c, e_sinh.c, e_cosh.c, s_tanh.c, s_expm1.c
+Copyright (C) 1993, 2004 by Sun Microsystems, Inc. All rights reserved.
+License: Sun permissive notice; full terms in LICENSES/fdlibm.txt.
+
+libmath.go adapts these algorithms above the ARM exp and log implementation.
+Polynomial grouping and explicit FMA reproduce the reference's evaluation.
+Source: https://netlib.org/fdlibm/
+
+The LGPL trigonometric implementations are outside this repository.
+Hosts can supply them through Options.Math without a production dependency.

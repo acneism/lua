@@ -66,7 +66,20 @@ func (s *State) openString() {
 				s.raise("string length overflow", 1)
 			}
 			s.checkString(len(text) * count)
-			return []Value{String(strings.Repeat(text, count))}, nil
+			var out strings.Builder
+			block := text
+			if len(text) < 16384 {
+				block = strings.Repeat(text, min(count, 16384/len(text)))
+			}
+			remaining := len(text) * count
+			for remaining > 0 {
+				s.pollHook()
+				offset := out.Len() % len(block)
+				size := min(remaining, 16384, len(block)-offset)
+				out.WriteString(block[offset : offset+size])
+				remaining -= size
+			}
+			return []Value{String(out.String())}, nil
 		},
 		"reverse": func(s *State, args []Value) ([]Value, error) {
 			text := []byte(s.checkText(args, 0))

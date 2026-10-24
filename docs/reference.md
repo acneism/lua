@@ -7,14 +7,28 @@ with Redis 7.2.16. No expected answer was rewritten during import.
 The imported file's SHA-256 is
 `b442925e7abca89031bbb849df933695eb9910b44cf6aa26ea1fa53b21ac9910`.
 
-A1 and A2 add 2398 entries captured by the same tool from Redis 7.2.16, for a total
-of 3105. The original 707 sources and answers remain unchanged. The new cases
+A1 and A2 add 3422 entries captured by the same tool from Redis 7.2.16, for a total
+of 4129. The original 707 sources and answers remain unchanged. The new cases
 cover coercion, arithmetic, table traversal, constructor batches, closures,
 varargs, error frames, coroutine boundaries, and parser and call limits.
 
-All 3105 entries execute; `testdata/pending.json` is empty.
+All 4129 main entries execute; `testdata/pending.json` is empty.
 Reference verification always checks the complete file. Each execution has a
 one-million-instruction hook budget, so a broken limit fails its own subtest.
+Three million-operation reviewer snippets have explicit two-million-step
+budgets in testdata/limits.json. Missing and stale overrides fail validation.
+
+The A2 review adds 324 main snippets and 16 exact trigonometric snippets in
+testdata/libm.json. All 340 reviewer sources and answers remain represented.
+The trigonometric file is validated separately and reserved for lua-libm tests;
+TestCorpus executes the main file. Reference CI verifies both against Redis.
+
+Seven deterministic LCG grids add 700 main snippets with 1000 inputs each:
+100,000 inputs per exp, log, log10, pow, sinh, cosh, and tanh. Each answer uses
+%.17g. The pow grid checks both math.pow and the power operator. Inputs cover
+near-one reduction, broad exponent ranges, subnormals, overflow, and signed
+integer powers. The generator is scripts/math-grids.py; every answer comes
+from capture running against Redis on the Azure reference VM.
 
 Five sources have explicit nan-sign rules in testdata/normalization.json for
 platform-dependent NaN generation. It changes no recorded answer, and only

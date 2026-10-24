@@ -11,9 +11,15 @@ A2 implements the interpreter core, base, coroutine, string, table, and math
 libraries, immutable prototypes, Lua tables, metatables, closures, varargs,
 tail calls, error locations, read-only tables, and an interruption hook.
 
-The corpus has 3105 snippets. All execute through the original capture wrapper.
+The corpus has 4129 snippets. All execute through the original capture wrapper.
 `testdata/pending.json` is empty. The reference verifier checks every recorded
 answer against Redis.
+
+The exp, log, pow, log10, sinh, cosh, and tanh implementations reproduce the
+x86-64 FMA reference, including the power operator. Hosts can supply the seven
+trigonometric functions through `Options.Math`. Without it, Go math provides
+them; acos uses asin near the endpoints. The 16 exact trigonometric probes in
+`testdata/libm.json` are reserved for the separate lua-libm module.
 
 The Redis engine, host interface, EVAL, and FUNCTION API belong to later stages.
 

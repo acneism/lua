@@ -41,6 +41,7 @@ func FuzzPattern(f *testing.F) {
 		source, pattern, replacement string
 		mode                         byte
 	}{
+		{strings.Repeat("a", 40), strings.Repeat("a?", 40) + strings.Repeat("a", 40), "", 0},
 		{"abc", "%f[%a]%w+", "x", 0}, {"(a(b)c)", "%b()", "%0", 1},
 		{"aaa", "a-", "x", 3}, {"abc", "()", "%1", 3},
 		{"aa", "(a)%1", "%1", 2}, {"\x00a", "[%z]", "%", 3},

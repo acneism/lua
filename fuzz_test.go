@@ -8,6 +8,9 @@ import (
 )
 
 func FuzzCompile(f *testing.F) {
+	for _, link := range []string{" + x", " and x", " == x", ".a", "()", ":m()"} {
+		f.Add("local x=1 return x" + strings.Repeat(link, 1000))
+	}
 	f.Add("local x=1 return x" + strings.Repeat(" + (x*x)", 300))
 	f.Add("local x=1 return f(" + strings.Repeat("x,", 300) + "x)")
 	for _, seed := range []string{"", "return +", "return '\\300'", "local x=x+1", "while true do end", "return 1..2", "return [[unterminated", "return \x1bLuaQ", strings.Repeat("(", 201), "local t={1,x=2} for k in pairs(t) do t[k]=nil end", "return load(function() return {} end)", "local co=coroutine.create(function() coroutine.yield(1) end) coroutine.resume(co)"} {
