@@ -28,7 +28,7 @@ func fuzzLibraryResult(t *testing.T, values []Value, err error) string {
 	}
 	var out strings.Builder
 	for _, value := range values {
-		out.WriteString(value.kind.String())
+		out.WriteString(value.Type().String())
 		out.WriteByte(':')
 		out.WriteString(value.String())
 		out.WriteByte(0)

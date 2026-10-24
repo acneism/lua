@@ -49,6 +49,18 @@ func readJSON(t *testing.T, path string, dest any) {
 	}
 }
 
+func readLimits(t *testing.T, path string, limits map[string]int) {
+	t.Helper()
+	var budget []limit
+	readJSON(t, path, &budget)
+	for _, item := range budget {
+		if _, duplicate := limits[item.Src]; duplicate || item.Steps <= 1000000 || item.Steps > 10000000 {
+			t.Fatalf("invalid corpus limit: %+v", item)
+		}
+		limits[item.Src] = item.Steps
+	}
+}
+
 func RunCorpus(t *testing.T, files []string, options lua.Options) {
 	t.Helper()
 	var snippets []snippet
@@ -64,19 +76,18 @@ func RunCorpus(t *testing.T, files []string, options lua.Options) {
 			seen[item.Src] = true
 			snippets = append(snippets, item)
 		}
+		budgetFile := strings.TrimSuffix(file, filepath.Ext(file)) + ".limits.json"
+		if _, err := os.Stat(budgetFile); err == nil {
+			readLimits(t, budgetFile, limits)
+		} else if !os.IsNotExist(err) {
+			t.Fatal(err)
+		}
 		directory := filepath.Dir(file)
 		if directories[directory] {
 			continue
 		}
 		directories[directory] = true
-		var budget []limit
-		readJSON(t, filepath.Join(directory, "limits.json"), &budget)
-		for _, item := range budget {
-			if _, duplicate := limits[item.Src]; duplicate || item.Steps <= 1000000 || item.Steps > 10000000 {
-				t.Fatalf("invalid corpus limit: %+v", item)
-			}
-			limits[item.Src] = item.Steps
-		}
+		readLimits(t, filepath.Join(directory, "limits.json"), limits)
 		var rules []normalization
 		readJSON(t, filepath.Join(directory, "normalization.json"), &rules)
 		for _, item := range rules {
@@ -100,6 +111,12 @@ func RunCorpus(t *testing.T, files []string, options lua.Options) {
 		t.Run(fmt.Sprintf("%03d", index+1), func(t *testing.T) {
 			runSnippet(t, item, options, steps, rule)
 		})
+	}
+	for source := range limits {
+		t.Fatalf("unused corpus limit: %s", source)
+	}
+	for source := range normalizations {
+		t.Fatalf("unused corpus normalization: %s", source)
 	}
 	t.Logf("executed %d snippets", len(snippets))
 }

@@ -1,6 +1,7 @@
 # 1. Register VM
 
-Status: proposed for A1 review.
+Status: implemented in A1; execution layout and performance limits updated by
+[decision 7](0007-vm-performance.md) in P. The limits below are the original A1 context.
 
 ## Context
 

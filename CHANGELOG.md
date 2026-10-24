@@ -13,7 +13,7 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 - Tagged values and Lua array/hash tables, metatables, and read-only support.
 - Closures, shared upvalues, varargs, multiple results, loops, and tail calls.
 - Base and coroutine libraries, native callbacks, hooks, and panic isolation.
-- A 4158-entry main corpus, 36 separate libm probes, and no pending A2 entries.
+- A 4185-entry main corpus, 36 separate libm probes, and no pending A2 entries.
 - Lua string patterns and formatting, table manipulation and auxsort, math and rand48.
 - Pattern and format fuzz targets, interruption and callback-allocation regressions.
 - Model, lifecycle, allocation, and semantic regression tests.
@@ -22,9 +22,14 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 - Architecture decisions, compatibility notes, and interpreter benchmarks.
 
 - A reusable test-only luatest.RunCorpus API for external math integrations.
+- A Go command to compare nine core workloads against Redis with alternating samples.
+- Hook reentry, straight-block interruption, and loop allocation regressions.
 
 ### Changed
 
+- Compact 24-byte values, packed opcodes, cached register windows, and 40-byte frames.
+- Direct Lua calls and arithmetic metamethod continuations with reusable registers.
+- Fused loop and call sequences, versioned metamethod caches, and direct array writes.
 - Corpus validation accepts growth beyond the original 707 entries.
 - Coverage CI requires the interpreter package and enforces its 85% threshold.
 
@@ -34,6 +39,8 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 
 ### Fixed
 
+- Unused corpus metadata is rejected, with per-fixture instruction-limit sidecars.
+- Negative log10 NaN normalization has one authoritative implementation.
 - Architecture-independent NaN propagation and inherited loadstring syntax depth.
 - Shared-product FMA contractions in near-one log and the pow low correction.
 

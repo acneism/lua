@@ -15,6 +15,8 @@ type tableNode struct {
 
 type Table struct {
 	object    object
+	version   uint64
+	sequence  int
 	array     []Value
 	nodes     []tableNode
 	lastFree  int
@@ -25,12 +27,12 @@ type Table struct {
 
 func NewTable(arraySize, hashSize int) *Table {
 	t := &Table{}
-	t.object.table = t
+	t.object.kind, t.object.table = TypeTable, t
 	t.resize(arraySize, hashSize)
 	return t
 }
 
-func (t *Table) Value() Value              { return Value{kind: TypeTable, object: &t.object} }
+func (t *Table) Value() Value              { return Value{object: &t.object} }
 func (t *Table) ReadOnly() bool            { return t.readonly }
 func (t *Table) SetReadOnly(readonly bool) { t.readonly = readonly }
 func (t *Table) Metatable() *Table         { return t.metatable }
@@ -44,7 +46,7 @@ func (t *Table) SetMetatable(meta *Table) error {
 }
 
 func arrayIndex(key Value) int {
-	if key.kind == TypeNumber && key.number >= 1 && key.number <= 1<<maxTableBits && key.number == math.Trunc(key.number) {
+	if key.Type() == TypeNumber && key.number >= 1 && key.number <= 1<<maxTableBits && key.number == math.Trunc(key.number) {
 		return int(key.number)
 	}
 	return -1
@@ -63,9 +65,9 @@ func (t *Table) mainPosition(key Value) int {
 	if len(t.nodes) == 0 {
 		return -1
 	}
-	switch key.kind {
+	switch key.Type() {
 	case TypeString:
-		return int(stringHash(key.text) & uint32(len(t.nodes)-1))
+		return int(stringHash(key.Text()) & uint32(len(t.nodes)-1))
 	case TypeBoolean:
 		return int(key.number) & (len(t.nodes) - 1)
 	case TypeNumber:
@@ -112,7 +114,7 @@ func (t *Table) RawSet(key, value Value) error {
 	if key.IsNil() {
 		return plainError("table index is nil")
 	}
-	if key.kind == TypeNumber && math.IsNaN(key.number) {
+	if key.Type() == TypeNumber && math.IsNaN(key.number) {
 		return plainError("table index is NaN")
 	}
 	t.set(key, value)
@@ -121,10 +123,12 @@ func (t *Table) RawSet(key, value Value) error {
 
 func (t *Table) set(key, value Value) {
 	if index := arrayIndex(key); index > 0 && index <= len(t.array) {
-		t.array[index-1] = value
+		t.setArray(index-1, value)
 		return
 	}
+	t.version++
 	if index := t.find(key); index >= 0 {
+		t.invalidateSequence(key, value)
 		t.nodes[index].value = value
 		return
 	}
@@ -158,8 +162,33 @@ func (t *Table) set(key, value Value) {
 			main = free
 		}
 	}
+	t.invalidateSequence(key, value)
 	t.nodes[main].key = key
 	t.nodes[main].value = value
+}
+
+func (t *Table) setArray(index int, value Value) {
+	if t.sequence >= 0 {
+		switch {
+		case value.IsNil():
+			if index == t.sequence-1 {
+				t.sequence--
+			} else if index < t.sequence {
+				t.sequence = -1
+			}
+		case index == t.sequence:
+			t.sequence++
+		case index > t.sequence:
+			t.sequence = -1
+		}
+	}
+	t.array[index] = value
+}
+
+func (t *Table) invalidateSequence(key, value Value) {
+	if t.sequence >= 0 && !value.IsNil() && key.object == &numberMarker && key.number >= 1 && key.number == math.Trunc(key.number) {
+		t.sequence = -1
+	}
 }
 
 func countArrayKey(key Value, counts *[maxTableBits + 1]int) int {
@@ -209,6 +238,9 @@ func (t *Table) resize(arraySize, hashSize int) {
 		panic(plainError("table overflow"))
 	}
 	oldArray, oldNodes := t.array, t.nodes
+	if arraySize < t.sequence {
+		t.sequence = -1
+	}
 	if arraySize > len(oldArray) {
 		t.memory.reserve(int64(arraySize-len(oldArray)) * 40)
 		t.array = make([]Value, arraySize)
@@ -265,6 +297,9 @@ func (t *Table) Next(key Value) (Value, Value, error) {
 }
 
 func (t *Table) Len() int {
+	if t.sequence >= 0 {
+		return t.sequence
+	}
 	upper := len(t.array)
 	if upper > 0 && t.array[upper-1].IsNil() {
 		lower := 0

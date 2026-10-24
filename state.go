@@ -51,18 +51,10 @@ func (u *upvalue) set(value Value) {
 }
 
 type frame struct {
-	function    *function
-	start       int
-	base        int
-	pc          int
-	line        int
-	varargBase  int
-	varargCount int
-	limit       int
-	returnDest  int
-	want        int
-	callName    nameInfo
-	method      bool
+	function                          *function
+	site                              *instruction
+	start, base, pc, returnDest, want int32
+	metacallTop                       int32
 }
 
 type thread struct {
@@ -86,6 +78,7 @@ type thread struct {
 }
 
 type State struct {
+	binaryCache [6]binaryCache
 	options     Options
 	globals     *Table
 	stringMeta  *Table
@@ -130,7 +123,7 @@ func (s *State) NewTable(arraySize, hashSize int) *Table {
 	if s.running > 0 {
 		t.memory = s.options.Memory
 	}
-	t.object = object{id: s.nextID, table: t}
+	t.object = object{kind: TypeTable, id: s.nextID, table: t}
 	t.resize(arraySize, hashSize)
 	return t
 }
@@ -138,16 +131,16 @@ func (s *State) NewTable(arraySize, hashSize int) *Table {
 func (s *State) Function(name string, native GoFunction) Value {
 	s.nextID++
 	s.reserve(128)
-	return Value{kind: TypeFunction, object: &object{id: s.nextID, function: &function{native: native, name: name, env: s.globals}}}
+	return Value{object: &object{kind: TypeFunction, id: s.nextID, function: &function{native: native, name: name, env: s.globals}}}
 }
 
 func (s *State) Userdata(data any) Value {
 	s.nextID++
-	return Value{kind: TypeUserdata, object: &object{id: s.nextID, data: data}}
+	return Value{object: &object{kind: TypeUserdata, id: s.nextID, data: data}}
 }
 
 func (v Value) Userdata() any {
-	if v.kind == TypeUserdata {
+	if v.Type() == TypeUserdata {
 		return v.object.data
 	}
 	return nil
@@ -163,7 +156,7 @@ func (s *State) Load(proto *Proto, env *Table) Value {
 func (s *State) closure(proto *Proto, env *Table, upvalues []*upvalue) Value {
 	s.nextID++
 	s.reserve(128 + int64(len(upvalues))*8)
-	return Value{kind: TypeFunction, object: &object{id: s.nextID, function: &function{proto: proto, env: env, upvalues: upvalues}}}
+	return Value{object: &object{kind: TypeFunction, id: s.nextID, function: &function{proto: proto, env: env, upvalues: upvalues}}}
 }
 
 func (s *State) Call(fn Value, args ...Value) (values []Value, err error) {
@@ -192,7 +185,7 @@ func (s *State) protected(fn Value, args []Value) (values []Value, err error) {
 func (s *State) protectedCall(fn Value, args []Value, enter bool) (values []Value, err error) {
 	t := s.current
 	cDepth := t.cDepth
-	depth, used, top, nativeDepth := len(t.frames), t.used, t.top, t.nativeDepth
+	depth, used, top, nativeDepth, boundary := len(t.frames), t.used, t.top, t.nativeDepth, t.boundary
 	defer func() {
 		if raised := recover(); raised != nil {
 			failure, ok := raised.(*Error)
@@ -213,7 +206,7 @@ func (s *State) protectedCall(fn Value, args []Value, enter bool) (values []Valu
 			t.close(used)
 			clear(t.stack[used:t.used])
 			t.frames = t.frames[:depth]
-			t.used, t.top, t.nativeDepth = used, top, nativeDepth
+			t.used, t.top, t.nativeDepth, t.boundary = used, top, nativeDepth, boundary
 		}
 	}()
 	if enter {
@@ -225,13 +218,13 @@ func (s *State) protectedCall(fn Value, args []Value, enter bool) (values []Valu
 			panic(plainError("error in error handling"))
 		}
 	}
-	if fn.kind != TypeFunction {
+	if fn.Type() != TypeFunction {
 		fn, args = s.callable(fn, args, nameInfo{})
 	}
 	if fn.object.function.native != nil {
-		return s.native(fn.object.function, args, nameInfo{}, false), nil
+		return s.native(fn.object.function, args, nil), nil
 	}
-	s.push(fn.object.function, args, -1, -1, nameInfo{}, false)
+	s.push(fn.object.function, args, -1, -1, nil)
 	return s.execute(depth), nil
 }
 
@@ -257,15 +250,15 @@ func (s *State) invokeOne(fn Value, args []Value) Value {
 	if t.cDepth >= 225 {
 		panic(plainError("error in error handling"))
 	}
-	if fn.kind != TypeFunction {
+	if fn.Type() != TypeFunction {
 		fn, args = s.callable(fn, args, nameInfo{})
 	}
 	if fn.object.function.native != nil {
-		return first(s.native(fn.object.function, append([]Value(nil), args...), nameInfo{}, false))
+		return first(s.native(fn.object.function, append([]Value(nil), args...), nil))
 	}
 	depth, used, top := len(t.frames), t.used, t.top
 	dest := max(used, top)
-	s.push(fn.object.function, args, dest, 1, nameInfo{}, false)
+	s.push(fn.object.function, args, dest, 1, nil)
 	s.execute(depth)
 	value := t.stack[dest]
 	t.stack[dest] = Nil()
@@ -274,6 +267,7 @@ func (s *State) invokeOne(fn Value, args []Value) Value {
 }
 
 func (s *State) cleanup() {
+	clear(s.binaryCache[:])
 	for _, t := range s.threads {
 		t.close(0)
 		clear(t.stack)
@@ -306,35 +300,32 @@ func (t *thread) ensure(size int) {
 }
 
 func (t *thread) capture(index int) *upvalue {
-	for current := t.open; current != nil; current = current.next {
-		if current.index == index {
-			return current
-		}
+	link := &t.open
+	for *link != nil && (*link).index > index {
+		link = &(*link).next
 	}
-	current := &upvalue{thread: t, index: index, next: t.open}
-	t.open = current
+	if *link != nil && (*link).index == index {
+		return *link
+	}
+	current := &upvalue{thread: t, index: index, next: *link}
+	*link = current
 	return current
 }
 
 func (t *thread) close(base int) {
-	link := &t.open
-	for *link != nil {
-		current := *link
-		if current.index >= base {
-			current.value = t.stack[current.index]
-			current.thread = nil
-			*link = current.next
-			current.next = nil
-		} else {
-			link = &current.next
-		}
+	for t.open != nil && t.open.index >= base {
+		current := t.open
+		t.open = current.next
+		current.value = t.stack[current.index]
+		current.thread = nil
+		current.next = nil
 	}
 }
 
 func (s *State) currentLine() int {
 	for i := len(s.current.frames) - 1; i >= 0; i-- {
 		if s.current.frames[i].function.proto != nil {
-			return s.current.frames[i].line
+			return s.current.frames[i].sourceLine()
 		}
 	}
 	return 0
@@ -345,7 +336,7 @@ func (s *State) raise(message string, level int) {
 	index := len(t.frames) - 1 - level
 	err := plainError(message)
 	if index >= 0 && t.frames[index].function.proto != nil {
-		err = locatedError(t.frames[index].function.proto.chunk, t.frames[index].line, message)
+		err = locatedError(t.frames[index].function.proto.chunk, t.frames[index].sourceLine(), message)
 	}
 	err.Line = s.currentLine()
 	err.cDepth = t.cDepth
@@ -356,9 +347,9 @@ func (s *State) runtimeError(message string) { s.raise(message, 0) }
 
 func (s *State) typeError(action string, value Value, info nameInfo) {
 	if info.name != "" {
-		s.runtimeError(fmt.Sprintf("attempt to %s %s '%s' (a %s value)", action, info.kind, info.name, value.kind))
+		s.runtimeError(fmt.Sprintf("attempt to %s %s '%s' (a %s value)", action, info.kind, info.name, value.Type()))
 	}
-	s.runtimeError(fmt.Sprintf("attempt to %s a %s value", action, value.kind))
+	s.runtimeError(fmt.Sprintf("attempt to %s a %s value", action, value.Type()))
 }
 
 func (s *State) tick() {

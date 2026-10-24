@@ -156,10 +156,11 @@ func stringDump(s *State, args []Value) ([]Value, error) {
 			}
 		}
 		putInt(len(proto.code))
-		for _, code := range proto.code {
+		for pc := range proto.code {
+			code := proto.instruction(pc)
 			s.tick()
 			out.WriteByte(byte(code.op))
-			for _, value := range []int{code.a, code.b, code.c, code.d, code.line} {
+			for _, value := range []int{code.a, code.b, code.c, code.d, int(proto.lines[pc])} {
 				putInt(value)
 			}
 			putText(code.text)
@@ -175,9 +176,9 @@ func stringDump(s *State, args []Value) ([]Value, error) {
 		}
 		putInt(len(proto.constants))
 		for _, value := range proto.constants {
-			out.WriteByte(byte(value.kind))
-			if value.kind == TypeString {
-				putText(value.text)
+			out.WriteByte(byte(value.Type()))
+			if value.Type() == TypeString {
+				putText(value.Text())
 			} else {
 				putInt(int(math.Float64bits(value.number)))
 			}

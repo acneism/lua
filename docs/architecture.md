@@ -4,15 +4,20 @@
 
 The lexer and parser build a temporary syntax tree. The compiler resolves locals
 and upvalues and emits register instructions into an immutable `Proto`.
-Prototypes own constants, child prototypes, source lines, and upvalue descriptors.
+Prototypes own packed uint64 code, constants, child prototypes, a PC-to-line
+table, pooled operand metadata, and upvalue descriptors.
 Execution never modifies them.
 
 A `State` owns globals, identities, hook counters, and execution stacks.
-Values carry a tag, a float64, a string, and an object pointer. Numbers are not
-boxed. Common numeric operations run directly in the dispatch loop. Slow paths
-handle coercion, metatables, and errors.
+Values occupy 24 bytes: a float64, an object pointer, and an immutable string
+header pointer. Private read-only objects identify numbers and booleans.
+Numbers are not boxed. Numeric opcodes encode register/constant modes. The
+dispatch loop caches its PC, code, constants, frame, and 256-register window;
+host callbacks and frame changes reload that state. Slow paths handle coercion,
+metatables, and errors.
 
-Lua calls push explicit frames into reusable slices. Varargs precede registers
+Lua calls push 40-byte frames into reusable slices and return in the same
+dispatch loop. Only missing parameters need clearing. Varargs precede registers
 in the value stack so expanding argument lists cannot overwrite saved varargs.
 Tail calls close open upvalues and replace the current frame.
 Left-associated binary chains reuse their result register, so temporary stack
@@ -23,7 +28,8 @@ Prototype dumping follows the same bounded function tree. Table sorting
 recurses only into the smaller partition; table rehash recursion is bounded
 by the finite array/hash sizing ranges.
 
-Open upvalues refer to a thread and register index. Closures that capture one
+Open upvalues refer to a thread and register index, sorted by descending index
+so frame return closes only its captures. Closures that capture one
 local share its upvalue. Scope exit copies the value into the upvalue object.
 Loop variables close on each iteration. The compiler omits close instructions
 when no local in that scope was captured.
@@ -33,7 +39,10 @@ when no local in that scope was captured.
 Tables port the array/hash layout, rehash sizing, collision chains, backward
 free-slot search, traversal, and length boundary search from Lua 5.1.5 in Redis.
 String and number hashes follow the source. Object keys use stable state IDs.
-Deleted hash keys remain available to `next`.
+Deleted hash keys remain available to `next`. A proven dense sequence retains
+its exact length across sequential writes. Gaps, interior deletion, positive
+integral hash entries, and bulk writes invalidate this shortcut; sparse tables
+keep Lua's original boundary search.
 
 Constructors use Lua's floating-byte capacities and `SETLIST` batches of 50.
 The final call or vararg expression can expand the last batch.
@@ -52,7 +61,9 @@ Native frame depth is tracked separately for yield boundaries.
 
 Lua callbacks needing one result write into a temporary VM result slot. This
 avoids allocating argument/result slices or installing a recover boundary for
-each Lua metamethod and sort comparator. The enclosing protected call performs
+each Lua metamethod and sort comparator. Arithmetic Lua metamethods run as
+continuation frames in the dispatch loop. State-local caches use the metatable
+pointer and mutation version to invalidate methods after writes. The enclosing protected call performs
 unwinding. Errors record the C depth where they originate.
 
 Error carries the Lua value, rendered message, innermost Lua line, abort cause,
@@ -60,9 +71,12 @@ and internal-error flag. Protected calls catch Lua errors. Abort causes and
 internal failures propagate through protected calls and coroutines. The call
 boundary converts Go panics into internal failures.
 
-Instructions carry operand names and source lines. Native argument errors use
-the call-site name. Go frames count toward caller levels. The hook polls after
-the configured number of steps; long source-reader loops poll it too.
+Cold instruction metadata carries operand names; errors look up the source
+line by saved PC. Native argument errors use the call-site name. Go frames
+count toward caller levels. Calls and backward branches account for four hook
+work units; straight blocks have checkpoints every 32 instructions. Hook reentry
+can grow the stack, so execution reloads register pointers afterward. Long
+source-reader and library loops poll the hook too.
 Syntax errors render chunk names with llex.c's 80-byte buffer; runtime errors
 use LUA_IDSIZE, 60 bytes. Both apply Redis's luaO_chunkid rules.
 

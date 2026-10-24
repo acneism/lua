@@ -17,11 +17,14 @@ func argument(args []Value, index int) Value {
 
 func (s *State) argError(index int, message string) {
 	f := s.current.frames[len(s.current.frames)-1]
-	name := f.callName.name
+	name := ""
+	if f.site != nil {
+		name = f.site.left.name
+	}
 	if name == "" {
 		name = "?"
 	}
-	if f.method {
+	if f.site != nil && f.site.method {
 		index--
 		if index == 0 {
 			s.raise(fmt.Sprintf("calling '%s' on bad self (%s)", name, message), 1)
@@ -40,7 +43,7 @@ func (s *State) checkAny(args []Value, index int) Value {
 func (s *State) expected(args []Value, index int, expected string) {
 	got := "no value"
 	if index < len(args) {
-		got = args[index].kind.String()
+		got = args[index].Type().String()
 	}
 	s.argError(index+1, expected+" expected, got "+got)
 }
@@ -103,7 +106,7 @@ func (s *State) openBase() {
 		"pcall": basePCall, "xpcall": baseXPCall, "loadstring": baseLoadString,
 		"load": baseLoad, "collectgarbage": baseCollectGarbage,
 		"type": func(s *State, args []Value) ([]Value, error) {
-			return []Value{String(s.checkAny(args, 0).kind.String())}, nil
+			return []Value{String(s.checkAny(args, 0).Type().String())}, nil
 		},
 		"rawequal": func(s *State, args []Value) ([]Value, error) {
 			return []Value{Bool(s.checkAny(args, 0).Equal(s.checkAny(args, 1)))}, nil
@@ -123,7 +126,7 @@ func (s *State) openBase() {
 		"getmetatable": func(s *State, args []Value) ([]Value, error) {
 			value := s.checkAny(args, 0)
 			var table *Table
-			switch value.kind {
+			switch value.Type() {
 			case TypeString:
 				table = s.stringMeta
 			case TypeTable:
@@ -140,7 +143,7 @@ func (s *State) openBase() {
 		"setmetatable": func(s *State, args []Value) ([]Value, error) {
 			table := s.checkTable(args, 0)
 			meta := s.checkAny(args, 1)
-			if !meta.IsNil() && meta.kind != TypeTable {
+			if !meta.IsNil() && meta.Type() != TypeTable {
 				s.argError(2, "nil or table expected")
 			}
 			if table.readonly {
@@ -242,7 +245,7 @@ func baseToNumber(s *State, args []Value) ([]Value, error) {
 }
 
 func baseSelect(s *State, args []Value) ([]Value, error) {
-	if len(args) > 0 && args[0].kind == TypeString && strings.HasPrefix(args[0].text, "#") {
+	if len(args) > 0 && args[0].Type() == TypeString && strings.HasPrefix(args[0].Text(), "#") {
 		return []Value{Number(float64(len(args) - 1))}, nil
 	}
 	index := int(s.checkNumber(args, 0))
@@ -286,8 +289,8 @@ func basePCall(s *State, args []Value) ([]Value, error) {
 	if err != nil {
 		failure := err.(*Error)
 		value := failure.Value
-		if value.kind == TypeTable {
-			if text := value.Table().RawGet(String("err")); text.kind == TypeString {
+		if value.Type() == TypeTable {
+			if text := value.Table().RawGet(String("err")); text.Type() == TypeString {
 				return []Value{Bool(false), text}, nil
 			}
 			return []Value{Bool(false), value, Nil()}, nil
@@ -338,7 +341,7 @@ func baseLoadString(s *State, args []Value) ([]Value, error) {
 
 func baseLoad(s *State, args []Value) ([]Value, error) {
 	reader := argument(args, 0)
-	if reader.kind != TypeFunction {
+	if reader.Type() != TypeFunction {
 		s.expected(args, 0, "function")
 	}
 	chunk := "=(load)"
@@ -349,7 +352,7 @@ func baseLoad(s *State, args []Value) ([]Value, error) {
 	for {
 		s.tick()
 		value := first(s.invoke(reader, nil))
-		if value.IsNil() || value.kind == TypeString && value.text == "" {
+		if value.IsNil() || value.Type() == TypeString && value.Text() == "" {
 			break
 		}
 		text, ok := value.toString()
@@ -357,7 +360,7 @@ func baseLoad(s *State, args []Value) ([]Value, error) {
 			failure := "reader function must return a string"
 			frames := s.current.frames
 			if len(frames) >= 2 && frames[len(frames)-2].function.proto != nil {
-				failure = locatedError(frames[len(frames)-2].function.proto.chunk, frames[len(frames)-2].line, failure).Error()
+				failure = locatedError(frames[len(frames)-2].function.proto.chunk, frames[len(frames)-2].sourceLine(), failure).Error()
 			}
 			return []Value{Nil(), String(failure)}, nil
 		}

@@ -1,0 +1,18 @@
+[
+  {
+    "src": "local r = {} for k = 0, 3999 do local c = (2 * k + 1) * 1.5707963267948966 local e = math.floor(math.log(c) / math.log(2)) local u = 2 ^ (e - 52) for d = -2, 2 do local x = c + d * u r[#r + 1] = string.format('%.17g|%.17g', x, math.tan(x)) end end return 'tan;' .. table.concat(r, ',')",
+    "steps": 4000000
+  },
+  {
+    "src": "local r = {} for k = 0, 3999 do local c = (2 * k + 1) * 1.5707963267948966 local e = math.floor(math.log(c) / math.log(2)) local u = 2 ^ (e - 52) for d = -2, 2 do local x = -(c + d * u) r[#r + 1] = string.format('%.17g|%.17g', x, math.tan(x)) end end return 'tan;' .. table.concat(r, ',')",
+    "steps": 4000000
+  },
+  {
+    "src": "local r = {} for k = 1, 4000 do local c = k * 3.141592653589793 local e = math.floor(math.log(c) / math.log(2)) local u = 2 ^ (e - 52) for d = -2, 2 do local x = c + d * u r[#r + 1] = string.format('%.17g|%.17g|%.17g|%.17g', x, math.sin(x), math.cos(x), math.tan(x)) end end return 'sct;' .. table.concat(r, ',')",
+    "steps": 4000000
+  },
+  {
+    "src": "local r = {} for k = 0, 3999 do local c = (2 * k + 1) * 1.5707963267948966 local e = math.floor(math.log(c) / math.log(2)) local u = 2 ^ (e - 52) for d = -2, 2 do local x = c + d * u r[#r + 1] = string.format('%.17g|%.17g|%.17g|%.17g', x, math.sin(x), math.cos(x), math.tan(x)) end end return 'sct;' .. table.concat(r, ',')",
+    "steps": 4000000
+  }
+]

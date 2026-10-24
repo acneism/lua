@@ -65,23 +65,23 @@ func (s *State) openCoroutine() {
 	s.globals.set(String("coroutine"), table.Value())
 }
 
-func (o *object) threadValue() Value { return Value{kind: TypeThread, object: o} }
+func (o *object) threadValue() Value { return Value{object: o} }
 
 func (s *State) createThread(args []Value) *thread {
 	fn := argument(args, 0)
-	if fn.kind != TypeFunction || fn.object.function.proto == nil {
+	if fn.Type() != TypeFunction || fn.object.function.proto == nil {
 		s.argError(1, "Lua function expected")
 	}
 	s.nextID++
 	t := &thread{entry: fn, status: "suspended"}
-	t.object = object{id: s.nextID, thread: t}
+	t.object = object{kind: TypeThread, id: s.nextID, thread: t}
 	s.threads = append(s.threads, t)
 	return t
 }
 
 func (s *State) checkThread(args []Value, index int) *thread {
 	value := argument(args, index)
-	if value.kind != TypeThread {
+	if value.Type() != TypeThread {
 		s.argError(index+1, "coroutine expected")
 	}
 	return value.object.thread

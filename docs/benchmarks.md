@@ -1,10 +1,53 @@
 # Benchmarks
 
-These are historical A2 measurements, accepted under the former 6x limit.
-The current requirement is at most 1.5x Redis on every scenario. Stage P will
-measure Redis 7.2.16 with jemalloc on the same VM, using medians of five
-alternating rounds and Redis times of at least 20 ms. Function and metamethod
-workloads use one million repetitions. A3 makes no performance acceptance claim.
+## P interpreter
+
+Machine: Azure Standard_B4as_v2, AMD EPYC 7763, four vCPUs, 16 GiB RAM.
+Linux amd64; Go 1.27.0; Redis 7.2.16 with jemalloc. CPU credits remained
+positive. Redis and Go run on the same VM, with no concurrent fuzzing,
+race checking, or CPU profiling during this comparison.
+
+Each value is the median of five alternating Redis/Go samples. Go executes
+in process after compilation and warmup; Redis EVAL uses a local TCP connection.
+Garbage collection before each sample is outside its measured interval on both
+sides. The command checks equal return values, requires jemalloc, and rejects
+Redis medians below 20 ms. Every raw timing and Go allocation count is retained
+in the JSON report.
+
+| Scenario | Redis median ms | Go median ms | Go / Redis |
+| --- | ---: | ---: | ---: |
+| Loop | 78.135 | 80.744 | 1.033 |
+| Fib27 | 21.886 | 31.964 | 1.460 |
+| LuaCalls | 29.458 | 40.133 | 1.362 |
+| TableInsert | 112.407 | 124.712 | 1.109 |
+| TableHash | 62.066 | 69.164 | 1.114 |
+| Sort | 39.930 | 42.250 | 1.058 |
+| GSub | 26.470 | 37.078 | 1.401 |
+| StringConcat | 45.712 | 29.783 | 0.652 |
+| Metamethod | 39.244 | 53.859 | 1.372 |
+
+The loop allocates one 24-byte outer result slice after warmup; its allocation
+count does not grow with iterations. LuaCalls allocates three objects and 152
+bytes for its whole million-call script. Metamethod allocates seven objects and
+560 bytes, including the script's tables, closure, and outer result. Loop and
+call allocation regressions compare short and long scripts. Generated strings
+and table growth still allocate according to their sizes.
+
+Reproduce the comparison on an otherwise idle VM:
+
+```sh
+mkdir -p work
+go run ./internal/cmd/bench -addr 127.0.0.1:6390 -output work/bench.json
+```
+
+Use `go test . -run '^$' -bench . -benchmem` for Go microbenchmarks and
+`-cpuprofile` on the comparison command for an exploratory aggregate profile.
+Profiling runs are separate from the acceptance comparison. See the
+[performance decision](adr/0007-vm-performance.md) for design and baseline
+measurements.
+
+The remaining measurements below are historical A2 results, accepted under the
+former six-times limit. They are not the P acceptance comparison.
 
 ## A2 interpreter and libraries
 
@@ -54,8 +97,8 @@ removed those costs while preserving the captured C-depth boundaries.
 
 Before the A2 review fixes, a three-round alternating comparison of earlier A1
 source 73da2d8 and A2 dacf508 on the same VM measured Fibonacci medians of
-86.623 ms and 90.790 ms: that A2 version was 4.81% slower. The individual ranges were 84.027–95.615 ms and
-89.405–94.966 ms. These short runs overlap and cannot isolate a compiler
+86.623 ms and 90.790 ms: that A2 version was 4.81% slower. The individual ranges were 84.027вЂ“95.615 ms and
+89.405вЂ“94.966 ms. These short runs overlap and cannot isolate a compiler
 regression from scheduling noise. Both versions allocated five objects and
 232 bytes. The profile identifies dispatch and frame setup as the main costs;
 the metamethod optimization does not address them.
@@ -65,7 +108,7 @@ fixes. No other fuzzing or race workload ran during benchmarks. The gsub
 benchmark also constructs its input with the new interruptible string.rep;
 its chunked builder allocates more than the earlier single Repeat call.
 
-## Reproduction
+## Historical A2 reproduction
 
 Run scripts/bench-reference.py from the repository root on the benchmark VM
 with Redis 7.2.16 on port 6390. It verifies the version, warms each script,

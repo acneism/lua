@@ -12,13 +12,17 @@ of 4158. The original 707 sources and answers remain unchanged. The new cases
 cover coercion, arithmetic, table traversal, constructor batches, closures,
 varargs, error frames, coroutine boundaries, and parser and call limits.
 
-All 4158 main entries execute; `testdata/pending.json` is empty.
+P adds 27 further Redis captures covering compact operand modes, direct calls,
+metamethod continuation and cache invalidation, source locations, and dense and
+sparse sequence lengths. All 4185 main entries execute;
+`testdata/pending.json` is empty.
 Reference verification always checks the complete file. Each execution has a
 one-million-instruction hook budget, so a broken limit fails its own subtest.
 Three million-operation reviewer snippets have explicit two-million-step
 budgets in testdata/limits.json. Four larger L1 grids have explicit
-four-million-step budgets. Overrides for a file outside the requested corpus
-are ignored; duplicate entries and invalid limits fail validation.
+four-million-step budgets in testdata/libm.limits.json. Every metadata entry
+must be used by a requested snippet; unused entries, duplicates and invalid
+limits fail validation.
 
 The A2 review adds 324 main snippets and 16 exact trigonometric snippets in
 testdata/libm.json. All 340 reviewer sources and answers remain represented.
@@ -47,7 +51,11 @@ func RunCorpus(t *testing.T, files []string, options lua.Options)
 
 It accepts relative or absolute JSON fixture paths. Each fixture directory must
 contain limits.json and normalization.json. Files in one directory share one
-copy of that metadata. The supplied Options.Math functions, memory budget,
+copy of that metadata. A fixture can also supply a sibling file named
+<fixture>.limits.json for budgets specific to that fixture. These budgets load
+only when that fixture is requested, so exact libm budgets do not become stale
+entries in a main-only run. All shared metadata must match the requested files.
+The supplied Options.Math functions, memory budget,
 string limit, and host hook remain active. A bounded hook also limits each
 snippet. The runner creates the same read-only snippet environment and separate
 outer capture helper as the root corpus tests.

@@ -42,12 +42,12 @@ func (t Type) String() string {
 
 type Value struct {
 	number float64
-	text   string
 	object *object
-	kind   Type
+	text   *string
 }
 
 type object struct {
+	kind     Type
 	id       uint64
 	table    *Table
 	function *function
@@ -55,48 +55,61 @@ type object struct {
 	data     any
 }
 
-func Nil() Value { return Value{} }
+var numberMarker = object{kind: TypeNumber}
+var booleanMarker = object{kind: TypeBoolean}
 
+func Nil() Value { return Value{} }
 func Bool(b bool) Value {
 	if b {
-		return Value{kind: TypeBoolean, number: 1}
+		return Value{object: &booleanMarker, number: 1}
 	}
-	return Value{kind: TypeBoolean}
+	return Value{object: &booleanMarker}
 }
-
-func Number(n float64) Value   { return Value{kind: TypeNumber, number: n} }
-func String(s string) Value    { return Value{kind: TypeString, text: s} }
-func (v Value) Type() Type     { return v.kind }
+func Number(n float64) Value { return Value{object: &numberMarker, number: n} }
+func String(s string) Value  { return Value{text: &s} }
+func (v Value) Type() Type {
+	if v.object != nil {
+		return v.object.kind
+	}
+	if v.text != nil {
+		return TypeString
+	}
+	return TypeNil
+}
 func (v Value) Float() float64 { return v.number }
-func (v Value) Text() string   { return v.text }
-func (v Value) IsNil() bool    { return v.kind == TypeNil }
-func (v Value) Truth() bool    { return v.kind != TypeNil && (v.kind != TypeBoolean || v.number != 0) }
-
+func (v Value) Text() string {
+	if v.text != nil {
+		return *v.text
+	}
+	return ""
+}
+func (v Value) IsNil() bool { return v.object == nil && v.text == nil }
+func (v Value) Truth() bool {
+	if v.object == nil {
+		return v.text != nil
+	}
+	return v.object != &booleanMarker || v.number != 0
+}
 func (v Value) Table() *Table {
-	if v.kind == TypeTable {
+	if v.Type() == TypeTable {
 		return v.object.table
 	}
 	return nil
 }
-
 func (v Value) Equal(other Value) bool {
-	if v.kind != other.kind {
+	if v.text != nil || other.text != nil {
+		return v.text != nil && other.text != nil && *v.text == *other.text
+	}
+	if v.object != other.object {
 		return false
 	}
-	switch v.kind {
-	case TypeNil:
-		return true
-	case TypeBoolean, TypeNumber:
+	if v.object == &numberMarker || v.object == &booleanMarker {
 		return v.number == other.number
-	case TypeString:
-		return v.text == other.text
-	default:
-		return v.object == other.object
 	}
+	return true
 }
-
 func (v Value) String() string {
-	switch v.kind {
+	switch v.Type() {
 	case TypeNil:
 		return "nil"
 	case TypeBoolean:
@@ -107,9 +120,9 @@ func (v Value) String() string {
 	case TypeNumber:
 		return formatNumber(v.number)
 	case TypeString:
-		return v.text
+		return *v.text
 	default:
-		return v.kind.String() + ": 0x" + strconv.FormatUint(v.object.id, 16)
+		return v.Type().String() + ": 0x" + strconv.FormatUint(v.object.id, 16)
 	}
 }
 
@@ -175,20 +188,20 @@ func validNaNPayload(s string) bool {
 }
 
 func (v Value) toNumber() (float64, bool) {
-	if v.kind == TypeNumber {
+	if v.Type() == TypeNumber {
 		return v.number, true
 	}
-	if v.kind == TypeString {
-		return parseNumber(v.text)
+	if v.Type() == TypeString {
+		return parseNumber(v.Text())
 	}
 	return 0, false
 }
 
 func (v Value) toString() (string, bool) {
-	if v.kind == TypeString {
-		return v.text, true
+	if v.Type() == TypeString {
+		return v.Text(), true
 	}
-	if v.kind == TypeNumber {
+	if v.Type() == TypeNumber {
 		return formatNumber(v.number), true
 	}
 	return "", false
