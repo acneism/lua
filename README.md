@@ -7,17 +7,15 @@ uses the Go standard library only. It requires Go 1.26.1 or later.
 
 ## Status
 
-A1 implements the interpreter core, base and coroutine libraries, immutable
-prototypes, Lua tables, metatables, closures, varargs, tail calls, error locations,
-read-only tables, and an interruption hook.
+A2 implements the interpreter core, base, coroutine, string, table, and math
+libraries, immutable prototypes, Lua tables, metatables, closures, varargs,
+tail calls, error locations, read-only tables, and an interruption hook.
 
-The corpus has 1499 snippets. The interpreter runs 1257 through the original
-capture wrapper. The other 242 are explicitly listed by source and stage in
-`testdata/pending.json`. All 242 currently need the A2 libraries.
-The reference verifier checks all 1499 against Redis.
+The corpus has 3105 snippets. All execute through the original capture wrapper.
+`testdata/pending.json` is empty. The reference verifier checks every recorded
+answer against Redis.
 
-String, table, and math libraries belong to A2. The Redis engine, host interface,
-EVAL, and FUNCTION API belong to later stages.
+The Redis engine, host interface, EVAL, and FUNCTION API belong to later stages.
 
 ## Interpreter example
 

@@ -1,11 +1,11 @@
 # Compatibility
 
-The target is Redis 7.2.16 and its Lua 5.1 variant. A1 implements the interpreter
-and base and coroutine libraries. EVAL, FUNCTION, host commands, A2 libraries,
+The target is Redis 7.2.16 and its Lua 5.1 variant. A2 implements the interpreter
+and base, coroutine, string, table, and math libraries. EVAL, FUNCTION, host commands,
 and C extensions are not implemented yet.
 
-Of 1499 reference snippets, 1257 execute in A1. The other 242 are listed explicitly
-in `testdata/pending.json`. Tests execute the original capture wrapper; its
+All 3105 reference snippets execute; `testdata/pending.json` is empty.
+Tests execute the original capture wrapper; its
 helper environment is separate from the snippet environment. Reference CI
 checks all recorded answers against Redis, including pending entries.
 
@@ -36,12 +36,21 @@ Object tostring values use stable IDs instead of machine addresses. Type
 prefixes such as `table: 0x` match. Pointer-key table order may differ.
 Numeric constants may merge signed zero. The specification also permits
 equivalent fpconv rounding, pooled random-state differences, and
-platform-dependent NaN signs. Three sources are explicitly listed for NaN-sign
+platform-dependent NaN signs. Five sources are explicitly listed for NaN-sign
 normalization on arm64 in testdata/normalization.json. All other fields still compare
 exactly. A separate test requires formatting to preserve the actual NaN sign.
 
 Lua modulo explicitly rounds its intermediate product to float64. This prevents
 fused multiply/subtract instructions from changing Redis's result on ARM64.
+
+String patterns operate on bytes with the C locale's character classes.
+Formatting preserves C integer conversions, byte widths, zero termination,
+and Lua 5.1's quoting rules. The random generator is state-local Redis rand48.
+Table sorting follows auxsort, including its comparator call order.
+
+string.dump serializes this VM's immutable register program after the LuaQ
+signature. Its payload is specific to this VM rather than Redis's instruction
+format. Binary loading is rejected, including this output, as in Redis.
 
 collectgarbage and gcinfo expose plausible Go memory statistics rather than the
 Redis Lua allocator's exact figures. Lua controls do not stop Go's process-wide

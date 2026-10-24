@@ -7,15 +7,16 @@ with Redis 7.2.16. No expected answer was rewritten during import.
 The imported file's SHA-256 is
 `b442925e7abca89031bbb849df933695eb9910b44cf6aa26ea1fa53b21ac9910`.
 
-A1 adds 792 entries captured by the same tool from Redis 7.2.16, for a total
-of 1499. The original 707 sources and answers remain unchanged. The new cases
+A1 and A2 add 2398 entries captured by the same tool from Redis 7.2.16, for a total
+of 3105. The original 707 sources and answers remain unchanged. The new cases
 cover coercion, arithmetic, table traversal, constructor batches, closures,
 varargs, error frames, coroutine boundaries, and parser and call limits.
 
-1257 entries execute in A1. The 242 entries needing A2 are recorded in
-`testdata/pending.json`. Reference verification always checks the complete file.
+All 3105 entries execute; `testdata/pending.json` is empty.
+Reference verification always checks the complete file. Each execution has a
+one-million-instruction hook budget, so a broken limit fails its own subtest.
 
-Three sources have explicit nan-sign rules in testdata/normalization.json for
+Five sources have explicit nan-sign rules in testdata/normalization.json for
 platform-dependent NaN generation. It changes no recorded answer, and only
 paired nan/-nan fields can compare equal on arm64; amd64 compares exactly.
 Finite modulo results are not normalized.
@@ -46,8 +47,8 @@ reply, as the original capture tool does. It preserves all other bytes.
 JSON cannot preserve an invalid UTF-8 result. Capture rejects such output rather
 than replacing its bytes. Binary probes encode results as hexadecimal inside
 Lua. The binary syntax-token tests compare raw Go results to those captured
-hexadecimal answers. Their string-library encoders remain explicitly pending A2.
+hexadecimal answers. Their string-library encoders also execute in the corpus.
 
-The future interpreter corpus runner must execute this same wrapper in the EVAL
-environment. Calling snippets directly changes protected-call and error-level
-semantics and does not satisfy the corpus contract.
+The interpreter corpus runner executes this same wrapper. The future EVAL
+environment must preserve it: calling snippets directly changes protected-call
+and error-level semantics and does not satisfy the corpus contract.

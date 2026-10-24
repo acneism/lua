@@ -45,6 +45,11 @@ metamethods, and generic iterators. Resumed coroutines inherit the caller's
 depth. Error handlers retain the failing depth and Lua's extra handling reserve.
 Native frame depth is tracked separately for yield boundaries.
 
+Lua callbacks needing one result write into a temporary VM result slot. This
+avoids allocating argument/result slices or installing a recover boundary for
+each Lua metamethod and sort comparator. The enclosing protected call performs
+unwinding. Errors record the C depth where they originate.
+
 Error carries the Lua value, rendered message, innermost Lua line, abort cause,
 and internal-error flag. Protected calls catch Lua errors. Abort causes and
 internal failures propagate through protected calls and coroutines. The call
@@ -64,11 +69,11 @@ part of B.
 
 The root corpus runner executes the original wrapper. A separate, test-only
 outer environment supplies its table.concat helper. Snippets do not inherit it.
-The pending manifest lists later-stage features and rejects duplicate,
-incomplete, and stale entries.
+The pending manifest is empty after A2. Its validator rejects duplicate,
+incomplete, and stale entries if later-stage cases are added.
 
 ## Remaining stages
 
-A2 adds string, table, and math libraries. B adds Redis environments, hosts,
+B adds Redis environments, hosts,
 replies, EVAL, and SCRIPT. C adds extension libraries. D adds FUNCTION, FCALL,
 and DUMP/RESTORE. E completes engine resource controls and final measurements.
