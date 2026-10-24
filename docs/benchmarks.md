@@ -13,15 +13,15 @@ compilation is excluded from the Go execution benchmark.
 
 | Workload | Redis | Go | Ratio | Go allocations per outer call |
 | --- | ---: | ---: | ---: | ---: |
-| Sum loop, 10 million iterations | 84.314 ms | 308.812 ms | 3.66 | 1 |
-| Fibonacci 27 | 24.082 ms | 98.701 ms | 4.10 | 5 |
-| 10,000 ordinary Lua calls | 0.370 ms | 1.063 ms | 2.88 | 3 |
-| Sequential table insertion, 1 million entries | 132.789 ms | 318.550 ms | 2.40 | 23 |
-| Fill and traverse 100,000 string keys | 90.485 ms | 86.434 ms | 0.96 | 400,015 |
-| Sort 100,000 descending numbers | 44.714 ms | 134.898 ms | 3.02 | 20 |
-| gsub of 1 MiB, %a+ to x | 29.542 ms | 20.771 ms | 0.70 | 34 |
-| Convert and concatenate 100,000 numbers | 46.546 ms | 49.353 ms | 1.06 | 200,042 |
-| 10,000 Lua arithmetic metamethod calls | 0.442 ms | 2.551 ms | 5.78 | 7 |
+| Sum loop, 10 million iterations | 84.294 ms | 234.776 ms | 2.79 | 1 |
+| Fibonacci 27 | 22.235 ms | 89.944 ms | 4.05 | 5 |
+| 10,000 ordinary Lua calls | 0.375 ms | 1.067 ms | 2.84 | 3 |
+| Sequential table insertion, 1 million entries | 121.426 ms | 272.981 ms | 2.25 | 23 |
+| Fill and traverse 100,000 string keys | 56.738 ms | 71.842 ms | 1.27 | 400,014 |
+| Sort 100,000 descending numbers | 37.896 ms | 113.482 ms | 2.99 | 20 |
+| gsub of 1 MiB, %a+ to x | 26.836 ms | 36.878 ms | 1.37 | 48 |
+| Convert and concatenate 100,000 numbers | 39.417 ms | 50.799 ms | 1.29 | 200,042 |
+| 10,000 Lua arithmetic metamethod calls | 0.453 ms | 2.089 ms | 4.61 | 7 |
 
 All scenarios satisfy the acceptance limit of six times Redis. Fibonacci and
 metamethod calls exceed the four-times target and remain optimization opportunities.
@@ -33,24 +33,31 @@ to seven allocations and 560 bytes. The seven allocations create the script's
 table, metatable, closure, and outer result; they do not grow with loop count.
 String-key and concatenation workloads allocate their generated strings.
 
-The number-value microbenchmark measured a median 4.006 ns/op, zero bytes,
+The number-value microbenchmark measured a median 3.742 ns/op, zero bytes,
 and zero allocations over three 100 ms runs.
 
 ## Profiles
 
-The two-second Fibonacci CPU profile attributed 65.12% flat samples to VM
-dispatch, 14.88% to frame setup, and 7.91% to memory clearing. It did not execute
-the protected metamethod path. The separate metamethod profile showed repeated
-protected-call recovery and argument/result allocations. A single-result VM
-call path removed those costs while preserving the captured C-depth boundaries.
+The final two-second Fibonacci CPU profile attributed 72.57% flat samples to VM
+dispatch, 10.55% to frame setup, and 6.33% to memory clearing. It did not execute
+the protected metamethod path. The final metamethod profile attributed 36.82%
+to dispatch, 15.48% to binary dispatch, and 7.11% to frame setup. Before the
+single-result optimization, a separate metamethod profile showed repeated
+protected-call recovery and argument/result allocations. Reusable result slots
+removed those costs while preserving the captured C-depth boundaries.
 
-An additional three-round alternating comparison of earlier A1 source 73da2d8
-and A2 on the same VM measured Fibonacci medians of 86.623 ms and 90.790 ms:
-A2 was 4.81% slower. The individual ranges were 84.027–95.615 ms and
+Before the A2 review fixes, a three-round alternating comparison of earlier A1
+source 73da2d8 and A2 dacf508 on the same VM measured Fibonacci medians of
+86.623 ms and 90.790 ms: that A2 version was 4.81% slower. The individual ranges were 84.027–95.615 ms and
 89.405–94.966 ms. These short runs overlap and cannot isolate a compiler
 regression from scheduling noise. Both versions allocated five objects and
 232 bytes. The profile identifies dispatch and frame setup as the main costs;
 the metamethod optimization does not address them.
+
+The final measurements above use production source 3ab696b after the review
+fixes. No other fuzzing or race workload ran during benchmarks. The gsub
+benchmark also constructs its input with the new interruptible string.rep;
+its chunked builder allocates more than the earlier single Repeat call.
 
 ## Reproduction
 

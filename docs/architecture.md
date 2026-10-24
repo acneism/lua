@@ -17,6 +17,11 @@ in the value stack so expanding argument lists cannot overwrite saved varargs.
 Tail calls close open upvalues and replace the current frame.
 Left-associated binary chains reuse their result register, so temporary stack
 capacity does not grow with the number of operands.
+Binary and suffix chains are traversed iteratively. The remaining recursive
+syntax and compiler paths follow parser nesting, bounded at 200 levels.
+Prototype dumping follows the same bounded function tree. Table sorting
+recurses only into the smaller partition; table rehash recursion is bounded
+by the finite array/hash sizing ranges.
 
 Open upvalues refer to a thread and register index. Closures that capture one
 local share its upvalue. Scope exit copies the value into the upvalue object.
