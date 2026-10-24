@@ -16,6 +16,7 @@ type tableNode struct {
 type Table struct {
 	object    object
 	version   uint64
+	sequence  int
 	array     []Value
 	nodes     []tableNode
 	lastFree  int
@@ -122,11 +123,12 @@ func (t *Table) RawSet(key, value Value) error {
 
 func (t *Table) set(key, value Value) {
 	if index := arrayIndex(key); index > 0 && index <= len(t.array) {
-		t.array[index-1] = value
+		t.setArray(index-1, value)
 		return
 	}
 	t.version++
 	if index := t.find(key); index >= 0 {
+		t.invalidateSequence(key, value)
 		t.nodes[index].value = value
 		return
 	}
@@ -160,8 +162,33 @@ func (t *Table) set(key, value Value) {
 			main = free
 		}
 	}
+	t.invalidateSequence(key, value)
 	t.nodes[main].key = key
 	t.nodes[main].value = value
+}
+
+func (t *Table) setArray(index int, value Value) {
+	if t.sequence >= 0 {
+		switch {
+		case value.IsNil():
+			if index == t.sequence-1 {
+				t.sequence--
+			} else if index < t.sequence {
+				t.sequence = -1
+			}
+		case index == t.sequence:
+			t.sequence++
+		case index > t.sequence:
+			t.sequence = -1
+		}
+	}
+	t.array[index] = value
+}
+
+func (t *Table) invalidateSequence(key, value Value) {
+	if t.sequence >= 0 && !value.IsNil() && key.object == &numberMarker && key.number >= 1 && key.number == math.Trunc(key.number) {
+		t.sequence = -1
+	}
 }
 
 func countArrayKey(key Value, counts *[maxTableBits + 1]int) int {
@@ -211,6 +238,9 @@ func (t *Table) resize(arraySize, hashSize int) {
 		panic(plainError("table overflow"))
 	}
 	oldArray, oldNodes := t.array, t.nodes
+	if arraySize < t.sequence {
+		t.sequence = -1
+	}
 	if arraySize > len(oldArray) {
 		t.memory.reserve(int64(arraySize-len(oldArray)) * 40)
 		t.array = make([]Value, arraySize)
@@ -267,6 +297,9 @@ func (t *Table) Next(key Value) (Value, Value, error) {
 }
 
 func (t *Table) Len() int {
+	if t.sequence >= 0 {
+		return t.sequence
+	}
 	upper := len(t.array)
 	if upper > 0 && t.array[upper-1].IsNil() {
 		lower := 0

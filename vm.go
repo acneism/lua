@@ -37,6 +37,7 @@ func (s *State) push(fn *function, args []Value, dest, want int, site *instructi
 	if p.argRegister >= 0 && p.needsArg && !p.usesVararg {
 		arg := s.NewTable(extra, 1)
 		copy(arg.array, t.stack[start:base])
+		arg.sequence = -1
 		arg.set(String("n"), Number(float64(extra)))
 		t.stack[base+p.argRegister] = arg.Value()
 	}
@@ -413,7 +414,7 @@ func (s *State) execute(stop int) (result []Value) {
 					if key.object == &numberMarker {
 						index := int(key.number)
 						if index > 0 && index <= len(table.array) && float64(index) == key.number {
-							table.array[index-1] = registers[uint8(word>>48)]
+							table.setArray(index-1, registers[uint8(word>>48)])
 							continue
 						}
 					}
@@ -558,6 +559,9 @@ func (s *State) execute(stop int) (result []Value) {
 					table.resize(i.d+count, len(table.nodes))
 				}
 				copy(table.array[i.d:i.d+count], t.stack[b:b+count])
+				if count > 0 {
+					table.sequence = -1
+				}
 			case opClosure:
 				child := p.children[i.b]
 				upvalues := make([]*upvalue, len(child.upvalues))
