@@ -32,6 +32,14 @@ func differentialClients(t *testing.T) (*redistest.Client, *redistest.Client) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = second.Close() })
+	if database := os.Getenv("REDIS_REF_DB"); database != "" {
+		for _, client := range []*redistest.Client{first, second} {
+			reply, err := client.Do("SELECT", database)
+			if err != nil || reply.Type == redis.ErrorReply {
+				t.Fatalf("SELECT %s: %v %+v", database, err, reply)
+			}
+		}
+	}
 	return first, second
 }
 
