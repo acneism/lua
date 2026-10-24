@@ -220,8 +220,6 @@ func (s *State) execute(stop int) (result []Value) {
 						remaining -= vmCallWeight
 						if remaining <= 0 {
 							s.pollHook()
-							f = &t.frames[frameIndex]
-							registers = (*[256]Value)(t.stack[base : base+256])
 							remaining = s.options.HookEvery - s.steps
 						}
 						t.cDepth++
@@ -276,8 +274,6 @@ func (s *State) execute(stop int) (result []Value) {
 					if remaining <= 0 {
 						t.frames[frameIndex].pc = int32(pc)
 						s.pollHook()
-						f = &t.frames[frameIndex]
-						registers = (*[256]Value)(t.stack[base : base+256])
 						remaining = s.options.HookEvery - s.steps
 					}
 					t.frames[frameIndex].pc = int32(pc)
@@ -412,8 +408,17 @@ func (s *State) execute(stop int) (result []Value) {
 			case opSetTable:
 				value := registers[register]
 				if value.Type() == TypeTable && !value.object.table.readonly && value.object.table.metatable == nil {
+					table := value.object.table
+					key := registers[uint8(word>>16)]
+					if key.object == &numberMarker {
+						index := int(key.number)
+						if index > 0 && index <= len(table.array) && float64(index) == key.number {
+							table.array[index-1] = registers[uint8(word>>48)]
+							continue
+						}
+					}
 					t.frames[frameIndex].pc = int32(pc)
-					if err := value.object.table.RawSet(registers[uint8(word>>16)], registers[uint8(word>>48)]); err != nil {
+					if err := table.RawSet(key, registers[uint8(word>>48)]); err != nil {
 						s.runtimeError(err.Error())
 					}
 					continue
@@ -526,7 +531,6 @@ func (s *State) execute(stop int) (result []Value) {
 					t.frames[frameIndex].pc = int32(pc)
 					s.pollHook()
 					f = &t.frames[frameIndex]
-					registers = (*[256]Value)(t.stack[base : base+256])
 					remaining = s.options.HookEvery - s.steps
 				}
 
@@ -570,7 +574,7 @@ func (s *State) execute(stop int) (result []Value) {
 			case opUnary:
 				t.stack[a] = s.unary(i.text, t.stack[b], i.left)
 			case opBinary:
-				left, right := Nil(), Nil()
+				var left, right Value
 				if i.b < 0 {
 					left = p.constants[-1-i.b]
 				} else {
@@ -586,8 +590,6 @@ func (s *State) execute(stop int) (result []Value) {
 					remaining -= vmCallWeight
 					if remaining <= 0 {
 						s.pollHook()
-						f = &t.frames[frameIndex]
-						registers = (*[256]Value)(t.stack[base : base+256])
 						remaining = s.options.HookEvery - s.steps
 					}
 					s.steps = s.options.HookEvery - remaining

@@ -76,7 +76,7 @@ func run(address, output string, rounds int, selected, profile string) error {
 		return err
 	}
 	if !strings.Contains(info, "redis_version:7.2.16\r\n") {
-		return fmt.Errorf("Redis 7.2.16 required")
+		return fmt.Errorf("redis 7.2.16 required")
 	}
 	info, err = client.command("INFO", "memory")
 	if err != nil {
@@ -170,6 +170,9 @@ func run(address, output string, rounds int, selected, profile string) error {
 		slices.Sort(redisTimes)
 		slices.Sort(goTimes)
 		result.RedisNS, result.GoNS = redisTimes[rounds/2], goTimes[rounds/2]
+		if result.RedisNS < int64(20*time.Millisecond) {
+			return fmt.Errorf("%s Redis median is below 20 ms; enlarge the workload", item.Name)
+		}
 		result.Ratio = float64(result.GoNS) / float64(result.RedisNS)
 		report.Results = append(report.Results, result)
 		fmt.Printf("%s median Redis %.3fms Go %.3fms ratio %.3f\n", item.Name, float64(result.RedisNS)/1e6, float64(result.GoNS)/1e6, result.Ratio)
@@ -210,7 +213,7 @@ func (r *reference) command(args ...string) (string, error) {
 	case '+', ':':
 		return line[1:], nil
 	case '-':
-		return "", fmt.Errorf("Redis: %s", line[1:])
+		return "", fmt.Errorf("redis: %s", line[1:])
 	case '$':
 		size, err := strconv.Atoi(line[1:])
 		if err != nil {

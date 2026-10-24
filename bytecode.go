@@ -68,7 +68,8 @@ func (c *compiler) freeze() {
 		if op == opCall || op == opReturn {
 			word = uint64(op) | uint64(uint8(source.a))<<8 | uint64(uint16(source.b))<<16 | uint64(uint16(source.c))<<32 | uint64(uint8(source.d))<<48
 		}
-		if op == opBinary {
+		switch op {
+		case opBinary:
 			operation := numericOperation(source.text)
 			left, right, mode := source.b, source.c, 0
 			if left < 0 {
@@ -83,7 +84,7 @@ func (c *compiler) freeze() {
 				op = numericBase + opcode(operation*4+mode)
 				word = uint64(op) | uint64(uint8(source.a))<<8 | uint64(uint16(left))<<16 | uint64(uint16(right))<<32
 			}
-		} else if op == opUnary {
+		case opUnary:
 			switch source.text {
 			case "-":
 				op = opNegate
