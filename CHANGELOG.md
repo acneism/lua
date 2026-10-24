@@ -13,13 +13,15 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 - Tagged values and Lua array/hash tables, metatables, and read-only support.
 - Closures, shared upvalues, varargs, multiple results, loops, and tail calls.
 - Base and coroutine libraries, native callbacks, hooks, and panic isolation.
-- A 4129-entry main corpus, 16 separate libm probes, and no pending A2 entries.
+- A 4158-entry main corpus, 36 separate libm probes, and no pending A2 entries.
 - Lua string patterns and formatting, table manipulation and auxsort, math and rand48.
 - Pattern and format fuzz targets, interruption and callback-allocation regressions.
 - Model, lifecycle, allocation, and semantic regression tests.
 - Compile/run fuzz targets, PR fuzz jobs, and ten-minute nightly fuzz jobs.
 - CI on Linux, Windows, and macOS, lint, race, and reference checks.
 - Architecture decisions, compatibility notes, and interpreter benchmarks.
+
+- A reusable test-only luatest.RunCorpus API for external math integrations.
 
 ### Changed
 
@@ -31,6 +33,9 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 - The A0 validation report from docs; reports belong in PRs and the journal.
 
 ### Fixed
+
+- Architecture-independent NaN propagation and inherited loadstring syntax depth.
+- Shared-product FMA contractions in near-one log and the pow low correction.
 
 - C-call depth for metamethods, generic iterators, protected calls, and coroutines.
 - Dynamic field names in runtime errors and token locations in register errors.

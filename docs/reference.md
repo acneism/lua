@@ -7,16 +7,18 @@ with Redis 7.2.16. No expected answer was rewritten during import.
 The imported file's SHA-256 is
 `b442925e7abca89031bbb849df933695eb9910b44cf6aa26ea1fa53b21ac9910`.
 
-A1 and A2 add 3422 entries captured by the same tool from Redis 7.2.16, for a total
-of 4129. The original 707 sources and answers remain unchanged. The new cases
+A1, A2, and A3 add 3451 entries captured by the same tool from Redis 7.2.16, for a total
+of 4158. The original 707 sources and answers remain unchanged. The new cases
 cover coercion, arithmetic, table traversal, constructor batches, closures,
 varargs, error frames, coroutine boundaries, and parser and call limits.
 
-All 4129 main entries execute; `testdata/pending.json` is empty.
+All 4158 main entries execute; `testdata/pending.json` is empty.
 Reference verification always checks the complete file. Each execution has a
 one-million-instruction hook budget, so a broken limit fails its own subtest.
 Three million-operation reviewer snippets have explicit two-million-step
-budgets in testdata/limits.json. Missing and stale overrides fail validation.
+budgets in testdata/limits.json. Four larger L1 grids have explicit
+four-million-step budgets. Overrides for a file outside the requested corpus
+are ignored; duplicate entries and invalid limits fail validation.
 
 The A2 review adds 324 main snippets and 16 exact trigonometric snippets in
 testdata/libm.json. All 340 reviewer sources and answers remain represented.
@@ -30,10 +32,29 @@ near-one reduction, broad exponent ranges, subnormals, overflow, and signed
 integer powers. The generator is scripts/math-grids.py; every answer comes
 from capture running against Redis on the Azure reference VM.
 
-Five sources have explicit nan-sign rules in testdata/normalization.json for
-platform-dependent NaN generation. It changes no recorded answer, and only
-paired nan/-nan fields can compare equal on arm64; amd64 compares exactly.
-Finite modulo results are not normalized.
+NaN results are now explicit on every architecture. normalization.json is
+empty. Earlier recorded answers are unchanged. A3 adds 29 reviewer probes;
+L1 adds 20 exact trigonometric probes. They were captured with Redis 7.2.16.
+One new A3 fmod answer was recaptured from the CI Docker image using glibc 2.36,
+which takes precedence over glibc 2.39 for its two-NaN case. The reference job
+publishes its actual capture as a seven-day artifact before verification.
+
+The test-only package github.com/acneism/lua/luatest exposes:
+
+```go
+func RunCorpus(t *testing.T, files []string, options lua.Options)
+```
+
+It accepts relative or absolute JSON fixture paths. Each fixture directory must
+contain limits.json and normalization.json. Files in one directory share one
+copy of that metadata. The supplied Options.Math functions, memory budget,
+string limit, and host hook remain active. A bounded hook also limits each
+snippet. The runner creates the same read-only snippet environment and separate
+outer capture helper as the root corpus tests.
+
+TestCorpus uses RunCorpus for snippets.json. The separate lua-libm integration
+uses it for both snippets.json and libm.json with Options.Math. No production
+module dependency is needed in either repository.
 
 The command uses the specification's wrapper unchanged:
 

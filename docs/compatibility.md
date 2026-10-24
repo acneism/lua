@@ -4,7 +4,7 @@ The target is Redis 7.2.16 and its Lua 5.1 variant. A2 implements the interprete
 and base, coroutine, string, table, and math libraries. EVAL, FUNCTION, host commands,
 and C extensions are not implemented yet.
 
-All 4129 main reference snippets execute; `testdata/pending.json` is empty.
+All 4158 main reference snippets execute; `testdata/pending.json` is empty.
 Tests execute the original capture wrapper; its
 helper environment is separate from the snippet environment. Reference CI
 checks all recorded answers against Redis, including pending entries.
@@ -23,6 +23,7 @@ checks all recorded answers against Redis, including pending entries.
   Lua finalizer execution.
 - Coroutines use VM stacks. Unfinished coroutines close after the outer call.
 - Native nesting and syntax limits match the captured wrapper probes.
+  loadstring inherits the current C-call depth, including pcall and coroutines.
 - Pattern recursion stops at 200,000 active match calls with `pattern too complex`.
   Redis can crash beyond this depth. Patterns with depth 150,000 still execute.
 - Binary and suffix chains compile iteratively with reusable registers.
@@ -39,10 +40,20 @@ Engine accounting, reset policy, KILL, and BUSY remain part of E.
 Object tostring values use stable IDs instead of machine addresses. Type
 prefixes such as `table: 0x` match. Pointer-key table order may differ.
 Numeric constants may merge signed zero. The specification also permits
-equivalent fpconv rounding, pooled random-state differences, and
-platform-dependent NaN signs. Five sources are explicitly listed for NaN-sign
-normalization on arm64 in testdata/normalization.json. All other fields still compare
-exactly. A separate test requires formatting to preserve the actual NaN sign.
+compatible fpconv rounding and pooled random-state differences.
+
+Arithmetic +, -, *, and / preserve the first NaN operand's sign and payload,
+quiet signaling NaNs, and create a negative quiet NaN for invalid operations.
+The behavior is explicit on every architecture; normalization.json is empty.
+Modulo preserves separately rounded division, floor, multiplication, and
+subtraction. Power follows the ARM routine's special-case rules, including its
+odd-exponent sign adjustment. log10 returns positive NaN for negative inputs
+and preserves an existing NaN operand.
+
+The reference Docker image uses glibc 2.36. fmod(-nan, +nan) preserves its first
+NaN operand there; glibc 2.39 returns positive NaN for this pair. The Docker
+reference decides this case. One A3 snippet is captured from that image;
+all other A3 and L1 captures agree between those glibc versions.
 
 Lua modulo explicitly rounds its intermediate product to float64. This prevents
 fused multiply/subtract instructions from changing Redis's result on ARM64.
@@ -61,7 +72,7 @@ Redis's x86-64 FMA results on all supported Go architectures. The corpus checks
 Options.Math supplies sin, cos, tan, asin, acos, atan, and atan2. Nil fields fall
 back to Go math. The default acos uses asin and sqrt near -1 and 1 to avoid
 Go acos's endpoint cancellation. The defaults can differ from glibc; no ULP
-normalization applies. Sixteen exact trigonometric probes live separately in
+normalization applies. Thirty-six exact trigonometric probes live separately in
 testdata/libm.json for lua-libm integration tests. Reference CI still verifies
 their captured answers against Redis. lua does not import the LGPL module.
 

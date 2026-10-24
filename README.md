@@ -7,18 +7,18 @@ uses the Go standard library only. It requires Go 1.26.1 or later.
 
 ## Status
 
-A2 implements the interpreter core, base, coroutine, string, table, and math
+A3 completes reference compatibility for the interpreter core, base, coroutine, string, table, and math
 libraries, immutable prototypes, Lua tables, metatables, closures, varargs,
 tail calls, error locations, read-only tables, and an interruption hook.
 
-The corpus has 4129 snippets. All execute through the original capture wrapper.
+The corpus has 4158 snippets. All execute through the original capture wrapper.
 `testdata/pending.json` is empty. The reference verifier checks every recorded
 answer against Redis.
 
 The exp, log, pow, log10, sinh, cosh, and tanh implementations reproduce the
 x86-64 FMA reference, including the power operator. Hosts can supply the seven
 trigonometric functions through `Options.Math`. Without it, Go math provides
-them; acos uses asin near the endpoints. The 16 exact trigonometric probes in
+them; acos uses asin near the endpoints. The 36 exact trigonometric probes in
 `testdata/libm.json` are reserved for the separate lua-libm module.
 
 The Redis engine, host interface, EVAL, and FUNCTION API belong to later stages.
@@ -60,6 +60,10 @@ go vet ./...
 go test -race ./...
 go run ./internal/cmd/capture -addr 127.0.0.1:6390 -verify testdata/snippets.json
 ```
+
+External math modules can run this corpus through the test-only
+`github.com/acneism/lua/luatest` package. Pass fixture paths and host options to
+`luatest.RunCorpus(t, files, options)`. See [reference tests](docs/reference.md).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md), [architecture](docs/architecture.md),
 [decisions](docs/adr/README.md), [compatibility](docs/compatibility.md), and

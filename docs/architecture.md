@@ -72,10 +72,11 @@ The capture command verifies the Redis version and captures or compares answers.
 Its small RESP2 client is private to that command. The public reply parser is
 part of B.
 
-The root corpus runner executes the original wrapper. A separate, test-only
+The test-only luatest.RunCorpus runner executes the original wrapper. A separate, test-only
 outer environment supplies its table.concat helper. Snippets do not inherit it.
-The pending manifest is empty after A2. Its validator rejects duplicate,
-incomplete, and stale entries if later-stage cases are added.
+The pending manifest is empty after A2. RunCorpus accepts JSON fixture paths,
+reads budgets and normalization rules from their directories, and preserves
+host options. The root test and the external lua-libm integration share it.
 
 ## Remaining stages
 
