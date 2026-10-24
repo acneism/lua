@@ -117,3 +117,30 @@ jobs:
           retention-days: 7
       - name: Verify every recorded answer
         run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -verify testdata/snippets.json testdata/libm.json luatest/testdata/environment.json
+      - name: Verify engine wire answers and command traces
+        run: go run ./internal/cmd/redis-capture -addr 127.0.0.1:6379 -verify redis/testdata/engine.json redis/testdata/protocol.json
+
+  differential:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      redis:
+        image: redis:7.2.16
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Compare script replies and database snapshots
+        env:
+          REDIS_REF_ADDR: 127.0.0.1:6379
+          LUA_DIFF_STEPS: '2000'
+        run: go test ./redis -run '^Test(ScriptScenario|ScriptDifferential|LuaDifferential)$' -count=1 -timeout=10m

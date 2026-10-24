@@ -10,8 +10,9 @@ default retains Redis's refusal. Memory-limited runs use fresh states because
 Budget accounting cannot be reset through the current interpreter API.
 Extension-library names are present but their implementations belong to C.
 The reference-crashing error-table case and direct error-handler frame metadata
-are pending agreement in the journal. Reply conversion currently bounds nesting
-at 128; deep-reply compatibility still needs reference validation.
+are pending agreement in the journal. Reply conversion follows the reference Lua stack budget, including different
+stack costs for array, map, and set entries. Captured deep and cyclic replies
+exercise these boundaries.
 
 The target is Redis 7.2.16 and its Lua 5.1 variant. A2 implements the interpreter
 and base, coroutine, string, table, and math libraries. EVAL, FUNCTION, host commands,

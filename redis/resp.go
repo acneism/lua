@@ -40,7 +40,7 @@ func readLine(reader *bufio.Reader) (string, error) {
 }
 
 func readReply(reader *bufio.Reader, depth int) (Reply, error) {
-	if depth > 128 {
+	if depth > maxRESPDepth {
 		return Reply{}, fmt.Errorf("RESP nesting exceeds limit")
 	}
 	line, err := readLine(reader)

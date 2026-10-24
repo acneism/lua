@@ -46,7 +46,7 @@ UTF-8 replacement. Offline tests replay captured host metadata and responses;
 they do not implement a second Redis server. Verification checks both the
 script result and every recorded command trace without changing files.
 
-The initial reference set contains 152 engine cases and 30 protocol frames.
+The initial reference set contains 156 engine cases and 30 protocol frames.
 It covers error locations, redis.call validation order, sandbox names,
 read-only writes, shebang parsing, numeric command arguments, and SCRIPT APIs.
 The independent protocol fixtures exercise both RESP versions; full RESP3
@@ -63,3 +63,10 @@ the visible error-handler frame metadata remain under discussion.
 Run five seeds with 50,000 steps each for ScriptDifferential and
 LuaDifferential on the reference VM, then the final race, coverage, fuzz,
 and mutation checks. Do not treat this implementation checkpoint as acceptance.
+
+Reply conversion follows Lua's 8,000-slot C API limit. The EVAL reply starts
+with two stack entries and checks room for four. Arrays add one live slot per
+child; maps add four for key conversion and three for value conversion; sets
+add three for a key. Actual cyclic array, map, and set replies verify the
+boundary. The RESP reader and writer accept up to 10,000 nesting levels, above
+all replies this Lua stack can produce.
