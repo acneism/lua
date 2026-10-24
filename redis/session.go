@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"math"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -13,10 +12,11 @@ import (
 )
 
 type session struct {
-	engine *Engine
-	state  *lua.State
-	active *execution
-	raise  lua.Value
+	engine  *Engine
+	state   *lua.State
+	globals *lua.Table
+	active  *execution
+	raise   lua.Value
 }
 
 const (
@@ -34,15 +34,23 @@ func newSession(engine *Engine) *session {
 		}
 		return nil
 	}})
-	globals := s.state.Globals()
-	s.raise = globals.RawGet(lua.String("error"))
+	original := s.state.Globals()
+	globals := s.state.NewTable(0, 2)
+	s.globals = globals
+	s.raise = original.RawGet(lua.String("error"))
+	_ = globals.RawSet(lua.String("_G"), globals.Value())
+	for _, name := range []string{"assert", "collectgarbage", "error", "gcinfo", "getmetatable", "load", "loadstring", "next", "pcall", "rawequal", "rawget", "rawset", "select", "setmetatable", "tonumber", "tostring", "type", "unpack", "xpcall", "_VERSION", "ipairs", "pairs", "coroutine"} {
+		_ = globals.RawSet(lua.String(name), original.RawGet(lua.String(name)))
+	}
 	meta := s.state.NewTable(0, 1)
 	_ = meta.RawSet(lua.String("__index"), s.state.Function("__index", func(state *lua.State, args []lua.Value) ([]lua.Value, error) {
-		name := "nil"
-		if len(args) > 1 {
-			name = args[1].String()
+		message := "Second argument to luaProtectedTableError must be a string or number"
+		if len(args) != 2 {
+			message = "Wrong number of arguments to luaProtectedTableError"
+		} else if args[1].Type() == lua.TypeString || args[1].Type() == lua.TypeNumber {
+			message = "Script attempted to access nonexistent global variable '" + args[1].String() + "'"
 		}
-		_, err := state.Call(s.raise, lua.String("Script attempted to access nonexistent global variable '"+name+"'"), lua.Number(2))
+		_, err := state.Call(s.raise, lua.String(message), lua.Number(2))
 		if failure, ok := err.(*lua.Error); ok {
 			return nil, &lua.Error{Value: failure.Value, Message: failure.Message, Line: failure.Line, Abort: failure.Abort, Internal: failure.Internal}
 		}
@@ -50,16 +58,21 @@ func newSession(engine *Engine) *session {
 	}))
 	meta.SetReadOnly(true)
 	_ = globals.SetMetatable(meta)
-	for _, name := range []string{"bit", "cjson", "cmsgpack", "struct"} {
-		_ = globals.RawSet(lua.String(name), s.state.NewTable(0, 0).Value())
+	for _, name := range []string{"table", "string", "math", "debug", "cjson", "struct", "cmsgpack", "bit"} {
+		value := original.RawGet(lua.String(name))
+		if value.IsNil() {
+			value = s.state.NewTable(0, 0).Value()
+		}
+		_ = globals.RawSet(lua.String(name), value)
 	}
+	s.openRedis()
+	_ = globals.RawSet(lua.String("debug"), lua.Nil())
 	_ = globals.RawSet(lua.String("__redis__err__handler"), s.state.Function("__redis__err__handler", func(_ *lua.State, args []lua.Value) ([]lua.Value, error) {
 		if len(args) == 0 {
 			return []lua.Value{lua.Nil()}, nil
 		}
 		return args[:1], nil
 	}))
-	s.openRedis()
 	for key, value, err := globals.Next(lua.Nil()); !key.IsNil() && err == nil; key, value, err = globals.Next(key) {
 		if table := value.Table(); table != nil && table != globals {
 			table.SetReadOnly(true)
@@ -70,7 +83,7 @@ func newSession(engine *Engine) *session {
 }
 
 func (s *session) arguments(keys, args [][]byte) {
-	globals := s.state.Globals()
+	globals := s.globals
 	globals.SetReadOnly(false)
 	defer globals.SetReadOnly(true)
 	for i, values := range [][][]byte{keys, args} {
@@ -151,7 +164,8 @@ func (s *session) openRedis() {
 			if len(args) != 1 {
 				return nil, s.failure("redis.setresp() requires one argument.")
 			}
-			proto := int(numeric(args[0]))
+			number, _ := numeric(args[0])
+			proto := int(number)
 			if proto != 2 && proto != 3 {
 				return nil, s.failure("RESP version must be 2 or 3.")
 			}
@@ -162,7 +176,8 @@ func (s *session) openRedis() {
 			if len(args) != 1 {
 				return nil, s.failure("redis.set_repl() requires one argument.")
 			}
-			flags := int(numeric(args[0]))
+			number, _ := numeric(args[0])
+			flags := int(number)
 			if flags & ^3 != 0 {
 				return nil, s.failure("Invalid replication flags. Use REPL_AOF, REPL_REPLICA, REPL_ALL or REPL_NONE.")
 			}
@@ -176,47 +191,84 @@ func (s *session) openRedis() {
 		"debug":              func(_ *lua.State, _ []lua.Value) ([]lua.Value, error) { return nil, nil },
 		"log":                s.log,
 	}
-	table := s.state.NewTable(0, len(functions)+11)
-	names := make([]string, 0, len(functions))
-	for name := range functions {
-		names = append(names, name)
+	table := s.state.NewTable(0, 0)
+	constants := map[string]lua.Value{"LOG_DEBUG": lua.Number(0), "LOG_VERBOSE": lua.Number(1), "LOG_NOTICE": lua.Number(2), "LOG_WARNING": lua.Number(3), "REPL_NONE": lua.Number(0), "REPL_AOF": lua.Number(1), "REPL_SLAVE": lua.Number(2), "REPL_REPLICA": lua.Number(2), "REPL_ALL": lua.Number(3), "REDIS_VERSION_NUM": lua.Number(float64(s.engine.config.VersionNum)), "REDIS_VERSION": lua.String(s.engine.config.Version)}
+	for _, name := range []string{"call", "pcall", "log", "LOG_DEBUG", "LOG_VERBOSE", "LOG_NOTICE", "LOG_WARNING", "REDIS_VERSION_NUM", "REDIS_VERSION", "setresp", "sha1hex", "error_reply", "status_reply", "set_repl", "REPL_NONE", "REPL_AOF", "REPL_SLAVE", "REPL_REPLICA", "REPL_ALL", "acl_check_cmd", "breakpoint", "debug", "replicate_commands"} {
+		value := constants[name]
+		if function := functions[name]; function != nil {
+			value = s.state.Function(name, function)
+		}
+		_ = table.RawSet(lua.String(name), value)
 	}
-	sort.Strings(names)
-	for _, name := range names {
-		_ = table.RawSet(lua.String(name), s.state.Function(name, functions[name]))
-	}
-	for name, value := range map[string]int{"LOG_DEBUG": 0, "LOG_VERBOSE": 1, "LOG_NOTICE": 2, "LOG_WARNING": 3, "REPL_NONE": 0, "REPL_AOF": 1, "REPL_SLAVE": 2, "REPL_REPLICA": 2, "REPL_ALL": 3, "REDIS_VERSION_NUM": s.engine.config.VersionNum} {
-		_ = table.RawSet(lua.String(name), lua.Number(float64(value)))
-	}
-	_ = table.RawSet(lua.String("REDIS_VERSION"), lua.String(s.engine.config.Version))
-	_ = s.state.Globals().RawSet(lua.String("redis"), table.Value())
+	_ = s.globals.RawSet(lua.String("redis"), table.Value())
 }
 
-func numeric(value lua.Value) float64 {
+func numeric(value lua.Value) (float64, bool) {
 	if value.Type() == lua.TypeNumber {
-		return value.Float()
+		return value.Float(), true
 	}
 	if value.Type() == lua.TypeString {
-		if n, err := strconv.ParseFloat(strings.TrimSpace(value.Text()), 64); err == nil {
-			return n
+		return parseNumeric(value.Text())
+	}
+	return 0, false
+}
+
+func parseNumeric(text string) (float64, bool) {
+	text = strings.Trim(text, " \t\n\r\v\f")
+	if text == "" || strings.ContainsRune(text, 0) {
+		return 0, false
+	}
+	unsigned := strings.ToLower(text)
+	sign := 1.0
+	if unsigned[0] == '-' || unsigned[0] == '+' {
+		if unsigned[0] == '-' {
+			sign = -1
+		}
+		unsigned = unsigned[1:]
+	}
+	if unsigned == "inf" || unsigned == "infinity" {
+		return math.Inf(int(sign)), true
+	}
+	if unsigned == "nan" {
+		return math.Copysign(math.NaN(), sign), true
+	}
+	if strings.HasPrefix(unsigned, "nan(") && strings.HasSuffix(unsigned, ")") {
+		valid := true
+		for _, c := range unsigned[4 : len(unsigned)-1] {
+			if !(c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_') {
+				valid = false
+				break
+			}
+		}
+		if valid {
+			return math.Copysign(math.NaN(), sign), true
 		}
 	}
-	return 0
+	if strings.ContainsRune(text, '_') {
+		return 0, false
+	}
+	if strings.HasPrefix(unsigned, "0x") && !strings.ContainsRune(unsigned, 'p') {
+		text += "p0"
+	}
+	n, err := strconv.ParseFloat(text, 64)
+	if err == nil {
+		return n, true
+	}
+	if failure, ok := err.(*strconv.NumError); ok && failure.Err == strconv.ErrRange {
+		return n, true
+	}
+	return 0, false
 }
 
 func (s *session) log(_ *lua.State, args []lua.Value) ([]lua.Value, error) {
 	if len(args) < 2 {
 		return nil, s.failure("redis.log() requires two arguments or more.")
 	}
-	if args[0].Type() != lua.TypeNumber && args[0].Type() != lua.TypeString {
+	number, ok := numeric(args[0])
+	if !ok {
 		return nil, s.failure("First argument must be a number (log level).")
 	}
-	if args[0].Type() == lua.TypeString {
-		if _, err := strconv.ParseFloat(strings.TrimSpace(args[0].Text()), 64); err != nil {
-			return nil, s.failure("First argument must be a number (log level).")
-		}
-	}
-	level := int(numeric(args[0]))
+	level := int(number)
 	if level < 0 || level > 3 {
 		return nil, s.failure("Invalid debug level.")
 	}
