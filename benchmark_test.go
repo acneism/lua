@@ -30,7 +30,7 @@ func BenchmarkFib27(b *testing.B) {
 }
 
 func BenchmarkLuaCalls(b *testing.B) {
-	benchmarkScript(b, "local function f(x) return x+1 end local n=0 for i=1,10000 do n=f(n) end return n")
+	benchmarkScript(b, "local function f(x) return x+1 end local n=0 for i=1,1000000 do n=f(n) end return n")
 }
 
 func BenchmarkTableInsert(b *testing.B) {
@@ -65,7 +65,7 @@ func BenchmarkStringConcat(b *testing.B) {
 }
 
 func BenchmarkMetamethod(b *testing.B) {
-	benchmarkScript(b, "local t=setmetatable({}, {__add=function(a,b) return b+1 end}) local n=0 for i=1,10000 do n=t+n end return n")
+	benchmarkScript(b, "local t=setmetatable({}, {__add=function(a,b) return b+1 end}) local n=0 for i=1,1000000 do n=t+n end return n")
 }
 
 func TestLuaCallsDoNotAllocatePerCall(t *testing.T) {
