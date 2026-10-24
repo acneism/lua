@@ -35,7 +35,7 @@ func (s *State) openMath() {
 			value := operation(input)
 			if math.IsNaN(value) && !math.IsNaN(input) {
 				sign := -1.0
-				if name == "acos" || name == "asin" {
+				if name == "acos" || name == "asin" || name == "log10" {
 					sign = 1
 				}
 				value = math.Copysign(value, sign)
@@ -51,7 +51,9 @@ func (s *State) openMath() {
 		b := s.checkNumber(args, 1)
 		a := s.checkNumber(args, 0)
 		value := math.Mod(a, b)
-		if math.IsNaN(a) {
+		if math.IsNaN(a) && math.IsNaN(b) {
+			value = math.Copysign(a, 1)
+		} else if math.IsNaN(a) {
 			value = a
 		} else if math.IsNaN(b) {
 			value = b

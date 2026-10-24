@@ -82,7 +82,11 @@ type compiler struct {
 	position  token
 }
 
-func Compile(source []byte, chunk string) (proto *Proto, err error) {
+func Compile(source []byte, chunk string) (*Proto, error) {
+	return compile(source, chunk, 0)
+}
+
+func compile(source []byte, chunk string, depth int) (proto *Proto, err error) {
 	defer func() {
 		if raised := recover(); raised != nil {
 			if failure, ok := raised.(*Error); ok {
@@ -96,7 +100,7 @@ func Compile(source []byte, chunk string) (proto *Proto, err error) {
 	if chunk == "" {
 		chunk = string(source)
 	}
-	p := &parser{lexer: lexer{source: string(source), chunk: chunk, line: 1}}
+	p := &parser{depth: depth, lexer: lexer{source: string(source), chunk: chunk, line: 1}}
 	p.advance()
 	f := &syntaxFunction{main: true, vararg: true, line: 1, body: p.block()}
 	p.expect("<eof>")

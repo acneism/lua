@@ -328,7 +328,7 @@ func baseLoadString(s *State, args []Value) ([]Value, error) {
 		chunk = s.checkText(args, 1)
 	}
 	s.checkString(len(source))
-	proto, err := Compile([]byte(source), chunk)
+	proto, err := compile([]byte(source), chunk, max(0, s.current.cDepth-1))
 	if err != nil {
 		return []Value{Nil(), String(err.Error())}, nil
 	}

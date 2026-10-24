@@ -169,7 +169,7 @@ func armPow(x, y float64) float64 {
 				return 1
 			}
 			if math.IsNaN(x) || math.IsNaN(y) {
-				return x + y
+				return luaNaN(x+y, x, y)
 			}
 			if math.Abs(x) == 1 {
 				return 1
@@ -226,6 +226,9 @@ func armPow(x, y float64) float64 {
 }
 
 func fdLog10(x float64) float64 {
+	if math.IsNaN(x) {
+		return x + x
+	}
 	bits := math.Float64bits(x)
 	high := int32(bits >> 32)
 	k := 0
@@ -234,7 +237,7 @@ func fdLog10(x float64) float64 {
 			return math.Inf(-1)
 		}
 		if math.Signbit(x) {
-			return math.Float64frombits(0xfff8000000000000)
+			return math.Float64frombits(0x7ff8000000000000)
 		}
 		k -= 54
 		x *= 0x1p54

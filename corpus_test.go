@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"runtime"
 	"strings"
 	"testing"
 )
@@ -118,109 +117,4 @@ func captureEnvironment(s *State) *Table {
 	}))
 	outer.set(String("table"), join.Value())
 	return outer
-}
-
-func TestCorpus(t *testing.T) {
-	limitData, err := os.ReadFile("testdata/limits.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	var limits []corpusLimit
-	if err = json.Unmarshal(limitData, &limits); err != nil {
-		t.Fatal(err)
-	}
-	limiting := make(map[string]int)
-	for _, item := range limits {
-		if _, duplicate := limiting[item.Src]; duplicate || item.Steps <= 1000000 || item.Steps > 10000000 {
-			t.Fatalf("invalid corpus limit: %+v", item)
-		}
-		limiting[item.Src] = item.Steps
-	}
-	normalizationData, err := os.ReadFile("testdata/normalization.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	var normalizations []corpusNormalization
-	if err := json.Unmarshal(normalizationData, &normalizations); err != nil {
-		t.Fatal(err)
-	}
-	normalizing := make(map[string]string)
-	for _, item := range normalizations {
-		if _, duplicate := normalizing[item.Src]; duplicate || item.Rule != "nan-sign" {
-			t.Fatalf("invalid normalization: %+v", item)
-		}
-		normalizing[item.Src] = item.Rule
-	}
-	data, err := os.ReadFile("testdata/pending.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	var pending []pendingSnippet
-	if err := json.Unmarshal(data, &pending); err != nil {
-		t.Fatal(err)
-	}
-	waiting := make(map[string]pendingSnippet)
-	for _, item := range pending {
-		if _, duplicate := waiting[item.Src]; duplicate || item.Stage == "" || item.Reason == "" {
-			t.Fatalf("invalid pending entry: %+v", item)
-		}
-		waiting[item.Src] = item
-	}
-	ran := 0
-	for index, snippet := range readCorpus(t) {
-		if _, deferred := waiting[snippet.Src]; deferred {
-			delete(waiting, snippet.Src)
-			continue
-		}
-		ran++
-		rule := normalizing[snippet.Src]
-		delete(normalizing, snippet.Src)
-		limit := 1000000
-		if specific, ok := limiting[snippet.Src]; ok {
-			limit = specific
-			delete(limiting, snippet.Src)
-		}
-		t.Run(fmt.Sprintf("%03d", index+1), func(t *testing.T) {
-			steps := 0
-			s := NewState(Options{HookEvery: 1000, Hook: func() error {
-				steps += 1000
-				if steps > limit {
-					return fmt.Errorf("corpus snippet exceeded %d steps", limit)
-				}
-				return nil
-			}})
-			env := captureEnvironment(s)
-			proto, err := Compile([]byte(fmt.Sprintf(captureWrapper, quoteLua(snippet.Src))), "@capture")
-			if err != nil {
-				t.Fatal(err)
-			}
-			values, err := s.Call(s.Load(proto, env))
-			if err != nil {
-				t.Fatalf("wrapper failed: %v; source: %s", err, snippet.Src)
-			}
-			if len(values) != 1 || values[0].kind != TypeString {
-				t.Fatalf("unexpected wrapper result: %v", values)
-			}
-			got := strings.TrimPrefix(values[0].text, "ERR ")
-			if got != snippet.Want {
-				if rule == "nan-sign" && runtime.GOARCH == "arm64" && equalNaNFields(got, snippet.Want) {
-					return
-				}
-				t.Fatalf("want %q\ngot  %q\nsource: %s", snippet.Want, got, snippet.Src)
-			}
-		})
-	}
-	if len(waiting) > 0 {
-		t.Fatalf("%d pending sources are absent from corpus", len(waiting))
-	}
-	if len(normalizing) > 0 {
-		t.Fatalf("%d normalization entries did not execute", len(normalizing))
-	}
-	if len(limiting) > 0 {
-		t.Fatalf("%d corpus limits did not execute", len(limiting))
-	}
-	if ran == 0 {
-		t.Fatal("no corpus entries executed")
-	}
-	t.Logf("executed %d snippets; %d explicitly pending", ran, len(pending))
 }

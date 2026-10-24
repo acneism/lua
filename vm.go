@@ -195,13 +195,13 @@ func (s *State) execute(stop int) (result []Value) {
 				x, y := left.number, right.number
 				switch i.text {
 				case "+":
-					t.stack[a] = Number(x + y)
+					t.stack[a] = Number(luaNaN(x+y, x, y))
 					continue
 				case "-":
-					t.stack[a] = Number(x - y)
+					t.stack[a] = Number(luaNaN(x-y, x, y))
 					continue
 				case "*":
-					t.stack[a] = Number(x * y)
+					t.stack[a] = Number(luaNaN(x*y, x, y))
 					continue
 				case "/":
 					t.stack[a] = Number(luaDivide(x, y))
@@ -473,11 +473,11 @@ func (s *State) binary(operator string, left, right Value, leftName, rightName n
 		if aok && bok {
 			switch operator {
 			case "+":
-				return Number(a + b)
+				return Number(luaNaN(a+b, a, b))
 			case "-":
-				return Number(a - b)
+				return Number(luaNaN(a-b, a, b))
 			case "*":
-				return Number(a * b)
+				return Number(luaNaN(a*b, a, b))
 			case "/":
 				return Number(luaDivide(a, b))
 			case "%":
@@ -518,15 +518,24 @@ func (s *State) binary(operator string, left, right Value, leftName, rightName n
 
 func luaModulo(left, right float64) float64 {
 	product := float64(math.Floor(left/right) * right)
-	return left - product
+	return luaNaN(left-product, left, right)
+}
+
+func luaNaN(value, left, right float64) float64 {
+	if !math.IsNaN(value) {
+		return value
+	}
+	if math.IsNaN(left) {
+		return math.Float64frombits(math.Float64bits(left) | 1<<51)
+	}
+	if math.IsNaN(right) {
+		return math.Float64frombits(math.Float64bits(right) | 1<<51)
+	}
+	return math.Float64frombits(0xfff8000000000000)
 }
 
 func luaDivide(left, right float64) float64 {
-	value := left / right
-	if math.IsNaN(value) && !math.IsNaN(left) && !math.IsNaN(right) {
-		return math.Copysign(value, -1)
-	}
-	return value
+	return luaNaN(left/right, left, right)
 }
 
 func luaPower(left, right float64) float64 {
