@@ -213,7 +213,7 @@ func (e *Engine) execute(entry *compiledScript, keys, args [][]byte, run Run) Re
 		e.mu.Unlock()
 	}()
 	s.arguments(keys, args)
-	values, err := s.state.Call(s.state.Load(entry.proto, nil))
+	values, err := s.state.Call(s.state.Load(entry.proto, s.globals))
 	if x.abort != nil {
 		return *x.abort
 	}
