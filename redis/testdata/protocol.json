@@ -1,0 +1,182 @@
+[
+  {
+    "name": "null RESP2",
+    "src": "return nil",
+    "proto": 2,
+    "want": "JC0xDQo="
+  },
+  {
+    "name": "null RESP3",
+    "src": "return nil",
+    "proto": 3,
+    "want": "Xw0K"
+  },
+  {
+    "name": "boolean true RESP2",
+    "src": "redis.setresp(3) return true",
+    "proto": 2,
+    "want": "OjENCg=="
+  },
+  {
+    "name": "boolean true RESP3",
+    "src": "redis.setresp(3) return true",
+    "proto": 3,
+    "want": "I3QNCg=="
+  },
+  {
+    "name": "boolean false RESP2",
+    "src": "redis.setresp(3) return false",
+    "proto": 2,
+    "want": "OjANCg=="
+  },
+  {
+    "name": "boolean false RESP3",
+    "src": "redis.setresp(3) return false",
+    "proto": 3,
+    "want": "I2YNCg=="
+  },
+  {
+    "name": "double RESP2",
+    "src": "return {double=1.5}",
+    "proto": 2,
+    "want": "JDMNCjEuNQ0K"
+  },
+  {
+    "name": "double RESP3",
+    "src": "return {double=1.5}",
+    "proto": 3,
+    "want": "LDEuNQ0K"
+  },
+  {
+    "name": "negative zero double RESP2",
+    "src": "return {double=-0.0}",
+    "proto": 2,
+    "want": "JDINCi0wDQo="
+  },
+  {
+    "name": "negative zero double RESP3",
+    "src": "return {double=-0.0}",
+    "proto": 3,
+    "want": "LC0wDQo="
+  },
+  {
+    "name": "double infinity RESP2",
+    "src": "return {double=1/0}",
+    "proto": 2,
+    "want": "JDMNCmluZg0K"
+  },
+  {
+    "name": "double infinity RESP3",
+    "src": "return {double=1/0}",
+    "proto": 3,
+    "want": "LGluZg0K"
+  },
+  {
+    "name": "double nan RESP2",
+    "src": "return {double=0/0}",
+    "proto": 2,
+    "want": "JDMNCm5hbg0K"
+  },
+  {
+    "name": "double nan RESP3",
+    "src": "return {double=0/0}",
+    "proto": 3,
+    "want": "LG5hbg0K"
+  },
+  {
+    "name": "map RESP2",
+    "src": "return {map={a=1,b=\"x\"}}",
+    "proto": 2,
+    "want": "KjQNCiQxDQphDQo6MQ0KJDENCmINCiQxDQp4DQo="
+  },
+  {
+    "name": "map RESP3",
+    "src": "return {map={a=1,b=\"x\"}}",
+    "proto": 3,
+    "want": "JTINCiQxDQphDQo6MQ0KJDENCmINCiQxDQp4DQo="
+  },
+  {
+    "name": "set RESP2",
+    "src": "return {set={a=true,b=false}}",
+    "proto": 2,
+    "want": "KjINCiQxDQphDQokMQ0KYg0K"
+  },
+  {
+    "name": "set RESP3",
+    "src": "return {set={a=true,b=false}}",
+    "proto": 3,
+    "want": "fjINCiQxDQphDQokMQ0KYg0K"
+  },
+  {
+    "name": "big number RESP2",
+    "src": "return {big_number=\"123456789012345678901234567890\"}",
+    "proto": 2,
+    "want": "JDMwDQoxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTANCg=="
+  },
+  {
+    "name": "big number RESP3",
+    "src": "return {big_number=\"123456789012345678901234567890\"}",
+    "proto": 3,
+    "want": "KDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MA0K"
+  },
+  {
+    "name": "verbatim RESP2",
+    "src": "return {verbatim_string={format=\"txt\",string=\"a\\0b\\255\"}}",
+    "proto": 2,
+    "want": "JDQNCmEAYv8NCg=="
+  },
+  {
+    "name": "verbatim RESP3",
+    "src": "return {verbatim_string={format=\"txt\",string=\"a\\0b\\255\"}}",
+    "proto": 3,
+    "want": "PTgNCnR4dDphAGL/DQo="
+  },
+  {
+    "name": "status RESP2",
+    "src": "return {ok=\"OK\"}",
+    "proto": 2,
+    "want": "K09LDQo="
+  },
+  {
+    "name": "status RESP3",
+    "src": "return {ok=\"OK\"}",
+    "proto": 3,
+    "want": "K09LDQo="
+  },
+  {
+    "name": "error RESP2",
+    "src": "return {err=\"BAD problem\"}",
+    "proto": 2,
+    "want": "LUJBRCBwcm9ibGVtDQo="
+  },
+  {
+    "name": "error RESP3",
+    "src": "return {err=\"BAD problem\"}",
+    "proto": 3,
+    "want": "LUJBRCBwcm9ibGVtDQo="
+  },
+  {
+    "name": "array RESP2",
+    "src": "redis.setresp(3) return {true,false,{double=2.5}}",
+    "proto": 2,
+    "want": "KjMNCjoxDQo6MA0KJDMNCjIuNQ0K"
+  },
+  {
+    "name": "array RESP3",
+    "src": "redis.setresp(3) return {true,false,{double=2.5}}",
+    "proto": 3,
+    "want": "KjMNCiN0DQojZg0KLDIuNQ0K"
+  },
+  {
+    "name": "bulk RESP2",
+    "src": "return \"a\\0b\\255\"",
+    "proto": 2,
+    "want": "JDQNCmEAYv8NCg=="
+  },
+  {
+    "name": "bulk RESP3",
+    "src": "return \"a\\0b\\255\"",
+    "proto": 3,
+    "want": "JDQNCmEAYv8NCg=="
+  }
+]

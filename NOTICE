@@ -54,3 +54,13 @@ Source: https://netlib.org/fdlibm/
 
 The LGPL trigonometric implementations are outside this repository.
 Hosts can supply them through Options.Math without a production dependency.
+
+Redis 7.2.16, src/eval.c
+Copyright (c) 2009-2012, Salvatore Sanfilippo <antirez at gmail dot com>
+All rights reserved.
+License: BSD-3-Clause; full terms in LICENSES/Redis-eval.txt.
+
+The redis package follows script caching, shebang parsing, and EVAL behavior
+from src/eval.c, and command validation and execution behavior from
+src/script_lua.c and src/script.c. The latter retain the Redis Ltd. notice
+and BSD-3-Clause terms listed above.
