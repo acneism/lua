@@ -24,22 +24,6 @@ type referenceSnippet struct {
 	Want string `json:"want"`
 }
 
-type pendingSnippet struct {
-	Src    string `json:"src"`
-	Stage  string `json:"stage"`
-	Reason string `json:"reason"`
-}
-
-type corpusNormalization struct {
-	Src  string `json:"src"`
-	Rule string `json:"rule"`
-}
-
-type corpusLimit struct {
-	Src   string `json:"src"`
-	Steps int    `json:"steps"`
-}
-
 func equalNaNFields(got, want string) bool {
 	left, right := strings.Split(got, ","), strings.Split(want, ",")
 	if len(left) != len(right) {

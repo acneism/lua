@@ -148,7 +148,7 @@ func runSnippet(t *testing.T, item snippet, options lua.Options, limit int, rule
 		t.Fatalf("unexpected wrapper result: %v", values)
 	}
 	got := strings.TrimPrefix(values[0].Text(), "ERR ")
-	if got != item.Want && !(rule == "nan-sign" && runtime.GOARCH == "arm64" && equalNaNFields(got, item.Want)) {
+	if got != item.Want && (rule != "nan-sign" || runtime.GOARCH != "arm64" || !equalNaNFields(got, item.Want)) {
 		t.Fatalf("want %q\ngot  %q\nsource: %s", item.Want, got, item.Src)
 	}
 }
@@ -221,7 +221,7 @@ func equalNaNFields(got, want string) bool {
 		return false
 	}
 	for index, value := range left {
-		if value != right[index] && !((value == "nan" || value == "-nan") && (right[index] == "nan" || right[index] == "-nan")) {
+		if value != right[index] && ((value != "nan" && value != "-nan") || (right[index] != "nan" && right[index] != "-nan")) {
 			return false
 		}
 	}
