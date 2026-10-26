@@ -27,10 +27,7 @@ func (p *redisParser) peek() token {
 	return *p.lookahead
 }
 func (p *redisParser) fail(message string) {
-	if p.current.kind == "\x00" {
-		p.lexerror(message)
-	}
-	panic(syntaxError(p.lexer.chunk, p.lexer.line, message+" near '"+lexerTokenText(p.current.text)+"'"))
+	p.lexer.syntaxError(message, &p.current)
 }
 func (p *redisParser) lexerror(message string) {
 	panic(syntaxError(p.lexer.chunk, p.lexer.line, message))
@@ -75,6 +72,7 @@ func (f *redisFunc) limit(value, limit int, what string) {
 func (p *redisParser) newlocal(name string, n int) {
 	f := p.fs
 	f.limit(f.active+n+1, 200, "local variables")
+	redisGrowLimit(len(f.p.locals), 32767, "too many local variables")
 	f.actvar[f.active+n] = len(f.p.locals)
 	f.p.locals = append(f.p.locals, redisLocal{name: name})
 }
@@ -192,6 +190,7 @@ func (f *redisFunc) leaveblock() {
 }
 func (p *redisParser) pushclosure(child *redisFunc, e *redisExp) {
 	f := p.fs
+	redisGrowLimit(len(f.p.children), redisMaxBx, "constant table overflow")
 	index := len(f.p.children)
 	f.p.children = append(f.p.children, child.p)
 	*e = redisExpression(rReloc, f.abx(rClosure, 0, index))
@@ -211,6 +210,7 @@ func (p *redisParser) openfunc() *redisFunc {
 func (p *redisParser) closefunc() { f := p.fs; p.removelocals(0); f.ret(0, 0); p.fs = f.parent }
 func parseRedis(source []byte, chunk string, depth int) *redisProto {
 	p := &redisParser{lexer: lexer{source: string(source), chunk: chunk, line: 1}, lastLine: 1, depth: depth}
+	p.lexer.errorToken = &p.current
 	f := p.openfunc()
 	f.p.vararg = 2
 	p.next()
@@ -240,6 +240,7 @@ func (p *redisParser) recordfield(cc *redisConstructor) {
 	reg := f.free
 	var key, value redisExp
 	if p.current.kind == "<name>" {
+		f.limit(cc.hash, redisMaxInt, "items in a constructor")
 		p.checkname(&key)
 	} else {
 		p.index(&key)
@@ -277,7 +278,12 @@ func (f *redisFunc) lastlist(cc *redisConstructor) {
 		f.setlist(cc.table.info, cc.array, cc.pending)
 	}
 }
-func (p *redisParser) listfield(cc *redisConstructor) { p.expr(&cc.value); cc.array++; cc.pending++ }
+func (p *redisParser) listfield(cc *redisConstructor) {
+	p.expr(&cc.value)
+	p.fs.limit(cc.array, redisMaxInt, "items in a constructor")
+	cc.array++
+	cc.pending++
+}
 func redisInt2fb(x int) int {
 	e := 0
 	for x >= 16 {

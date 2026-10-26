@@ -37,14 +37,48 @@ jobs:
           lscpu | tee -a work/machine.txt
       - name: Capture compiler boundary probes
         run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -out work/compiler-limits.json internal/cmd/capture/testdata/compiler-limits.json
+      - name: Capture compiler vector limits
+        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -out work/compiler-vector-limits.json testdata/compiler-limits.json
+      - name: Compare compiler vector limits
+        env:
+          LUA_COMPILER_LIMITS_FIXTURE: work/compiler-vector-limits.json
+        run: go test -run '^TestRedisCompilerLimits$' .
+      - name: Verify the compiler vector-limit mutation
+        env:
+          LUA_COMPILER_LIMITS_FIXTURE: work/compiler-vector-limits.json
+        run: |
+          cp redis_bytecode.go work/redis_bytecode.original
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('redis_bytecode.go')
+          source = path.read_text()
+          original = 'if length >= limit {'
+          assert source.count(original) == 1
+          path.write_text(source.replace(original, 'if false && length >= limit {'))
+          PY
+          set +e
+          go test -run '^TestRedisCompilerLimits$' -count=1 -v . >work/mutation-vector-limits.log 2>&1
+          result=$?
+          set -e
+          cp work/redis_bytecode.original redis_bytecode.go
+          cat work/mutation-vector-limits.log
+          test "$result" -ne 0
+          python3 - <<'PY'
+          from pathlib import Path
+          log = Path('work/mutation-vector-limits.log').read_text()
+          for case in (2, 3, 4):
+              assert f'--- FAIL: TestRedisCompilerLimits/{case} ' in log
+          PY
       - name: Capture every corpus prototype up to 4 KiB
-        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -dump -out work/compiler-dump.json testdata/snippets.json testdata/libm.json luatest/testdata/environment.json internal/cmd/capture/testdata/compiler-lexer.json
+        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -dump -out work/compiler-dump.json testdata/snippets.json testdata/libm.json luatest/testdata/environment.json internal/cmd/capture/testdata/compiler-lexer.json testdata/compiler-limits.json
       - uses: actions/upload-artifact@v7
         with:
           name: compiler-dump-captured
           path: |
             work/compiler-dump.json
             work/compiler-limits.json
+            work/compiler-vector-limits.json
+            work/mutation-vector-limits.log
           retention-days: 7
       - name: Compare the full compiler output with Redis
         env:

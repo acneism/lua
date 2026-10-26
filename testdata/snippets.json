@@ -16926,5 +16926,13 @@
   {
     "src": "local f, e = loadstring(\"return \\127\", \"@user_script\") if not f then return e end return f()",
     "want": "user_script:1: unexpected symbol near 'char(127)'"
+  },
+  {
+    "src": "local src=string.rep(\"do local x end \",32767) local f,e=loadstring(src,\"@local-limit\") return type(f),e",
+    "want": "function,nil"
+  },
+  {
+    "src": "local src=string.rep(\"do local x end \",32768) local f,e=loadstring(src,\"@local-limit\") return type(f),e",
+    "want": "nil,too many local variables"
   }
 ]

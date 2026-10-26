@@ -14,10 +14,11 @@ type token struct {
 }
 
 type lexer struct {
-	source string
-	chunk  string
-	pos    int
-	line   int
+	source     string
+	chunk      string
+	pos        int
+	line       int
+	errorToken *token
 }
 
 func isDigit(c byte) bool { return c >= '0' && c <= '9' }
@@ -46,6 +47,16 @@ func (l *lexer) newline() {
 		l.pos++
 	}
 	l.line++
+	if l.line >= redisMaxInt {
+		l.syntaxError("chunk has too many lines", l.errorToken)
+	}
+}
+
+func (l *lexer) syntaxError(message string, current *token) {
+	if current != nil && current.kind != "" && current.kind != "\x00" {
+		message += " near '" + lexerTokenText(current.text) + "'"
+	}
+	panic(syntaxError(l.chunk, l.line, message))
 }
 
 func (l *lexer) fail(message, near string) {

@@ -3,10 +3,40 @@ package lua
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 )
+
+func TestRedisCompilerLimits(t *testing.T) {
+	path := os.Getenv("LUA_COMPILER_LIMITS_FIXTURE")
+	if path == "" {
+		t.Skip("compiler vector limits run in the Compiler workflow")
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var cases []referenceSnippet
+	if err := json.Unmarshal(data, &cases); err != nil {
+		t.Fatal(err)
+	}
+	for n, item := range cases {
+		t.Run(strconv.Itoa(n+1), func(t *testing.T) {
+			s := NewState(Options{})
+			p, err := Compile([]byte(fmt.Sprintf(captureWrapper, quoteLua(item.Src))), "@capture")
+			if err != nil {
+				t.Fatal(err)
+			}
+			values, err := s.Call(s.Load(p, s.Globals()))
+			if err != nil || len(values) != 1 || strings.TrimPrefix(values[0].Text(), "ERR ") != item.Want {
+				t.Fatalf("want %q; got %v %v", item.Want, values, err)
+			}
+		})
+	}
+}
 
 func TestRedisCompilerDump(t *testing.T) {
 	path := "testdata/compiler-dump.json"

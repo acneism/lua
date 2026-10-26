@@ -28,6 +28,13 @@ suppresses the near-token suffix in syntax errors; other control tokens retain
 their char(n) diagnostics. Captured probes cover execution, errors and complete
 raw prototypes for these cases.
 
+Preserve Lua's vector limits: 32767 local debug records and 262143 constants or
+child prototypes per function. Overflow raises the same unlocated error as
+luaM_growaux_, distinct from syntax-limit diagnostics. The code, line and
+constructor counters retain C's MAX_INT value of 2147483645. The Compiler
+workflow runs the two large generated-source probes separately from normal
+race tests and verifies that disabling vector limits breaks all three cases.
+
 The source SHA-256 values are:
 
 | Redis file | SHA-256 |

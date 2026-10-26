@@ -169,6 +169,7 @@ func (f *redisFunc) addconstant(v Value) int {
 			return n
 		}
 	}
+	redisGrowLimit(len(f.p.constants), redisMaxBx, "constant table overflow")
 	n := len(f.p.constants)
 	f.p.constants = append(f.p.constants, v)
 	switch v.Type() {
@@ -575,6 +576,7 @@ func (f *redisFunc) fixline(line int) { f.p.lines[f.pc()-1] = int32(line) }
 func (f *redisFunc) emit(i redisInstruction, line int) int {
 	f.patchaux(f.pending, f.pc(), redisNoRegister, f.pc())
 	f.pending = -1
+	redisGrowLimit(len(f.p.code), redisMaxInt, "code size overflow")
 	pc := f.pc()
 	f.p.code = append(f.p.code, i)
 	f.p.lines = append(f.p.lines, int32(line))

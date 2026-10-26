@@ -43,6 +43,7 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 ### Fixed
 
 - Embedded NUL scanning and zero-token diagnostics match Redis's C lexer.
+- Canonical compiler vectors preserve Redis's local, constant and prototype limits.
 
 - Unused corpus metadata is rejected, with per-fixture instruction-limit sidecars.
 - Negative log10 NaN normalization has one authoritative implementation.

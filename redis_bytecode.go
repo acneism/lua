@@ -45,7 +45,15 @@ const (
 
 const redisNoRegister = 255
 const redisMaxJump = 131071
+const redisMaxBx = 262143
+const redisMaxInt = 2147483645
 const redisRK = 256
+
+func redisGrowLimit(length, limit int, message string) {
+	if length >= limit {
+		panic(plainError(message))
+	}
+}
 
 type redisInstruction uint32
 
