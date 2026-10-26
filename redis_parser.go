@@ -284,7 +284,7 @@ func redisInt2fb(x int) int {
 	if x < 8 {
 		return x
 	}
-	return (e+1)<<3 | x - 8
+	return (e+1)<<3 | (x - 8)
 }
 func redisFb2int(x int) int {
 	e := x >> 3 & 31
@@ -301,10 +301,7 @@ func (p *redisParser) constructor(t *redisExp) {
 	cc := redisConstructor{table: t, value: redisExpression(rVoid, 0)}
 	f.nextreg(t)
 	p.expect("{")
-	for {
-		if p.current.kind == "}" {
-			break
-		}
+	for p.current.kind != "}" {
 		f.closelist(&cc)
 		switch p.current.kind {
 		case "<name>":

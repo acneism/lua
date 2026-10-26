@@ -188,19 +188,21 @@ func (f *redisFunc) addconstant(v Value) int {
 	return n
 }
 func (f *redisFunc) setreturns(e *redisExp, n int) {
-	if e.k == rCallExp {
+	switch e.k {
+	case rCallExp:
 		f.p.code[e.info].setC(n + 1)
-	} else if e.k == rVarargExp {
+	case rVarargExp:
 		f.p.code[e.info].setB(n + 1)
 		f.p.code[e.info].setA(f.free)
 		f.reserve(1)
 	}
 }
 func (f *redisFunc) oneret(e *redisExp) {
-	if e.k == rCallExp {
+	switch e.k {
+	case rCallExp:
 		e.k = rRegister
 		e.info = f.p.code[e.info].a()
-	} else if e.k == rVarargExp {
+	case rVarargExp:
 		f.p.code[e.info].setB(2)
 		e.k = rReloc
 	}
@@ -446,7 +448,7 @@ func redisFold(op redisOpcode, e1, e2 *redisExp) bool {
 		if b == 0 {
 			return false
 		}
-		r = a - math.Floor(a/b)*b
+		r = luaModulo(a, b)
 	case rPow:
 		r = luaPower(a, b)
 	case rUnm:

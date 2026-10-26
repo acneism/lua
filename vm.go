@@ -557,7 +557,7 @@ func (s *State) execute(stop int) (result []Value) {
 			case opSetTable:
 				s.set(t.stack[a], t.stack[b], t.stack[c], i.left)
 			case opSetTableRK:
-				key, value := t.stack[base], t.stack[base]
+				var key, value Value
 				if i.b < 0 {
 					key = p.constants[-1-i.b]
 				} else {
@@ -571,7 +571,7 @@ func (s *State) execute(stop int) (result []Value) {
 				s.set(t.stack[a], key, value, i.left)
 			case opSelf:
 				value := t.stack[b]
-				key := Nil()
+				var key Value
 				if i.c < 0 {
 					key = p.constants[-1-i.c]
 				} else {

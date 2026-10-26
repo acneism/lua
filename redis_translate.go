@@ -117,6 +117,7 @@ func translateRedis(raw *redisProto) *Proto {
 			ins.op = opConcat
 		case rJmp:
 			ins.op = opJump
+			ins.a = 0
 			ins.c = 0
 		case rEq, rLt, rLe:
 			scratch := raw.maxStack

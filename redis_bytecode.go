@@ -43,7 +43,6 @@ const (
 	rVararg
 )
 
-const redisNoJump = -1
 const redisNoRegister = 255
 const redisMaxJump = 131071
 const redisRK = 256
