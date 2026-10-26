@@ -7,6 +7,12 @@ on:
   schedule:
     - cron: '0 0 * * *'
   workflow_dispatch:
+    inputs:
+      duration:
+        description: Fuzz duration per target
+        type: choice
+        default: 30s
+        options: [30s, 10m]
 
 permissions:
   contents: read
@@ -32,5 +38,23 @@ jobs:
           cache: false
       - name: Fuzz
         env:
-          FUZZ_TIME: ${{ github.event_name == 'schedule' && '10m' || '30s' }}
+          FUZZ_TIME: ${{ github.event_name == 'schedule' && '10m' || github.event_name == 'workflow_dispatch' && inputs.duration || '30s' }}
         run: go test . -run '^$' -fuzz '^${{ matrix.target }}$' -fuzztime="$FUZZ_TIME" -parallel=2
+
+  libm:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/checkout@v7.0.1
+        with:
+          repository: acneism/lua-libm
+          ref: ac3288e406d1f185a4a35f01972c0d1fa9d9c91e
+          path: work/lua-libm
+      - name: Validate the accepted math implementation through the public API
+        run: go run ./work/lua-libm/internal/cmd/integration/main.go -lua . -root work/lua-libm

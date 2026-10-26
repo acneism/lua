@@ -84,3 +84,10 @@ on the reference VM and preserve every previous source and answer.
 Branch from current `main`, update README, docs, and the Unreleased changelog,
 and include test results and mutation evidence in the PR report. The reviewer
 merges PRs. Do not merge your own work.
+# Manual acceptance checks
+
+The Fuzz workflow accepts a manual duration of 30s or 10m per target.
+Manual runs also validate the complete corpus through the accepted lua-libm
+revision and the public luatest API. This provides a remote acceptance run
+when the reference VM cannot be allocated.
+
