@@ -70,6 +70,7 @@ type thread struct {
 	started       bool
 	nativeDepth   int
 	nativeArgs    [][]Value
+	hookRoots     []Value
 	cDepth        int
 	boundary      int
 	resumeDest    int
@@ -376,8 +377,20 @@ func (s *State) tick() {
 }
 
 func (s *State) pollHook() {
+	s.pollHookRoots(nil)
+}
+
+func (s *State) pollHookRoots(roots []Value) {
 	s.steps = 0
 	if s.options.Hook != nil {
+		t := s.current
+		base := len(t.hookRoots)
+		t.hookRoots = append(t.hookRoots, roots...)
+		t.hookRoots = append(t.hookRoots, t.pendingCall()...)
+		defer func() {
+			clear(t.hookRoots[base:])
+			t.hookRoots = t.hookRoots[:base]
+		}()
 		if err := s.options.Hook(); err != nil {
 			panic(&Error{Message: err.Error(), Value: String(err.Error()), Line: s.currentLine(), Abort: err})
 		}

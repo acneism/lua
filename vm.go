@@ -231,7 +231,8 @@ func (s *State) execute(stop int) (result []Value) {
 						t.frames[frameIndex].pc = int32(pc)
 						remaining -= vmCallWeight
 						if remaining <= 0 {
-							s.pollHook()
+							roots := [3]Value{method, arguments[0], arguments[1]}
+							s.pollHookRoots(roots[:])
 							remaining = s.options.HookEvery - s.steps
 						}
 						t.cDepth++
@@ -284,6 +285,7 @@ func (s *State) execute(stop int) (result []Value) {
 					pc += 2
 					remaining -= vmCallWeight
 					if remaining <= 0 {
+						registers[register], registers[register+1] = value, argument
 						t.frames[frameIndex].pc = int32(pc)
 						s.pollHook()
 						remaining = s.options.HookEvery - s.steps
@@ -604,7 +606,8 @@ func (s *State) execute(stop int) (result []Value) {
 				if method.Type() == TypeFunction && method.object.function.proto != nil {
 					remaining -= vmCallWeight
 					if remaining <= 0 {
-						s.pollHook()
+						roots := [3]Value{method, left, right}
+						s.pollHookRoots(roots[:])
 						remaining = s.options.HookEvery - s.steps
 					}
 					s.steps = s.options.HookEvery - remaining

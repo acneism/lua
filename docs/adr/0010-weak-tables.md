@@ -28,6 +28,14 @@ the full backing slice would keep the reviewer's temporary weak keys alive.
 Native argument slices use reusable thread storage and are removed on every
 return, error, or yield. The frame layout remains 48 bytes.
 
+Before a reentrant host hook, copy the pending callee and arguments into a
+reusable per-thread root buffer. Prepared calls materialize their original
+function and argument slots first. Arithmetic and concatenation continuations
+also root their chosen metamethod and operand snapshots: the hook may remove
+the method from its metatable or change captured variables before collecting.
+Nested hooks restore the previous buffer length on return or panic. Clear
+vacated slots so completed hooks do not retain values.
+
 Read __mode directly from each metatable at collection time, using the C-string
 prefix as Lua 5.1 does. Trace metatables strongly. Weak k entries trace values
 even when their keys are initially unmarked: Lua 5.1 has no ephemerons. Weak v
@@ -83,3 +91,7 @@ Mutations in a separate source copy produce these failures:
 | Trace abandoned registers above the call top | Corpus 4195, 4196, 4208, 4209 |
 | Omit native arguments | TestWeakNativeArguments |
 | Omit masked outer handlers | TestWeakMaskedHandlerRoot |
+| Omit pending call roots during hooks | TestWeakPendingHookArguments |
+| Omit prepared-call slot materialization | TestWeakPreparedHookCallee |
+| Omit tracing the hook root buffer | TestWeakMetamethodHookRoots |
+| Omit selected metamethod/operand snapshots | TestWeakMetamethodHookRoots |

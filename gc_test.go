@@ -1,6 +1,9 @@
 package lua
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func collectTest(t *testing.T, s *State) {
 	t.Helper()
@@ -149,5 +152,118 @@ func TestWeakMaskedHandlerRoot(t *testing.T) {
 	collectTest(t, s)
 	if !w.RawGet(Number(1)).IsNil() || len(s.main.handlerRoots) != 0 {
 		t.Fatal("finished handler remained rooted")
+	}
+}
+
+func TestWeakPendingHookArguments(t *testing.T) {
+	proto := compileTest(t, "local function use(v) return weak[1]==v end\nlocal function make() local v={} weak[1]=v return v end\nreturn use(make())")
+	for period := 1; period <= 16; period++ {
+		var s *State
+		inside := false
+		s = NewState(Options{HookEvery: period, Hook: func() error {
+			if inside {
+				return nil
+			}
+			inside = true
+			defer func() { inside = false }()
+			_, err := s.Call(s.Globals().RawGet(String("collectgarbage")))
+			return err
+		}})
+		weakTestTable(t, s, "v")
+		values, err := s.Call(s.Load(proto, nil))
+		if err != nil || len(values) != 1 || !values[0].Truth() {
+			t.Fatalf("period %d: %v %v", period, values, err)
+		}
+		if len(s.main.hookRoots) != 0 {
+			t.Fatal("hook roots retained after return")
+		}
+	}
+}
+
+func TestWeakPreparedHookCallee(t *testing.T) {
+	var s *State
+	inside, mutated := false, false
+	s = NewState(Options{HookEvery: 8, Hook: func() error {
+		frame, ok := s.Frame(0)
+		setter := s.Globals().RawGet(String("setter"))
+		if inside || mutated || !ok || frame.What != "main" || frame.Line != 4 || setter.Type() != TypeFunction {
+			return nil
+		}
+		inside, mutated = true, true
+		defer func() { inside = false }()
+		if _, err := s.Call(setter); err != nil {
+			return err
+		}
+		_, err := s.Call(s.Globals().RawGet(String("collectgarbage")))
+		return err
+	}})
+	w := weakTestTable(t, s, "v")
+	warm := s.Load(compileTest(t, "local function f(n) if n==0 then return 0 end return 1+f(n-1) end return f(10)"), nil)
+	if _, err := s.Call(warm); err != nil {
+		t.Fatal(err)
+	}
+	fn := s.Load(compileTest(t, "local target=function(v) return weak[1]~=nil end\nweak[1]=target\nsetter=function() target=nil end do local a,b,c=1,2,3 end\nlocal result=target(1)\nreturn result"), nil)
+	values, err := s.Call(fn)
+	if err != nil || len(values) != 1 || !values[0].Truth() || !mutated {
+		t.Fatal("prepared callee was lost across hook", values, err, mutated)
+	}
+	collectTest(t, s)
+	if !w.RawGet(Number(1)).IsNil() {
+		t.Fatal("finished prepared call retained callee")
+	}
+}
+
+func TestWeakMetamethodHookRoots(t *testing.T) {
+	for _, operation := range []string{"+", ".."} {
+		observed := false
+		for period := 1; period <= 32; period++ {
+			var s *State
+			inside, mutated := false, false
+			s = NewState(Options{HookEvery: period, Hook: func() error {
+				frame, ok := s.Frame(0)
+				setter := s.Globals().RawGet(String("setter"))
+				if inside || mutated || !ok || frame.What != "main" || frame.Line != 7 || setter.Type() != TypeFunction {
+					return nil
+				}
+				inside, mutated = true, true
+				defer func() { inside = false }()
+				if _, err := s.Call(setter); err != nil {
+					return err
+				}
+				_, err := s.Call(s.Globals().RawGet(String("collectgarbage")))
+				return err
+			}})
+			w := weakTestTable(t, s, "v")
+			fn := s.Load(compileTest(t, "local target=function(a,b) return weak[1]~=nil end\nweak[1]=target\nlocal mt={__add=target,__concat=target}\nlocal v=setmetatable({},mt)\ntarget=nil\nsetter=function() mt.__add=nil mt.__concat=nil end\nreturn v"+operation+"1"), nil)
+			values, err := s.Call(fn)
+			if err != nil || len(values) != 1 || !values[0].Truth() {
+				t.Fatalf("%s, period %d: %v %v", operation, period, values, err)
+			}
+			observed = observed || mutated
+			collectTest(t, s)
+			if mutated && !w.RawGet(Number(1)).IsNil() || len(s.main.hookRoots) != 0 {
+				t.Fatalf("%s, period %d: finished metamethod retained hook roots", operation, period)
+			}
+		}
+		if !observed {
+			t.Fatalf("%s did not exercise the metamethod hook", operation)
+		}
+	}
+}
+
+func TestWeakHookAbortReleasesRoots(t *testing.T) {
+	stop := errors.New("stop")
+	s := NewState(Options{HookEvery: 1, Hook: func() error { return stop }})
+	w := weakTestTable(t, s, "v")
+	fn := s.Load(compileTest(t, "return ..."), nil)
+	value := s.NewTable(0, 0).Value()
+	_ = w.RawSet(Number(1), value)
+	if _, err := s.Call(fn, value); !errors.Is(err, stop) || len(s.main.hookRoots) != 0 {
+		t.Fatal("aborted hook retained roots", err)
+	}
+	s.options.Hook = nil
+	collectTest(t, s)
+	if !w.RawGet(Number(1)).IsNil() {
+		t.Fatal("aborted call retained its argument")
 	}
 }

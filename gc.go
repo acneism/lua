@@ -23,6 +23,34 @@ type collector struct {
 	weak   []weakTable
 }
 
+func (t *thread) pendingCall() []Value {
+	for index := len(t.frames) - 1; index >= 0; index-- {
+		f := &t.frames[index]
+		p := f.function.proto
+		if p == nil {
+			continue
+		}
+		pc := int(f.pc) - 1
+		if pc < 0 || pc >= len(p.code) {
+			return nil
+		}
+		site := p.instruction(pc)
+		if site.op != opCall && site.op != opTailCall {
+			return nil
+		}
+		start := int(f.base) + site.a
+		end := start + 1 + site.b
+		if site.b < 0 {
+			end = t.top
+		}
+		if start < 0 || start >= len(t.stack) {
+			return nil
+		}
+		return t.stack[start:max(start+1, min(end, len(t.stack)))]
+	}
+	return nil
+}
+
 func (g *collector) add(object any) {
 	if !g.marked[object] {
 		g.marked[object] = true
@@ -77,6 +105,9 @@ func (g *collector) stack(t *thread) {
 		for _, value := range args {
 			g.value(value)
 		}
+	}
+	for _, value := range t.hookRoots {
+		g.value(value)
 	}
 	for u := t.open; u != nil; u = u.next {
 		g.value(u.get())
