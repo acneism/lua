@@ -94,6 +94,14 @@ Lua's compiler can omit an initial LOADNIL. Both direct call paths perform the
 same initialization. A canonical numeric-for offset must not enter the packed
 word's otherwise unused C field: the accumulator fusion uses that field.
 
+Profiles on the EPYC 9V45 runner show repeated pointer stores in the numeric
+for path. FORPREP establishes that its hidden index is a number, and script
+code cannot name that register. Update only its numeric field on FORLOOP.
+The guarded numeric accumulator also retains its existing number tag and
+updates only the float. The visible loop variable still receives a complete
+Value because the loop body can overwrite it. Generated assembly confirms
+that these two updates remove redundant pointer stores and write barriers.
+
 Port ldump.c using a fixed Redis x86-64 layout on every architecture. The
 header is 1b4c75615100010408040800. Integers and instructions use four bytes,
 size_t and binary64 use eight bytes, and every field is little-endian. Dumps

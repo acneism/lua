@@ -635,13 +635,13 @@ func (s *State) execute(stop int) (result []Value) {
 				next := registers[register].number + step
 				limit := registers[register+1].number
 				if step > 0 && next <= limit || step <= 0 && limit <= next {
-					registers[register] = Number(next)
+					registers[register].number = next
 					registers[register+3] = Number(next)
 					pc = int(uint32(word >> 16))
 					if op == opForAccumulate {
 						sum := &registers[uint8(word>>48)]
 						if sum.object == &numberMarker {
-							*sum = Number(luaNaN(sum.number+next, sum.number, next))
+							sum.number = luaNaN(sum.number+next, sum.number, next)
 							pc++
 						}
 					}
