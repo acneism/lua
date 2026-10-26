@@ -49,6 +49,11 @@ func (s *State) native(fn *function, args []Value, site *instruction) []Value {
 	t.frames = append(t.frames, frame{function: fn, site: site})
 	t.nativeDepth++
 	defer func() { t.nativeDepth--; t.frames = t.frames[:depth] }()
+	defer func() {
+		if raised := recover(); raised != nil {
+			panic(s.processPanic(raised))
+		}
+	}()
 	s.tick()
 	values, err := fn.native(s, args)
 	if err != nil {
@@ -124,7 +129,7 @@ func (s *State) execute(stop int) (result []Value) {
 				t.status = "suspended"
 				result = signal.values
 			} else {
-				panic(raised)
+				panic(s.processPanic(raised))
 			}
 		}
 	}()
@@ -635,12 +640,14 @@ func (s *State) execute(stop int) (result []Value) {
 					}
 				} else if i.op == opTailCall {
 					metaTop := f.metacallTop
+					tailcalls := f.tailcalls + 1
 					t.tail = append(t.tail[:0], args...)
 					t.close(int(f.base))
 					t.frames = t.frames[:frameIndex]
 					t.used, t.top = int(f.start), int(f.start)
 					s.push(fn.object.function, t.tail, int(f.returnDest), int(f.want), i)
 					t.frames[len(t.frames)-1].metacallTop = metaTop
+					t.frames[len(t.frames)-1].tailcalls = tailcalls
 				} else {
 					s.push(fn.object.function, args, base+i.d, i.c, i)
 				}

@@ -55,26 +55,30 @@ type frame struct {
 	site                              *instruction
 	start, base, pc, returnDest, want int32
 	metacallTop                       int32
+	tailcalls                         int64
 }
 
 type thread struct {
-	object       object
-	stack        []Value
-	frames       []frame
-	used         int
-	top          int
-	open         *upvalue
-	status       string
-	entry        Value
-	started      bool
-	nativeDepth  int
-	cDepth       int
-	boundary     int
-	resumeDest   int
-	resumeWant   int
-	resumeReturn bool
-	parent       *thread
-	tail         []Value
+	object        object
+	stack         []Value
+	frames        []frame
+	used          int
+	top           int
+	open          *upvalue
+	status        string
+	entry         Value
+	started       bool
+	nativeDepth   int
+	cDepth        int
+	boundary      int
+	resumeDest    int
+	resumeWant    int
+	resumeReturn  bool
+	parent        *thread
+	tail          []Value
+	handler       Value
+	handlerID     uint64
+	handlerActive bool
 }
 
 type State struct {
@@ -89,6 +93,7 @@ type State struct {
 	steps       int
 	running     int
 	randomState uint64
+	handlers    *handlerOwner
 }
 
 func NewState(options Options) *State {
@@ -160,6 +165,10 @@ func (s *State) closure(proto *Proto, env *Table, upvalues []*upvalue) Value {
 }
 
 func (s *State) Call(fn Value, args ...Value) (values []Value, err error) {
+	return s.call(fn, args, Nil(), false)
+}
+
+func (s *State) call(fn Value, args []Value, handler Value, active bool) (values []Value, err error) {
 	outer := s.running == 0
 	s.running++
 	if outer {
@@ -175,7 +184,7 @@ func (s *State) Call(fn Value, args ...Value) (values []Value, err error) {
 		s.current.boundary++
 		defer func() { s.current.boundary-- }()
 	}
-	return s.protected(fn, args)
+	return s.protectedHandler(fn, args, handler, active)
 }
 
 func (s *State) protected(fn Value, args []Value) (values []Value, err error) {
@@ -188,6 +197,7 @@ func (s *State) protectedCall(fn Value, args []Value, enter bool) (values []Valu
 	depth, used, top, nativeDepth, boundary := len(t.frames), t.used, t.top, t.nativeDepth, t.boundary
 	defer func() {
 		if raised := recover(); raised != nil {
+			raised = s.processPanic(raised)
 			failure, ok := raised.(*Error)
 			if !ok {
 				cause := fmt.Errorf("internal Lua error: %v", raised)
@@ -280,6 +290,7 @@ func (s *State) cleanup() {
 		t.cDepth = 0
 		t.status = "dead"
 		t.parent = nil
+		t.handler, t.handlerID, t.handlerActive = Nil(), 0, false
 	}
 	s.threads = s.threads[:0]
 	s.current = s.main
@@ -291,6 +302,7 @@ func (s *State) cleanup() {
 	s.main.frames = s.main.frames[:0]
 	s.main.used, s.main.top, s.main.nativeDepth, s.main.boundary = 0, 0, 0, 0
 	s.main.cDepth = 0
+	s.main.handler, s.main.handlerID, s.main.handlerActive = Nil(), 0, false
 }
 
 func (t *thread) ensure(size int) {
@@ -333,10 +345,9 @@ func (s *State) currentLine() int {
 
 func (s *State) raise(message string, level int) {
 	t := s.current
-	index := len(t.frames) - 1 - level
 	err := plainError(message)
-	if index >= 0 && t.frames[index].function.proto != nil {
-		err = locatedError(t.frames[index].function.proto.chunk, t.frames[index].sourceLine(), message)
+	if frame, ok := s.Frame(level); ok && (frame.What == "main" || frame.What == "Lua") {
+		err = locatedError(frame.Source, frame.Line, message)
 	}
 	err.Line = s.currentLine()
 	err.cDepth = t.cDepth

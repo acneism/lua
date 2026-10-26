@@ -71,6 +71,13 @@ and internal-error flag. Protected calls catch Lua errors. Abort causes and
 internal failures propagate through protected calls and coroutines. The call
 boundary converts Go panics into internal failures.
 
+Frame exposes all active levels, including native functions and virtual levels
+for collapsed Lua tail calls. Error levels use the same sequence. CallWithHandler
+and xpcall run handlers before native/interpreter recovery removes the failing
+frames; Call, pcall, and new coroutines mask surrounding handlers. Handler
+results replace Error.Value. The existing C-depth reserve bounds recursive
+handler failures. See [decision 9](adr/0009-error-handlers.md).
+
 Cold instruction metadata carries operand names; errors look up the source
 line by saved PC. Native argument errors use the call-site name. Go frames
 count toward caller levels. Calls and backward branches account for four hook

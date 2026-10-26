@@ -16738,5 +16738,41 @@
   {
     "src": "local t={} local r={} local n=13 for i=1,1500 do n=(n*25173+13849)%65536 local k=n%83+1 if n%4==0 then rawset(t,k,nil) else t[k]=i end if i%13==0 then r[#r+1]=#t end end return table.concat(r,',')",
     "want": "0,0,0,0,14,14,54,59,29,29,29,29,31,31,31,19,14,14,64,64,64,64,64,64,64,64,64,64,64,61,30,30,30,30,31,31,31,31,31,31,27,27,27,31,30,30,14,14,14,14,8,79,79,79,79,79,79,79,31,31,31,31,31,31,31,31,31,31,62,64,64,70,70,72,72,72,76,76,76,76,76,76,83,83,83,83,83,83,83,83,64,64,64,42,42,47,64,64,64,64,64,64,59,59,59,59,59,59,59,61,61,61,61,61,55"
+  },
+  {
+    "src": "local function f() error('x', 2) end local function g() return f() end g()",
+    "want": "x"
+  },
+  {
+    "src": "local function f()\n  error('x', 2)\nend\nlocal function g()\n  return f()\nend\ng()",
+    "want": "x"
+  },
+  {
+    "src": "local function f() error('x', 3) end local function g() return f() end local function h() g() end h()",
+    "want": "user_script:1: x"
+  },
+  {
+    "src": "local function f() error('x', 3) end local function g() return f() end local function h() return g() end h()",
+    "want": "x"
+  },
+  {
+    "src": "local function f() error('x', 2) end local function g() return f() end local ok, e = pcall(g) return e",
+    "want": "x"
+  },
+  {
+    "src": "local function f() error('x', 2) end local function g() local r = f() return r end g()",
+    "want": "user_script:1: x"
+  },
+  {
+    "src": "local function f() error({code = 1}, 2) end local function g() return f() end local ok, e = pcall(g) return type(e), e.code",
+    "want": "table,1"
+  },
+  {
+    "src": "local function f() error(7, 2) end local function g() return f() end g()",
+    "want": "7"
+  },
+  {
+    "src": "local function f(n) if n == 0 then error('x', 2) end return f(n - 1) end f(3)",
+    "want": "x"
   }
 ]

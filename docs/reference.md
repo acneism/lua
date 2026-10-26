@@ -14,7 +14,9 @@ varargs, error frames, coroutine boundaries, and parser and call limits.
 
 P adds 27 further Redis captures covering compact operand modes, direct calls,
 metamethod continuation and cache invalidation, source locations, and dense and
-sparse sequence lengths. All 4185 main entries execute;
+sparse sequence lengths. B0 adds nine reviewer captures for error levels across
+lost tail calls. The earlier 4185 sources and answers remain unchanged.
+All 4194 main entries execute;
 `testdata/pending.json` is empty.
 Reference verification always checks the complete file. Each execution has a
 one-million-instruction hook budget, so a broken limit fails its own subtest.

@@ -6,12 +6,14 @@ import (
 )
 
 type Error struct {
-	Value    Value
-	Message  string
-	Line     int
-	Abort    error
-	Internal bool
-	cDepth   int
+	Value        Value
+	Message      string
+	Line         int
+	Abort        error
+	Internal     bool
+	cDepth       int
+	handlerOwner *handlerOwner
+	handlerID    uint64
 }
 
 func (e *Error) Error() string {

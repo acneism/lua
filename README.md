@@ -11,7 +11,7 @@ A3 completes reference compatibility for the interpreter core, base, coroutine, 
 libraries, immutable prototypes, Lua tables, metatables, closures, varargs,
 tail calls, error locations, read-only tables, and an interruption hook.
 
-The corpus has 4185 snippets. All execute through the original capture wrapper.
+The corpus has 4194 snippets. All execute through the original capture wrapper.
 `testdata/pending.json` is empty. The reference verifier checks every recorded
 answer against Redis.
 
@@ -22,6 +22,10 @@ them; acos uses asin near the endpoints. The 36 exact trigonometric probes in
 `testdata/libm.json` are reserved for the separate lua-libm module.
 
 The Redis engine, host interface, EVAL, and FUNCTION API belong to later stages.
+
+`State.Frame` exposes Lua, native, and lost tail-call levels. `CallWithHandler`
+runs an error handler at the original failure point before unwinding; xpcall
+uses the same behavior. See [error handling](docs/adr/0009-error-handlers.md).
 
 The interpreter uses 24-byte values, packed instructions, cached register
 windows, and reusable Lua call frames. See the [performance decision](docs/adr/0007-vm-performance.md)

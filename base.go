@@ -282,7 +282,7 @@ func basePCall(s *State, args []Value) ([]Value, error) {
 	if len(args) == 0 {
 		return []Value{Bool(false), String("attempt to call a boolean value")}, nil
 	}
-	values, err := s.protected(args[0], args[1:])
+	values, err := s.protectedHandler(args[0], args[1:], Nil(), false)
 	if abortError(err) {
 		return nil, err
 	}
@@ -303,25 +303,14 @@ func basePCall(s *State, args []Value) ([]Value, error) {
 func baseXPCall(s *State, args []Value) ([]Value, error) {
 	fn := s.checkAny(args, 0)
 	handler := s.checkAny(args, 1)
-	values, err := s.protected(fn, nil)
+	values, err := s.protectedHandler(fn, nil, handler, true)
 	if abortError(err) {
 		return nil, err
 	}
 	if err == nil {
 		return append([]Value{Bool(true)}, values...), nil
 	}
-	failure := err.(*Error)
-	depth := s.current.cDepth
-	s.current.cDepth = failure.cDepth
-	handled, handlingError := s.protected(handler, []Value{failure.Value})
-	s.current.cDepth = depth
-	if abortError(handlingError) {
-		return nil, handlingError
-	}
-	if handlingError != nil {
-		return []Value{Bool(false), String("error in error handling")}, nil
-	}
-	return []Value{Bool(false), first(handled)}, nil
+	return []Value{Bool(false), err.(*Error).Value}, nil
 }
 
 func baseLoadString(s *State, args []Value) ([]Value, error) {

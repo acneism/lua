@@ -7,13 +7,15 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 
 ### Added
 
+- Observable Lua, native, and virtual tail-call frames through State.Frame.
+- State.CallWithHandler with an error handler before stack unwinding.
 - Go module, Apache-2.0 license, upstream notices, and repository scaffold.
 - A standard-library tool to capture and verify Redis 7.2.16 reference answers.
 - An immutable register program, lexer, parser, compiler, and Lua VM.
 - Tagged values and Lua array/hash tables, metatables, and read-only support.
 - Closures, shared upvalues, varargs, multiple results, loops, and tail calls.
 - Base and coroutine libraries, native callbacks, hooks, and panic isolation.
-- A 4185-entry main corpus, 36 separate libm probes, and no pending A2 entries.
+- A 4194-entry main corpus, 36 separate libm probes, and no pending A2 entries.
 - Lua string patterns and formatting, table manipulation and auxsort, math and rand48.
 - Pattern and format fuzz targets, interruption and callback-allocation regressions.
 - Model, lifecycle, allocation, and semantic regression tests.
@@ -39,6 +41,8 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 
 ### Fixed
 
+- xpcall invokes its handler at the original error point, including recursive failures.
+- Error levels include lost Lua tail calls and preserve native callback frames.
 - Unused corpus metadata is rejected, with per-fixture instruction-limit sidecars.
 - Negative log10 NaN normalization has one authoritative implementation.
 - Architecture-independent NaN propagation and inherited loadstring syntax depth.
