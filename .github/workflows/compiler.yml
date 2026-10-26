@@ -54,6 +54,7 @@ jobs:
         run: go run ./internal/cmd/bench -addr 127.0.0.1:6379 -output work/p2a-bench.json -rounds 5
       - name: Profile recursive calls and arithmetic metamethods
         run: |
+          go run ./internal/cmd/bench -addr 127.0.0.1:6379 -scenario Loop -rounds 30 -cpuprofile work/loop.pprof -output work/loop-profile.json
           go run ./internal/cmd/bench -addr 127.0.0.1:6379 -scenario Fib27 -rounds 30 -cpuprofile work/fib.pprof -output work/fib-profile.json
           go run ./internal/cmd/bench -addr 127.0.0.1:6379 -scenario Metamethod -rounds 30 -cpuprofile work/metamethod.pprof -output work/metamethod-profile.json
       - uses: actions/upload-artifact@v7
@@ -66,3 +67,12 @@ jobs:
             work/*.pprof
             work/*-profile.json
           retention-days: 7
+      - name: Enforce the core performance limit
+        run: |
+          python3 - <<'PY'
+          import json
+          results = json.load(open('work/p2a-bench.json'))['Results']
+          failures = [r['Name'] for r in results if r['Ratio'] > 1.5]
+          assert len(results) == 9, 'expected nine core scenarios'
+          assert not failures, 'core scenarios exceed 1.5x: ' + ', '.join(failures)
+          PY

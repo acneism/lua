@@ -9,6 +9,19 @@ type yieldSignal struct{ values []Value }
 
 func (y *yieldSignal) Error() string { return "coroutine yielded" }
 
+func clearRegisters(values []Value) {
+	switch len(values) {
+	case 1:
+		values[0] = Nil()
+	case 2:
+		values[0], values[1] = Nil(), Nil()
+	case 3:
+		values[0], values[1], values[2] = Nil(), Nil(), Nil()
+	default:
+		clear(values)
+	}
+}
+
 func (s *State) push(fn *function, args []Value, dest, want int, site *instruction) {
 	t := s.current
 	if len(t.frames) >= 20000 {
@@ -24,7 +37,7 @@ func (s *State) push(fn *function, args []Value, dest, want int, site *instructi
 	limit := base + p.maxRegisters
 	t.ensure(max(limit, base+256))
 	count := copy(t.stack[base:base+p.parameters], args)
-	clear(t.stack[base+count : limit])
+	clearRegisters(t.stack[base+count : limit])
 	if p.argRegister >= 0 {
 		t.stack[base+p.argRegister] = Nil()
 	}
@@ -289,7 +302,7 @@ func (s *State) execute(stop int) (result []Value) {
 								if provided > 1 {
 									t.stack[start+1] = arguments[1]
 								}
-								clear(t.stack[start+provided : start+callee.proto.maxRegisters])
+								clearRegisters(t.stack[start+provided : start+callee.proto.maxRegisters])
 								t.frames = append(t.frames, frame{function: callee, start: int32(start), base: int32(start), returnDest: int32(base + int(register)), want: 1})
 								t.used, t.top = start+callee.proto.maxRegisters, start+parameters
 							} else {
@@ -382,7 +395,7 @@ func (s *State) execute(stop int) (result []Value) {
 					if parameters > 0 {
 						t.stack[start] = argument
 					}
-					clear(t.stack[start+min(parameters, 1) : start+callee.proto.maxRegisters])
+					clearRegisters(t.stack[start+min(parameters, 1) : start+callee.proto.maxRegisters])
 					t.frames = append(t.frames, frame{function: callee, base: int32(start), start: int32(start), returnDest: int32(base + int(uint8(word>>40))), want: int32(int16(word >> 48))})
 					t.used, t.top = start+callee.proto.maxRegisters, start+parameters
 					frameIndex++
@@ -417,7 +430,7 @@ func (s *State) execute(stop int) (result []Value) {
 						for argument := 0; argument < provided; argument++ {
 							t.stack[start+argument] = registers[int(register)+1+argument]
 						}
-						clear(t.stack[start+provided : start+callee.proto.maxRegisters])
+						clearRegisters(t.stack[start+provided : start+callee.proto.maxRegisters])
 						t.frames = append(t.frames, frame{function: callee, base: int32(start), start: int32(start), returnDest: int32(base + int(uint8(word>>48))), want: int32(int16(word >> 32))})
 						t.used, t.top = start+callee.proto.maxRegisters, start+parameters
 						frameIndex++

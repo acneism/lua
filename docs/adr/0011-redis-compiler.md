@@ -65,6 +65,11 @@ Vararg functions and stack growth retain the general push path. Both paths
 clear the entire remaining register window, keep C-depth/yield restrictions,
 and preserve the metamethod continuation's stack top.
 
+Profiles after direct entry attributed about six percent of call-heavy runs
+to clearing small register windows. One to three slots use direct nil writes;
+larger windows retain clear. The helper inlines with compiler cost 57. Every
+slot is still initialized, including unused temporary registers.
+
 The VM initializes the complete register window on function entry because
 Lua's compiler can omit an initial LOADNIL. Both direct call paths perform the
 same initialization. A canonical numeric-for offset must not enter the packed
