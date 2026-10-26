@@ -279,7 +279,22 @@ func (s *State) execute(stop int) (result []Value) {
 							}
 							previousTop := t.top
 							callee := method.object.function
-							s.push(callee, arguments[:], base+int(register), 1, nil)
+							start := max(t.used, t.top)
+							if !callee.proto.vararg && len(t.frames) < 20000 && start+256 <= len(t.stack) {
+								parameters := callee.proto.parameters
+								provided := min(parameters, 2)
+								if provided > 0 {
+									t.stack[start] = arguments[0]
+								}
+								if provided > 1 {
+									t.stack[start+1] = arguments[1]
+								}
+								clear(t.stack[start+provided : start+callee.proto.maxRegisters])
+								t.frames = append(t.frames, frame{function: callee, start: int32(start), base: int32(start), returnDest: int32(base + int(register)), want: 1})
+								t.used, t.top = start+callee.proto.maxRegisters, start+parameters
+							} else {
+								s.push(callee, arguments[:], base+int(register), 1, nil)
+							}
 							t.boundary++
 							frameIndex++
 							f = &t.frames[frameIndex]
@@ -306,15 +321,51 @@ func (s *State) execute(stop int) (result []Value) {
 
 				continue
 
-			case opCallDirect, opCallDirectUpvalue, opCallDirectConstant, opCallDirectUpvalueConstant:
+			case opCallDirect, opCallDirectUpvalue, opCallDirectConstant, opCallDirectUpvalueConstant, opCallArithmetic, opCallArithmeticUpvalue:
 				mode := op - opCallDirect
 				value := registers[uint8(word>>16)]
 				if mode&1 != 0 {
 					value = f.function.upvalues[uint8(word>>16)].get()
 				}
-				argument := registers[uint8(word>>24)]
-				if mode&2 != 0 {
-					argument = constants[uint16(word>>24)]
+				var argument Value
+				if op == opCallArithmetic || op == opCallArithmeticUpvalue {
+					if value.Type() != TypeFunction || value.object.function.proto == nil || value.object.function.proto.vararg {
+						registers[register] = value
+						continue
+					}
+					packed := code[pc]
+					operation := opcode(packed) - numericBase
+					left, right := &registers[uint8(packed>>16)], &registers[uint8(packed>>32)]
+					if operation&1 != 0 {
+						left = &constants[uint16(packed>>16)]
+					}
+					if operation&2 != 0 {
+						right = &constants[uint16(packed>>32)]
+					}
+					if left.object != &numberMarker || right.object != &numberMarker {
+						registers[register] = value
+						continue
+					}
+					x, y := left.number, right.number
+					switch operation / 4 {
+					case 0:
+						argument = Number(luaNaN(x+y, x, y))
+					case 1:
+						argument = Number(luaNaN(x-y, x, y))
+					case 2:
+						argument = Number(luaNaN(x*y, x, y))
+					case 3:
+						argument = Number(luaDivide(x, y))
+					case 4:
+						argument = Number(luaModulo(x, y))
+					case 5:
+						argument = Number(luaPower(x, y))
+					}
+				} else {
+					argument = registers[uint8(word>>24)]
+					if mode&2 != 0 {
+						argument = constants[uint16(word>>24)]
+					}
 				}
 				start := max(t.used, t.top)
 				if value.Type() == TypeFunction && value.object.function.proto != nil && !value.object.function.proto.vararg && len(t.frames) < 20000 && start+256 <= len(t.stack) && (argument.Type() != TypeString || len(argument.Text()) <= s.options.MaxString) {

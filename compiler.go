@@ -46,6 +46,8 @@ const (
 	opConcat
 	opForIterator
 	opCompare
+	opCallArithmetic
+	opCallArithmeticUpvalue
 )
 
 type nameInfo struct {

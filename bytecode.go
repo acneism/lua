@@ -134,10 +134,14 @@ func (c *compiler) freeze() {
 	for pc := 0; pc+2 < len(p.code); pc++ {
 		load, argument, call := p.code[pc], p.code[pc+1], p.code[pc+2]
 		loadOp, argumentOp := opcode(load), opcode(argument)
-		if (loadOp != opMove && loadOp != opGetUpvalue) || (argumentOp != opMove && argumentOp != opConstant) || opcode(call) != opCall || uint8(load>>8) != uint8(call>>8) || uint8(argument>>8) != uint8(call>>8)+1 || int16(call>>16) != 1 {
+		arithmetic := argumentOp >= numericBase && argumentOp < numericBase+6*4
+		if (loadOp != opMove && loadOp != opGetUpvalue) || (argumentOp != opMove && argumentOp != opConstant && !arithmetic) || opcode(call) != opCall || uint8(load>>8) != uint8(call>>8) || uint8(argument>>8) != uint8(call>>8)+1 || int16(call>>16) != 1 {
 			continue
 		}
 		arg := uint32(argument >> 16)
+		if arithmetic {
+			arg = 0
+		}
 		if arg > 65535 {
 			continue
 		}
@@ -147,6 +151,12 @@ func (c *compiler) freeze() {
 		}
 		if argumentOp == opConstant {
 			op += 2
+		}
+		if arithmetic {
+			op = opCallArithmetic
+			if loadOp == opGetUpvalue {
+				op = opCallArithmeticUpvalue
+			}
 		}
 		p.code[pc] = uint64(op) | uint64(uint8(load>>8))<<8 | uint64(uint8(load>>16))<<16 | uint64(uint16(arg))<<24 | uint64(uint8(call>>48))<<40 | uint64(uint16(call>>32))<<48
 	}

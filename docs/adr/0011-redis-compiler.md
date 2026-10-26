@@ -51,6 +51,20 @@ word, rather than testing PC divisibility. Long chains of empty conditionals
 therefore still poll. Low opcodes bypass the numerical families with one
 range check.
 
+Extend the existing prepared-call fusion to a numerical argument expression.
+A local/upvalue function load followed by one numeric binary instruction and
+a one-argument CALL can share a dispatch. The original words remain available
+as fallback entries. Strings needing coercion, metamethod operands, native and
+callable objects, and vararg callees execute those original instructions.
+Numeric execution preserves the original CALL's saved PC and destination.
+The six operations and both RK modes use the same arithmetic helpers as the
+ordinary instruction path.
+
+Fixed-argument arithmetic metamethods enter through the direct frame setup.
+Vararg functions and stack growth retain the general push path. Both paths
+clear the entire remaining register window, keep C-depth/yield restrictions,
+and preserve the metamethod continuation's stack top.
+
 The VM initializes the complete register window on function entry because
 Lua's compiler can omit an initial LOADNIL. Both direct call paths perform the
 same initialization. A canonical numeric-for offset must not enter the packed
