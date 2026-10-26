@@ -27,6 +27,9 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 
 ### Changed
 
+- Port the Redis Lua 5.1 compiler and exact binary dumps with debug information.
+- Compare complete corpus prototypes against captured Redis dumps in hex.
+
 - Compact 24-byte values, packed opcodes, cached register windows, and 40-byte frames.
 - Direct Lua calls and arithmetic metamethod continuations with reusable registers.
 - Fused loop and call sequences, versioned metamethod caches, and direct array writes.

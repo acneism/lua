@@ -24,7 +24,7 @@ func (s *State) push(fn *function, args []Value, dest, want int, site *instructi
 	limit := base + p.maxRegisters
 	t.ensure(max(limit, base+256))
 	count := copy(t.stack[base:base+p.parameters], args)
-	clear(t.stack[base+count : base+p.parameters])
+	clear(t.stack[base+count : limit])
 	if p.argRegister >= 0 {
 		t.stack[base+p.argRegister] = Nil()
 	}
@@ -282,8 +282,8 @@ func (s *State) execute(stop int) (result []Value) {
 					parameters := callee.proto.parameters
 					if parameters > 0 {
 						t.stack[start] = argument
-						clear(t.stack[start+1 : start+parameters])
 					}
+					clear(t.stack[start+min(parameters, 1) : start+callee.proto.maxRegisters])
 					t.frames = append(t.frames, frame{function: callee, base: int32(start), start: int32(start), returnDest: int32(base + int(uint8(word>>40))), want: int32(int16(word >> 48))})
 					t.used, t.top = start+callee.proto.maxRegisters, start+parameters
 					frameIndex++
@@ -318,7 +318,7 @@ func (s *State) execute(stop int) (result []Value) {
 						for argument := 0; argument < provided; argument++ {
 							t.stack[start+argument] = registers[int(register)+1+argument]
 						}
-						clear(t.stack[start+provided : start+parameters])
+						clear(t.stack[start+provided : start+callee.proto.maxRegisters])
 						t.frames = append(t.frames, frame{function: callee, base: int32(start), start: int32(start), returnDest: int32(base + int(uint8(word>>48))), want: int32(int16(word >> 32))})
 						t.used, t.top = start+callee.proto.maxRegisters, start+parameters
 						frameIndex++
@@ -385,6 +385,9 @@ func (s *State) execute(stop int) (result []Value) {
 			case opMove:
 				registers[register] = registers[uint8(word>>16)]
 				continue
+			case opLoadNil:
+				clear(registers[int(register) : int(uint32(word>>16))+1])
+				continue
 			case opGetUpvalue:
 				registers[register] = f.function.upvalues[uint32(word>>16)].get()
 				continue
@@ -397,10 +400,14 @@ func (s *State) execute(stop int) (result []Value) {
 					registers[register] = value
 					continue
 				}
-			case opGetTable:
+			case opGetTable, opGetTableK:
 				value := registers[uint8(word>>16)]
 				if value.Type() == TypeTable {
-					found := value.object.table.RawGet(registers[uint8(word>>48)])
+					key := registers[uint8(word>>48)]
+					if op == opGetTableK {
+						key = constants[uint16(word>>48)]
+					}
+					found := value.object.table.RawGet(key)
 					if !found.IsNil() {
 						registers[register] = found
 						continue
@@ -545,8 +552,46 @@ func (s *State) execute(stop int) (result []Value) {
 				s.set(f.function.env.Value(), p.constants[i.a], t.stack[b], nameInfo{})
 			case opGetTable:
 				t.stack[a] = s.get(t.stack[b], t.stack[c], i.left)
+			case opGetTableK:
+				t.stack[a] = s.get(t.stack[b], p.constants[i.c], i.left)
 			case opSetTable:
 				s.set(t.stack[a], t.stack[b], t.stack[c], i.left)
+			case opSetTableRK:
+				key, value := t.stack[base], t.stack[base]
+				if i.b < 0 {
+					key = p.constants[-1-i.b]
+				} else {
+					key = t.stack[b]
+				}
+				if i.c < 0 {
+					value = p.constants[-1-i.c]
+				} else {
+					value = t.stack[c]
+				}
+				s.set(t.stack[a], key, value, i.left)
+			case opSelf:
+				value := t.stack[b]
+				key := Nil()
+				if i.c < 0 {
+					key = p.constants[-1-i.c]
+				} else {
+					key = t.stack[c]
+				}
+				t.stack[a+1] = value
+				t.stack[a] = s.get(value, key, i.left)
+			case opTestSet:
+				if t.stack[b].Truth() == (i.c != 0) {
+					t.stack[a] = t.stack[b]
+				} else {
+					t.frames[frameIndex].pc = int32(i.d)
+				}
+			case opConcat:
+				for reg := i.c; reg > i.b; reg-- {
+					leftName, rightName := nameInfo{kind: "register", register: int16(reg - 1)}, nameInfo{kind: "register", register: int16(reg)}
+					value := s.binary("..", t.stack[base+reg-1], t.stack[base+reg], leftName, rightName)
+					t.stack[base+reg-1] = value
+				}
+				t.stack[a] = t.stack[b]
 			case opNewTable:
 				t.stack[a] = s.NewTable(i.b, i.c).Value()
 			case opSetList:
@@ -670,6 +715,15 @@ func (s *State) execute(stop int) (result []Value) {
 				if !t.stack[a+3].IsNil() {
 					t.stack[a+2] = t.stack[a+3]
 					t.frames[frameIndex].pc = int32(i.b)
+				}
+			case opForIterator:
+				arguments := [2]Value{t.stack[a+1], t.stack[a+2]}
+				values := s.invoke(t.stack[a], arguments[:])
+				t.writeResults(a+3, i.c, values)
+				if !t.stack[a+3].IsNil() {
+					t.stack[a+2] = t.stack[a+3]
+				} else {
+					t.frames[frameIndex].pc = int32(i.d)
 				}
 			}
 			break

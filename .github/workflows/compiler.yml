@@ -1,0 +1,52 @@
+name: Compiler
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: compiler-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  differential:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      redis:
+        image: redis:7.2.16
+        ports: [6379:6379]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - run: mkdir -p work
+      - name: Capture every corpus prototype up to 4 KiB
+        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -dump -out work/compiler-dump.json testdata/snippets.json testdata/libm.json luatest/testdata/environment.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: compiler-dump-captured
+          path: work/compiler-dump.json
+          retention-days: 7
+      - name: Compare the full compiler output with Redis
+        env:
+          LUA_DUMP_FIXTURE: work/compiler-dump.json
+        run: go test -run '^TestRedisCompilerDump$' .
+      - name: Measure the nine core scenarios
+        run: go run ./internal/cmd/bench -addr 127.0.0.1:6379 -output work/p2a-bench.json -rounds 5
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: compiler-performance
+          path: work/p2a-bench.json
+          retention-days: 7

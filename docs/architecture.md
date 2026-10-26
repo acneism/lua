@@ -2,11 +2,13 @@
 
 ## Interpreter
 
-The lexer and parser build a temporary syntax tree. The compiler resolves locals
-and upvalues and emits register instructions into an immutable `Proto`.
-Prototypes own packed uint64 code, constants, child prototypes, a PC-to-line
-table, pooled operand metadata, and upvalue descriptors.
-Execution never modifies them.
+The Redis Lua 5.1 parser emits the canonical register program directly. A second
+pass translates it to packed uint64 VM words. Immutable prototypes retain raw
+instruction words, constant order, debug records, child prototypes, VM-to-Lua
+PC maps, pooled operand metadata, and closure binding descriptors. Execution
+never modifies them. Runtime error names use ldebug.c's symbolic execution at
+the original Lua PC. The binary dumper serializes the canonical program in
+Redis's fixed x86-64 layout. See ADR 0011.
 
 A `State` owns globals, identities, hook counters, and execution stacks.
 Values occupy 24 bytes: a float64, an object pointer, and an immutable string
@@ -17,7 +19,8 @@ host callbacks and frame changes reload that state. Slow paths handle coercion,
 metatables, and errors.
 
 Lua calls push 40-byte frames into reusable slices and return in the same
-dispatch loop. Only missing parameters need clearing. Varargs precede registers
+dispatch loop. Function entry clears registers beyond supplied parameters.
+Varargs precede registers
 in the value stack so expanding argument lists cannot overwrite saved varargs.
 Tail calls close open upvalues and replace the current frame.
 Left-associated binary chains reuse their result register, so temporary stack
