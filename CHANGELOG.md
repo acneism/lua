@@ -29,7 +29,8 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 
 ### Changed
 
-- Compact 24-byte values, packed opcodes, cached register windows, and 40-byte frames.
+- Compact 24-byte values, packed opcodes, cached register windows, and reusable frames.
+- A 48-byte frame retains the observable count of collapsed Lua tail calls.
 - Direct Lua calls and arithmetic metamethod continuations with reusable registers.
 - Fused loop and call sequences, versioned metamethod caches, and direct array writes.
 - Corpus validation accepts growth beyond the original 707 entries.

@@ -16,7 +16,7 @@ dispatch loop caches its PC, code, constants, frame, and 256-register window;
 host callbacks and frame changes reload that state. Slow paths handle coercion,
 metatables, and errors.
 
-Lua calls push 40-byte frames into reusable slices and return in the same
+Lua calls push 48-byte frames into reusable slices and return in the same
 dispatch loop. Only missing parameters need clearing. Varargs precede registers
 in the value stack so expanding argument lists cannot overwrite saved varargs.
 Tail calls close open upvalues and replace the current frame.
