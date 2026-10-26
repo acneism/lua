@@ -19,7 +19,8 @@ func translateRedis(raw *redisProto) *Proto {
 	mapping := make([]int, len(raw.code)+1)
 	targets := make(map[int]int)
 	emit := func(i instruction, pc int) int {
-		if len(c.code) > 0 && len(c.code)%vmPollStride == 0 {
+		companion := pc > 0 && raw.code[pc].op() == rJmp && redisTestMode(raw.code[pc-1].op())
+		if len(c.code) > 0 && len(c.code)%vmPollStride == 0 && !companion {
 			c.code = append(c.code, instruction{op: opPoll, line: int(raw.lines[pc])})
 			p.rawPC = append(p.rawPC, pc)
 		}
@@ -45,6 +46,7 @@ func translateRedis(raw *redisProto) *Proto {
 		return nameInfo{kind: "register", register: int16(reg)}
 	}
 	for pc := 0; pc < len(raw.code); pc++ {
+		origin := pc
 		mapping[pc] = len(c.code)
 		i := raw.code[pc]
 		a, b, d := i.a(), i.b(), i.c()
@@ -120,17 +122,7 @@ func translateRedis(raw *redisProto) *Proto {
 			ins.a = 0
 			ins.c = 0
 		case rEq, rLt, rLe:
-			scratch := raw.maxStack
-			p.maxRegisters = max(p.maxRegisters, scratch+1)
-			ins = instruction{op: opBinary, a: scratch, b: redisOperand(b), c: redisOperand(d), text: []string{"==", "<", "<="}[i.op()-rEq], left: name(b, pc), right: name(d, pc)}
-			emit(ins, pc)
-			branch := opJumpTrue
-			if a != 0 {
-				branch = opJumpFalse
-			}
-			index := emit(instruction{op: branch, a: scratch}, pc)
-			targets[index] = pc + 2
-			continue
+			ins = instruction{op: opCompare, a: a, b: redisOperand(b), c: redisOperand(d), text: []string{"==", "<", "<="}[i.op()-rEq], left: name(b, pc), right: name(d, pc)}
 		case rTest:
 			ins.op = opJumpTrue
 			if d != 0 {
@@ -186,8 +178,7 @@ func translateRedis(raw *redisProto) *Proto {
 				binding := raw.code[pc+1+n]
 				child.upvalues = append(child.upvalues, upvalueDescriptor{local: binding.op() == rMove, index: binding.b(), name: upname})
 			}
-			index := emit(ins, pc)
-			_ = index
+			emit(ins, pc)
 			for range child.upvalues {
 				pc++
 				mapping[pc] = len(c.code)
@@ -197,7 +188,7 @@ func translateRedis(raw *redisProto) *Proto {
 			ins.op = opVararg
 			ins.b = b - 1
 		}
-		index := emit(ins, pc)
+		index := emit(ins, origin)
 		switch i.op() {
 		case rJmp, rForLoop, rForPrep:
 			targets[index] = pc + 1 + i.sbx()

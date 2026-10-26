@@ -146,6 +146,52 @@ func (s *State) execute(stop int) (result []Value) {
 			word := code[pc]
 			pc++
 			op, register := opcode(word), uint8(word>>8)
+			if op >= comparisonBase && op < comparisonEnd {
+				mode := op - comparisonBase
+				left, right := &registers[uint8(word>>8)], &registers[uint8(word>>16)]
+				if mode&1 != 0 {
+					left = &constants[uint8(word>>8)]
+				}
+				if mode&2 != 0 {
+					right = &constants[uint8(word>>16)]
+				}
+				var matched bool
+				if left.object == &numberMarker && right.object == &numberMarker {
+					switch mode / 8 {
+					case 0:
+						matched = left.number == right.number
+					case 1:
+						matched = left.number < right.number
+					case 2:
+						matched = left.number <= right.number
+					}
+				} else {
+					t.frames[frameIndex].pc = int32(pc)
+					s.steps = s.options.HookEvery - remaining
+					i := p.instruction(pc - 1)
+					matched = s.binary(i.text, *left, *right, i.left, i.right).Truth()
+					f = &t.frames[frameIndex]
+					registers = (*[256]Value)(t.stack[base : base+256])
+					remaining = s.options.HookEvery - s.steps
+				}
+				if matched == (mode&4 != 0) {
+					target := int(uint32(code[pc] >> 16))
+					if target < pc {
+						remaining -= vmCallWeight
+						if remaining <= 0 {
+							t.frames[frameIndex].pc = int32(pc)
+							s.pollHook()
+							f = &t.frames[frameIndex]
+							registers = (*[256]Value)(t.stack[base : base+256])
+							remaining = s.options.HookEvery - s.steps
+						}
+					}
+					pc = target
+				} else {
+					pc++
+				}
+				continue
+			}
 			if op >= numericBase && op < numericEnd || op >= numericJumpBase && op < numericJumpEnd {
 				operation := op
 				fused := op >= numericJumpBase

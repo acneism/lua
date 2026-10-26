@@ -42,6 +42,7 @@ const (
 	opTestSet
 	opConcat
 	opForIterator
+	opCompare
 )
 
 type nameInfo struct {
