@@ -29,7 +29,7 @@ func FuzzCompile(f *testing.F) {
 }
 
 func FuzzRun(f *testing.F) {
-	for _, seed := range [][]byte{{}, {0}, {1, 7, 9}, {2}, {3}, {255, 0, 31}, {4, 3, 2, 1}, {5}, {6}, {7}} {
+	for _, seed := range [][]byte{{}, {0}, {1, 7, 9}, {2}, {3}, {255, 0, 31}, {4, 3, 2, 1}, {5}, {6}, {7}, {8}, {9}} {
 		f.Add(seed)
 	}
 	f.Fuzz(func(t *testing.T, data []byte) {
@@ -38,7 +38,7 @@ func FuzzRun(f *testing.F) {
 		}
 		var source strings.Builder
 		if len(data) > 0 {
-			switch data[0] % 8 {
+			switch data[0] % 10 {
 			case 1:
 				source.WriteString("do local t={1,2,x=3} for k in pairs(t) do t[k]=nil end end ")
 			case 2:
@@ -53,6 +53,11 @@ func FuzzRun(f *testing.F) {
 				source.WriteString("do local function f(n) if n==0 then return 1 end return coroutine.wrap(f)(n-1) end pcall(f,200) end ")
 			case 7:
 				source.WriteString("do local function f() return xpcall(f,function(e) return e end) end f() end ")
+			case 8:
+				mode := []string{"k", "v", "kv"}[data[0]/10%3]
+				fmt.Fprintf(&source, "do local w=setmetatable({}, {__mode='%s'}) for i=1,%d do w[{}]={} end collectgarbage() assert(next(w)==nil) end ", mode, 1+int(data[0]%16))
+			case 9:
+				source.WriteString("do local w=setmetatable({}, {__mode='k'}) do local k={} w[k]={k} end collectgarbage() assert(next(w)~=nil) for k in pairs(w) do w[k]=nil end collectgarbage() assert(next(w)==nil) end ")
 			}
 		}
 		source.WriteString("local n=0 local t={} local function f(x) return x*2+1 end ")
