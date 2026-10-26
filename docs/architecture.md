@@ -99,6 +99,12 @@ The pending manifest is empty after A2. RunCorpus accepts JSON fixture paths,
 reads budgets and normalization rules from their directories, and preserves
 host options. The root test and the external lua-libm integration share it.
 
+Explicit Lua collection traces objects from globals, the string metatable,
+active/reachable thread stacks and frames, upvalues, handler scopes, native
+arguments, and State.Retain registrations. It clears weak table entries after
+marking and leaves physical reclamation to Go. It never requests Go GC.
+See [decision 10](adr/0010-weak-tables.md).
+
 ## Remaining stages
 
 L supplies exact glibc trigonometry through Options.Math in the separate

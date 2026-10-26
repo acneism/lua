@@ -48,7 +48,13 @@ func (s *State) native(fn *function, args []Value, site *instruction) []Value {
 	depth := len(t.frames)
 	t.frames = append(t.frames, frame{function: fn, site: site})
 	t.nativeDepth++
-	defer func() { t.nativeDepth--; t.frames = t.frames[:depth] }()
+	t.nativeArgs = append(t.nativeArgs, args)
+	defer func() {
+		t.nativeDepth--
+		t.frames = t.frames[:depth]
+		t.nativeArgs[len(t.nativeArgs)-1] = nil
+		t.nativeArgs = t.nativeArgs[:len(t.nativeArgs)-1]
+	}()
 	defer func() {
 		if raised := recover(); raised != nil {
 			panic(s.processPanic(raised))

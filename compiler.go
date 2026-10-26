@@ -1,6 +1,9 @@
 package lua
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type opcode uint8
 
@@ -110,6 +113,9 @@ func compile(source []byte, chunk string, depth int) (proto *Proto, err error) {
 	}()
 	if chunk == "" {
 		chunk = string(source)
+	}
+	if end := strings.IndexByte(chunk, 0); end >= 0 {
+		chunk = chunk[:end]
 	}
 	p := &parser{depth: depth, lexer: lexer{source: string(source), chunk: chunk, line: 1}}
 	p.advance()

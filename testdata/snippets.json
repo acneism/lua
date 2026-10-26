@@ -16774,5 +16774,141 @@
   {
     "src": "local function f(n) if n == 0 then error('x', 2) end return f(n - 1) end f(3)",
     "want": "x"
+  },
+  {
+    "src": "local t = setmetatable({}, {__mode = 'k'}) t[{}] = 1 collectgarbage() return tostring(next(t))",
+    "want": "nil"
+  },
+  {
+    "src": "local t = setmetatable({}, {__mode = 'v'}) t[1] = {} collectgarbage() return tostring(t[1])",
+    "want": "nil"
+  },
+  {
+    "src": "local t = setmetatable({}, {__mode = 'k'}) local k = {} t[k] = 1 collectgarbage() return tostring(t[k])",
+    "want": "1"
+  },
+  {
+    "src": "local t = setmetatable({}, {__mode = 'kv'}) for i = 1, 10 do t[{}] = {} end collectgarbage() local n = 0 for _ in pairs(t) do n = n + 1 end return n",
+    "want": "0"
+  },
+  {
+    "src": "local t = setmetatable({}, {__mode = 'kv'}) t['a'] = 'b' t[1] = 'x' t[2] = 5 t[true] = false collectgarbage() local n = 0 for _ in pairs(t) do n = n + 1 end return n",
+    "want": "4"
+  },
+  {
+    "src": "local t = setmetatable({}, {__mode = 'k'}) local k = {} t[k] = {k} k = nil collectgarbage() local n = 0 for _ in pairs(t) do n = n + 1 end return n",
+    "want": "1"
+  },
+  {
+    "src": "local t = setmetatable({}, {__mode = 'k'}) t[function() end] = 1 collectgarbage() return tostring(next(t))",
+    "want": "nil"
+  },
+  {
+    "src": "local keep = {} local t = setmetatable({}, {__mode = 'v'}) t[1] = keep t[2] = {} collectgarbage() return tostring(t[1] == keep) .. '|' .. tostring(t[2])",
+    "want": "true|nil"
+  },
+  {
+    "src": "local t = {} t[{}] = 1 setmetatable(t, {__mode = 'k'}) collectgarbage() return tostring(next(t))",
+    "want": "nil"
+  },
+  {
+    "src": "local mt = {__mode = 'k'} local t = setmetatable({}, mt) mt.__mode = nil t[{}] = 1 collectgarbage() return tostring(next(t) ~= nil)",
+    "want": "true"
+  },
+  {
+    "src": "local t = setmetatable({}, {__mode = 'k'}) t[coroutine.create(function() end)] = 1 collectgarbage() return tostring(next(t))",
+    "want": "nil"
+  },
+  {
+    "src": "local t = setmetatable({}, {__mode = 'v'}) local a = {} a.b = {} t[1] = a.b a = nil collectgarbage() return tostring(t[1])",
+    "want": "nil"
+  },
+  {
+    "src": "local t = setmetatable({}, {__mode = 'k'}) local k = {} local f = function() return k end t[k] = 1 collectgarbage() return tostring(next(t) ~= nil) .. '|' .. tostring(f() ~= nil)",
+    "want": "true|true"
+  },
+  {
+    "src": "local t = setmetatable({}, {__mode = 'k'}) do local x = {} t[x] = 1 end collectgarbage() return tostring(next(t))",
+    "want": "nil"
+  },
+  {
+    "src": "local t = setmetatable({}, {__mode = 'k'}) do local a, x = 1, {} t[x] = 1 end collectgarbage() return tostring(next(t))",
+    "want": "nil"
+  },
+  {
+    "src": "local t = setmetatable({}, {__mode = 'k'}) t[{}] = 1 local y = 2 collectgarbage() return tostring(next(t))",
+    "want": "nil"
+  },
+  {
+    "src": "local t = setmetatable({}, {__mode = 'k'}) local function f() local x = {} t[x] = 1 return 1 end f() collectgarbage() return tostring(next(t))",
+    "want": "nil"
+  },
+  {
+    "src": "local t = {} t.__mode = 'k' setmetatable(t, t) t[{}] = 1 collectgarbage() local n = 0 for k in pairs(t) do n = n + 1 end return n",
+    "want": "1"
+  },
+  {
+    "src": "local t = setmetatable({}, {__mode = 'v'}) for i = 1, 5 do t[i] = {} end collectgarbage('collect') return #t .. '|' .. tostring(t[1])",
+    "want": "0|nil"
+  },
+  {
+    "src": "local t = setmetatable({}, {__mode = 'k'}) local s = 0 for i = 1, 3 do t[{}] = i end collectgarbage('step', 0) collectgarbage() for _, v in pairs(t) do s = s + v end return s",
+    "want": "0"
+  },
+  {
+    "src": "local f, e = load(function() error('r') end) return tostring(f) .. '|' .. tostring(e)",
+    "want": "nil|user_script:1: r"
+  },
+  {
+    "src": "local n = 0 local f, e = load(function() n = n + 1 if n == 1 then return 'return 1' end error('r') end) return tostring(f) .. '|' .. tostring(e)",
+    "want": "nil|user_script:1: r"
+  },
+  {
+    "src": "local f, e = load(function() error({code = 5}) end) return tostring(f) .. '|' .. type(e) .. '|' .. tostring(e.code)",
+    "want": "nil|table|5"
+  },
+  {
+    "src": "local f, e = load(function() local t = nil return t.x end) return tostring(f) .. '|' .. tostring(e)",
+    "want": "nil|user_script:1: attempt to index local 't' (a nil value)"
+  },
+  {
+    "src": "local ok, f, e = pcall(load, function() error('r') end) return tostring(ok) .. '|' .. tostring(f) .. '|' .. tostring(e)",
+    "want": "true|nil|user_script:1: r"
+  },
+  {
+    "src": "local f, e = load(function() return {} end) return tostring(f) .. '|' .. tostring(e)",
+    "want": "nil|user_script:1: reader function must return a string"
+  },
+  {
+    "src": "local f, e = load(function()\n  return {}\nend)\nreturn tostring(f) .. '|' .. tostring(e)",
+    "want": "nil|user_script:1: reader function must return a string"
+  },
+  {
+    "src": "local f, e = load(function() error('r', 0) end, '=named') return tostring(f) .. '|' .. tostring(e)",
+    "want": "nil|r"
+  },
+  {
+    "src": "local w=setmetatable({}, {__mode='v'}) do local c=coroutine.create(function() local self=coroutine.running() coroutine.yield() return self end) w[1]=c coroutine.resume(c) end collectgarbage() return tostring(w[1])",
+    "want": "nil"
+  },
+  {
+    "src": "local w=setmetatable({}, {__mode='v\\0k'}) w[{}]=1 collectgarbage() return next(w)~=nil",
+    "want": "true"
+  },
+  {
+    "src": "local w=setmetatable({}, {__mode='\\0v'}) w[1]={} collectgarbage() return w[1]~=nil",
+    "want": "true"
+  },
+  {
+    "src": "local w=setmetatable({}, {__mode='kv'}) w[{}]='held' collectgarbage() return tostring(next(w))",
+    "want": "nil"
+  },
+  {
+    "src": "local w=setmetatable({}, {__mode='v'}) do local v={} w[{v}]=v end collectgarbage() return next(w)~=nil",
+    "want": "true"
+  },
+  {
+    "src": "local w=setmetatable({}, {__mode='v'}) local c=coroutine.wrap(function() w[1]=coroutine.running() coroutine.yield() end) c() collectgarbage() local alive=w[1]~=nil c=nil collectgarbage() return alive,tostring(w[1])",
+    "want": "true,nil"
   }
 ]

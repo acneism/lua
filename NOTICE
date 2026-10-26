@@ -9,7 +9,7 @@ License: MIT; full terms in LICENSES/Lua-5.1.5.txt.
 
 The Go interpreter adapts algorithms and behavior from deps/lua/src/ltable.c,
 llex.c, lparser.c, lcode.c, lvm.c, ldo.c, ldebug.c, lobject.c, lbaselib.c,
-lfunc.c, lstate.h, lua.h, luaconf.h, lstrlib.c, ltablib.c, and lmathlib.c
+lfunc.c, lstate.h, lua.h, luaconf.h, lstrlib.c, ltablib.c, lmathlib.c, and lgc.c
 in Redis 7.2.16.
 The register instruction representation and coroutine stack implementation
 are specific to this Go implementation.

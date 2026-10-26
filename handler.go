@@ -11,6 +11,11 @@ func (s *State) protectedHandler(fn Value, args []Value, handler Value, active b
 	previous, previousID, previousActive := t.handler, t.handlerID, t.handlerActive
 	t.handler, t.handlerActive = handler, active
 	if active {
+		t.handlerRoots = append(t.handlerRoots, handler)
+		defer func() {
+			t.handlerRoots[len(t.handlerRoots)-1] = Nil()
+			t.handlerRoots = t.handlerRoots[:len(t.handlerRoots)-1]
+		}()
 		if s.handlers == nil {
 			s.handlers = &handlerOwner{}
 		}

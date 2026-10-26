@@ -111,6 +111,8 @@ func TestHandlerSeesErrorPoint(t *testing.T) {
 		{"named loadstring", "loadstring('error(1)','=mychunk')()", "=mychunk", 1},
 		{"raw loadstring", "loadstring('error(1)')()", "error(1)", 1},
 		{"handler error", "error(math)", "@err_handler_def", 10},
+		{"nul name", "loadstring('error(1)','=a\\0b')()", "=a", 1},
+		{"nul source", "loadstring('error(1) --\\0junk')()", "error(1) --", 1},
 	} {
 		t.Run(item.name, func(t *testing.T) {
 			s := NewState(Options{})
@@ -133,6 +135,58 @@ func TestHandlerSeesErrorPoint(t *testing.T) {
 				t.Fatal("handler state retained")
 			}
 		})
+	}
+}
+
+func TestCompileTruncatesChunkName(t *testing.T) {
+	s := NewState(Options{})
+	handler := testRedisHandler(t, s)
+	proto, err := Compile([]byte("error('x')"), "@a\x00b")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = s.CallWithHandler(s.Load(proto, nil), handler)
+	var failure *Error
+	if !errors.As(err, &failure) || failure.Value.Table().RawGet(String("source")).Text() != "@a" {
+		t.Fatal("C chunk name changed", err)
+	}
+}
+
+func TestLoadReaderPreservesHandler(t *testing.T) {
+	for _, source := range []string{
+		"local f,e=load(function()\nerror('reader')\nend) return f,e.source,e.line",
+		"local f,e=load(function() return {} end) return f,e.source,e.line",
+		"local f,e=load(function()\nreturn {}\nend) return f,e.source,e.line",
+	} {
+		s := NewState(Options{})
+		handler := testRedisHandler(t, s)
+		proto, err := Compile([]byte(source), "@user_script")
+		if err != nil {
+			t.Fatal(err)
+		}
+		values, err := s.CallWithHandler(s.Load(proto, nil), handler)
+		line := 1.0
+		if strings.Contains(source, "error('reader')") {
+			line = 2
+		}
+		if err != nil || len(values) != 3 || !values[0].IsNil() || values[1].Text() != "@user_script" || values[2].Float() != line {
+			t.Fatalf("reader handler lost: %v %v", values, err)
+		}
+	}
+}
+
+func TestLoadReaderAbortAndReuse(t *testing.T) {
+	s := NewState(Options{})
+	cause := errors.New("reader abort")
+	_ = s.Globals().RawSet(String("reader"), s.Function("reader", func(*State, []Value) ([]Value, error) { return nil, cause }))
+	handler := s.Function("handler", func(*State, []Value) ([]Value, error) { t.Error("abort reached handler"); return nil, nil })
+	fn := s.Load(compileTest(t, "return pcall(load,reader)"), nil)
+	if _, err := s.CallWithHandler(fn, handler); !errors.Is(err, cause) {
+		t.Fatal(err)
+	}
+	values, err := s.Call(s.Load(compileTest(t, "return 7"), nil))
+	if err != nil || len(values) != 1 || values[0].Float() != 7 {
+		t.Fatal(values, err)
 	}
 }
 

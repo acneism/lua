@@ -177,6 +177,8 @@ func (s *State) openBase() {
 	for _, name := range names {
 		s.globals.set(String(name), s.Function(name, functions[name]))
 	}
+	s.globals.RawGet(String("pairs")).object.function.upvalues = []*upvalue{{value: next}}
+	s.globals.RawGet(String("ipairs")).object.function.upvalues = []*upvalue{{value: ipairs}}
 	s.globals.set(String("_G"), s.globals.Value())
 	s.globals.set(String("_VERSION"), String("Lua 5.1"))
 }
@@ -337,6 +339,31 @@ func baseLoad(s *State, args []Value) ([]Value, error) {
 	if len(args) > 1 && !args[1].IsNil() {
 		chunk = s.checkText(args, 1)
 	}
+	return s.loadReader(reader, chunk)
+}
+
+func (s *State) loadReader(reader Value, chunk string) (values []Value, err error) {
+	t := s.current
+	depth, used, top := len(t.frames), t.used, t.top
+	cDepth, nativeDepth, boundary := t.cDepth, t.nativeDepth, t.boundary
+	defer func() {
+		if raised := recover(); raised != nil {
+			raised = s.processPanic(raised)
+			failure, ok := raised.(*Error)
+			if !ok {
+				panic(raised)
+			}
+			t.close(used)
+			clear(t.stack[used:t.used])
+			t.frames = t.frames[:depth]
+			t.used, t.top, t.cDepth, t.nativeDepth, t.boundary = used, top, cDepth, nativeDepth, boundary
+			if abortError(failure) {
+				values, err = nil, failure
+			} else {
+				values, err = []Value{Nil(), failure.Value}, nil
+			}
+		}
+	}()
 	var source strings.Builder
 	for {
 		s.tick()
@@ -346,12 +373,7 @@ func baseLoad(s *State, args []Value) ([]Value, error) {
 		}
 		text, ok := value.toString()
 		if !ok {
-			failure := "reader function must return a string"
-			frames := s.current.frames
-			if len(frames) >= 2 && frames[len(frames)-2].function.proto != nil {
-				failure = locatedError(frames[len(frames)-2].function.proto.chunk, frames[len(frames)-2].sourceLine(), failure).Error()
-			}
-			return []Value{Nil(), String(failure)}, nil
+			s.raise("reader function must return a string", 1)
 		}
 		if source.Len() > s.options.MaxString-len(text) {
 			s.raise("string length overflow", 1)
@@ -375,7 +397,10 @@ func baseCollectGarbage(s *State, args []Value) ([]Value, error) {
 		return []Value{Bool(false)}, nil
 	case "setpause", "setstepmul":
 		return []Value{Number(200)}, nil
-	case "collect", "stop", "restart":
+	case "collect":
+		s.collect()
+		return []Value{Number(0)}, nil
+	case "stop", "restart":
 		return []Value{Number(0)}, nil
 	default:
 		s.argError(1, "invalid option '"+option+"'")

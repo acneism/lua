@@ -16,7 +16,8 @@ P adds 27 further Redis captures covering compact operand modes, direct calls,
 metamethod continuation and cache invalidation, source locations, and dense and
 sparse sequence lengths. B0 adds nine reviewer captures for error levels across
 lost tail calls. The earlier 4185 sources and answers remain unchanged.
-All 4194 main entries execute;
+The B0 review adds 20 weak-table and eight protected-reader captures, plus six
+further weak-mode/coroutine captures. All 4228 main entries execute;
 `testdata/pending.json` is empty.
 Reference verification always checks the complete file. Each execution has a
 one-million-instruction hook budget, so a broken limit fails its own subtest.

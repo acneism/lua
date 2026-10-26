@@ -6,7 +6,8 @@ Status: implemented for B0 review.
 
 Expose State.Frame with Lua 5.1's observable stack levels. Native Go functions
 occupy C levels, and collapsed Lua tail calls occupy virtual tail levels.
-Frame source names retain the original chunk string; C and tail frames have
+Frame source names retain the chunk string through its first zero byte;
+C and tail frames have
 their reference source names and line -1. A main prototype is distinct from
 a nested Lua function. Only the currently running coroutine is inspected.
 
@@ -50,6 +51,10 @@ and @err_handler_def:10 when the handler writes a read-only table.
 B1 will compile the same Lua handler in its environment and construct errors
 from the resulting table. It must not synthesize source names from Error.Line.
 
+The protected load reader inherits the current handler and returns its error
+value rather than raising it through load's caller. It adds no synthetic C
+frame or C-depth level. Abort and internal failures continue to escape.
+
 Mutations run in separate source copies:
 
 | Mutation | Failing tests |
@@ -57,3 +62,5 @@ Mutations run in separate source copies:
 | Invoke handlers after protected-call cleanup | TestXpcallHandlerSeesLiveFrames and TestHandlerSeesErrorPoint |
 | Discard the collapsed-tail count | TestFrameLevels, TestDirectHandlerTailFrame, and corpus entries 4186, 4187, 4193, 4194 |
 | Skip native frames in Frame | TestFrameGoCallsGo and TestHandlerSeesErrorPoint/Go_calls_Go |
+| Remove the protected reader boundary | TestLoadReaderPreservesHandler and corpus 4215 through 4219, 4222 |
+| Preserve zero bytes in chunk names | TestCompileTruncatesChunkName and TestHandlerSeesErrorPoint/nul_name, nul_source |

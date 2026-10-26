@@ -8,3 +8,4 @@
 - [Reference floating-point math](0006-reference-math.md)
 - [Compact values and interpreter execution](0007-vm-performance.md)
 - [Error handlers and observable frames](0009-error-handlers.md)
+- [Explicit Lua collection and host roots](0010-weak-tables.md)

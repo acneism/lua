@@ -4,7 +4,7 @@ The target is Redis 7.2.16 and its Lua 5.1 variant. A2 implements the interprete
 and base, coroutine, string, table, and math libraries. EVAL, FUNCTION, host commands,
 and C extensions are not implemented yet.
 
-All 4194 main reference snippets execute; `testdata/pending.json` is empty.
+All 4228 main reference snippets execute; `testdata/pending.json` is empty.
 Tests execute the original capture wrapper; its
 helper environment is separate from the snippet environment. Reference CI
 checks all recorded answers against Redis, including pending entries.
@@ -19,8 +19,16 @@ checks all recorded answers against Redis, including pending entries.
 - Read-only writes fail with Redis's error. The standalone globals start writable;
   installation of the Redis sandbox belongs to B.
 - Binary chunks are parsed as text and rejected.
-- Weak-table and finalizer fields are accepted without weak references or
-  Lua finalizer execution.
+- Weak k, v, and kv tables clear unreachable tables, functions, and threads
+  during collectgarbage() and collectgarbage("collect"). Strings and scalar
+  values remain. Strong values keep weak keys alive, as in Lua 5.1.
+- There is no automatic or incremental Lua collection. stop/restart do not
+  change the explicit collection pass; step returns false. count and gcinfo
+  report Go allocation figures. Collection never requests a full Go GC.
+- Hosts register external Lua roots with State.Retain and release them when
+  no longer needed. Native arguments are roots while the function executes.
+  Opaque Go captures and userdata are not inspected.
+- Table finalizers do not execute, as in Lua 5.1.
 - Coroutines use VM stacks. Unfinished coroutines close after the outer call.
 - Native nesting and syntax limits match the captured wrapper probes.
   loadstring inherits the current C-call depth, including pcall and coroutines.

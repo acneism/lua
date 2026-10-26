@@ -69,6 +69,7 @@ type thread struct {
 	entry         Value
 	started       bool
 	nativeDepth   int
+	nativeArgs    [][]Value
 	cDepth        int
 	boundary      int
 	resumeDest    int
@@ -79,6 +80,7 @@ type thread struct {
 	handler       Value
 	handlerID     uint64
 	handlerActive bool
+	handlerRoots  []Value
 }
 
 type State struct {
@@ -94,6 +96,8 @@ type State struct {
 	running     int
 	randomState uint64
 	handlers    *handlerOwner
+	hostRoots   map[uint64]Value
+	rootID      uint64
 }
 
 func NewState(options Options) *State {
