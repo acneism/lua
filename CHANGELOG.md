@@ -42,6 +42,8 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 
 ### Fixed
 
+- Embedded NUL scanning and zero-token diagnostics match Redis's C lexer.
+
 - Unused corpus metadata is rejected, with per-fixture instruction-limit sidecars.
 - Negative log10 NaN normalization has one authoritative implementation.
 - Architecture-independent NaN propagation and inherited loadstring syntax depth.

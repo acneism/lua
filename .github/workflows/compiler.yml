@@ -38,7 +38,7 @@ jobs:
       - name: Capture compiler boundary probes
         run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -out work/compiler-limits.json internal/cmd/capture/testdata/compiler-limits.json
       - name: Capture every corpus prototype up to 4 KiB
-        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -dump -out work/compiler-dump.json testdata/snippets.json testdata/libm.json luatest/testdata/environment.json
+        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -dump -out work/compiler-dump.json testdata/snippets.json testdata/libm.json luatest/testdata/environment.json internal/cmd/capture/testdata/compiler-lexer.json
       - uses: actions/upload-artifact@v7
         with:
           name: compiler-dump-captured

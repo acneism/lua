@@ -16822,5 +16822,109 @@
   {
     "src": "local function f(x) return x end local x=setmetatable({}, {__add=function() return 9 end}) local function g() return f(x+2) end return g()",
     "want": "9"
+  },
+  {
+    "src": "local f, e = loadstring(\"return 1\\000\", \"@user_script\") if not f then return e end return f()",
+    "want": "1"
+  },
+  {
+    "src": "local f, e = loadstring(\"return 1\\000;\", \"@user_script\") if not f then return e end return f()",
+    "want": "1"
+  },
+  {
+    "src": "local f, e = loadstring(\"return 1\\0002\", \"@user_script\") if not f then return e end return f()",
+    "want": "1"
+  },
+  {
+    "src": "local f, e = loadstring(\"return 1\\000e+3\", \"@user_script\") if not f then return e end return f()",
+    "want": "4"
+  },
+  {
+    "src": "local f, e = loadstring(\"return 1\\000+2\", \"@user_script\") if not f then return e end return f()",
+    "want": "1"
+  },
+  {
+    "src": "local f, e = loadstring(\"return 1e\\000\", \"@user_script\") if not f then return e end return f()",
+    "want": "user_script:1: malformed number near '1e'"
+  },
+  {
+    "src": "local f, e = loadstring(\"return 1\\000\\000\", \"@user_script\") if not f then return e end return f()",
+    "want": "1"
+  },
+  {
+    "src": "local f, e = loadstring(\"return 0x1\\000\", \"@user_script\") if not f then return e end return f()",
+    "want": "user_script:1: '<eof>' expected"
+  },
+  {
+    "src": "local f, e = loadstring(\"return .1\\000\", \"@user_script\") if not f then return e end return f()",
+    "want": "0.1"
+  },
+  {
+    "src": "local f, e = loadstring(\"return \\\"abc\\\\999\\\"\", \"@user_script\") if not f then return e end return f()",
+    "want": "user_script:1: escape sequence too large near '\"abc'"
+  },
+  {
+    "src": "local f, e = loadstring(\"return 1e\\000+2\", \"@user_script\") if not f then return e end return f()",
+    "want": "user_script:1: malformed number near '1e'"
+  },
+  {
+    "src": "local f, e = loadstring(\"return 1\\000\\000\\000\", \"@user_script\") if not f then return e end return f()",
+    "want": "user_script:1: '<eof>' expected"
+  },
+  {
+    "src": "local f, e = loadstring(\"return 1\\000-2\", \"@user_script\") if not f then return e end return f()",
+    "want": "1"
+  },
+  {
+    "src": "local f, e = loadstring(\"return 1\\000.2\", \"@user_script\") if not f then return e end return f()",
+    "want": "user_script:1: '<eof>' expected near '.2'"
+  },
+  {
+    "src": "local f, e = loadstring(\"return .\\000\", \"@user_script\") if not f then return e end return f()",
+    "want": "user_script:1: unexpected symbol near '..'"
+  },
+  {
+    "src": "local f, e = loadstring(\"return .\\000\\000\", \"@user_script\") if not f then return e end return f()",
+    "want": ""
+  },
+  {
+    "src": "local f, e = loadstring(\"return 1 .\\000 2\", \"@user_script\") if not f then return e end return f()",
+    "want": "12"
+  },
+  {
+    "src": "local f, e = loadstring(\"return 1 .\\000\\000 2\", \"@user_script\") if not f then return e end return f()",
+    "want": "user_script:1: '<eof>' expected near '...'"
+  },
+  {
+    "src": "local f, e = loadstring(\"return 1.\\0002\", \"@user_script\") if not f then return e end return f()",
+    "want": "1"
+  },
+  {
+    "src": "local f, e = loadstring(\"return 1e+\\0002\", \"@user_script\") if not f then return e end return f()",
+    "want": "user_script:1: malformed number near '1e+'"
+  },
+  {
+    "src": "local f, e = loadstring(\"return \\000\", \"@user_script\") if not f then return e end return f()",
+    "want": "user_script:1: unexpected symbol"
+  },
+  {
+    "src": "local f, e = loadstring(\"local x\\000=1\", \"@user_script\") if not f then return e end return f()",
+    "want": "user_script:1: unexpected symbol"
+  },
+  {
+    "src": "local f, e = loadstring(\"return 1e2\\000\", \"@user_script\") if not f then return e end return f()",
+    "want": "user_script:1: '<eof>' expected"
+  },
+  {
+    "src": "local f, e = loadstring(\"return \\001\", \"@user_script\") if not f then return e end return f()",
+    "want": "user_script:1: unexpected symbol near 'char(1)'"
+  },
+  {
+    "src": "local f, e = loadstring(\"return \\027\", \"@user_script\") if not f then return e end return f()",
+    "want": "user_script:1: unexpected symbol near 'char(27)'"
+  },
+  {
+    "src": "local f, e = loadstring(\"return \\127\", \"@user_script\") if not f then return e end return f()",
+    "want": "user_script:1: unexpected symbol near 'char(127)'"
   }
 ]

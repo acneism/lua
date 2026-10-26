@@ -21,6 +21,13 @@ next records that line before consuming a token. Token text in diagnostics
 stops at NUL, as txtToken passed through C string formatting. Chunk source
 names stop at NUL before entering the parser.
 
+Match check_next's strchr behavior for embedded NUL bytes in source: a zero
+byte matches the set terminator in exponent, sign and dot lookahead. Numeral
+conversion reads only the buffer prefix before NUL. A standalone zero token
+suppresses the near-token suffix in syntax errors; other control tokens retain
+their char(n) diagnostics. Captured probes cover execution, errors and complete
+raw prototypes for these cases.
+
 The source SHA-256 values are:
 
 | Redis file | SHA-256 |

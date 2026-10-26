@@ -4,7 +4,7 @@ The target is Redis 7.2.16 and its Lua 5.1 variant. A2 implements the interprete
 and base, coroutine, string, table, and math libraries. EVAL, FUNCTION, host commands,
 and C extensions are not implemented yet.
 
-All 4185 main reference snippets execute; `testdata/pending.json` is empty.
+All 4232 main reference snippets execute; `testdata/pending.json` is empty.
 Tests execute the original capture wrapper; its
 helper environment is separate from the snippet environment. Reference CI
 checks all recorded answers against Redis, including pending entries.
@@ -76,9 +76,10 @@ normalization applies. Thirty-six exact trigonometric probes live separately in
 testdata/libm.json for lua-libm integration tests. Reference CI still verifies
 their captured answers against Redis. lua does not import the LGPL module.
 
-string.dump serializes this VM's immutable register program after the LuaQ
-signature. Its payload is specific to this VM rather than Redis's instruction
-format. Binary loading is rejected, including this output, as in Redis.
+string.dump serializes the canonical Redis Lua 5.1 prototype in the x86-64
+format, including instructions, constants and debug information. Output matches
+Redis byte for byte on every supported architecture. Binary loading is rejected,
+including this output, as in Redis.
 
 collectgarbage and gcinfo expose plausible Go memory statistics rather than the
 Redis Lua allocator's exact figures. Lua controls do not stop Go's process-wide
