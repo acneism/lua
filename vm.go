@@ -385,6 +385,7 @@ func (s *State) execute(stop int) (result []Value) {
 					pc += 2
 					remaining -= vmCallWeight
 					if remaining <= 0 {
+						registers[register], registers[register+1] = value, argument
 						t.frames[frameIndex].pc = int32(pc)
 						s.pollHook()
 						remaining = s.options.HookEvery - s.steps
@@ -484,6 +485,11 @@ func (s *State) execute(stop int) (result []Value) {
 					base, pc = int(f.base), int(f.pc)
 					code, constants = p.code, p.constants
 					registers = (*[256]Value)(t.stack[base : base+256])
+					next := code[pc]
+					if opcode(next) == opMove {
+						registers[uint8(next>>8)] = registers[uint8(next>>16)]
+						pc++
+					}
 					continue
 				}
 			case opConstant:

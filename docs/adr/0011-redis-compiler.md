@@ -70,6 +70,11 @@ to clearing small register windows. One to three slots use direct nil writes;
 larger windows retain clear. The helper inlines with compiler cost 57. Every
 slot is still initialized, including unused temporary registers.
 
+After a fixed Lua return, execute a following MOVE while restoring the caller
+register view. This applies to any register copy after a return, preserves its
+source and destination, and introduces no new polling point. Prepared calls
+materialize their original callee and argument slots before a reentrant hook.
+
 The VM initializes the complete register window on function entry because
 Lua's compiler can omit an initial LOADNIL. Both direct call paths perform the
 same initialization. A canonical numeric-for offset must not enter the packed

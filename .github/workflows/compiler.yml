@@ -52,10 +52,11 @@ jobs:
         run: go test -run '^TestRedisCompilerDump$' .
       - name: Measure the nine core scenarios
         run: go run ./internal/cmd/bench -addr 127.0.0.1:6379 -output work/p2a-bench.json -rounds 5
-      - name: Profile recursive calls and arithmetic metamethods
+      - name: Profile core loops and Lua calls
         run: |
           go run ./internal/cmd/bench -addr 127.0.0.1:6379 -scenario Loop -rounds 30 -cpuprofile work/loop.pprof -output work/loop-profile.json
           go run ./internal/cmd/bench -addr 127.0.0.1:6379 -scenario Fib27 -rounds 30 -cpuprofile work/fib.pprof -output work/fib-profile.json
+          go run ./internal/cmd/bench -addr 127.0.0.1:6379 -scenario LuaCalls -rounds 30 -cpuprofile work/calls.pprof -output work/calls-profile.json
           go run ./internal/cmd/bench -addr 127.0.0.1:6379 -scenario Metamethod -rounds 30 -cpuprofile work/metamethod.pprof -output work/metamethod-profile.json
       - uses: actions/upload-artifact@v7
         if: always()
