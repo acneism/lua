@@ -1,6 +1,9 @@
 package lua
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type opcode uint8
 
@@ -109,5 +112,6 @@ func compile(source []byte, chunk string, depth int) (proto *Proto, err error) {
 	if chunk == "" {
 		chunk = string(source)
 	}
+	chunk, _, _ = strings.Cut(chunk, "\x00")
 	return translateRedis(parseRedis(source, chunk, depth)), nil
 }

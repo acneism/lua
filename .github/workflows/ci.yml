@@ -117,3 +117,5 @@ jobs:
           retention-days: 7
       - name: Verify every recorded answer
         run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -verify testdata/snippets.json testdata/libm.json luatest/testdata/environment.json
+      - name: Verify every recorded compiler dump
+        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -dump -verify testdata/compiler-dump.json

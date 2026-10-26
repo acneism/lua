@@ -18,12 +18,15 @@ func translateRedis(raw *redisProto) *Proto {
 	c := &compiler{proto: p}
 	mapping := make([]int, len(raw.code)+1)
 	targets := make(map[int]int)
+	sincePoll := 0
 	emit := func(i instruction, pc int) int {
 		companion := pc > 0 && raw.code[pc].op() == rJmp && redisTestMode(raw.code[pc-1].op())
-		if len(c.code) > 0 && len(c.code)%vmPollStride == 0 && !companion {
+		if sincePoll >= vmPollStride && !companion {
 			c.code = append(c.code, instruction{op: opPoll, line: int(raw.lines[pc])})
 			p.rawPC = append(p.rawPC, pc)
+			sincePoll = 0
 		}
+		sincePoll++
 		i.line = int(raw.lines[pc])
 		p.rawPC = append(p.rawPC, pc)
 		index := len(c.code)

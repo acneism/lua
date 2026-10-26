@@ -40,7 +40,14 @@ func (l *lexer) newline() {
 }
 
 func (l *lexer) fail(message, near string) {
-	panic(syntaxError(l.chunk, l.line, message+" near '"+near+"'"))
+	panic(syntaxError(l.chunk, l.line, message+" near '"+lexerTokenText(near)+"'"))
+}
+
+func lexerTokenText(text string) string {
+	if zero := strings.IndexByte(text, 0); zero >= 0 {
+		return text[:zero]
+	}
+	return text
 }
 
 func (l *lexer) delimiter(pos int, bracket byte) (int, int) {

@@ -10,6 +10,27 @@ tree. Preserve the exact constant insertion order, instruction words, nested
 functions, vararg flags, stack size and debug records. The canonical program
 is immutable after compilation.
 
+Reuse the existing lexer after auditing it against this Redis source, rather
+than maintaining a second scanner. ASCII character classes match the C locale.
+The numeral scanner consumes digits/dots, an optional E exponent and sign,
+then alphanumerics/underscore before luaO_str2d-compatible conversion. Quoted
+strings use decimal escapes, normalized escaped newlines and literal unknown
+escapes. Long strings match separator levels and normalize CR/LF pairs while
+discarding the first newline. Lookahead retains the scanner's current line;
+next records that line before consuming a token. Token text in diagnostics
+stops at NUL, as txtToken passed through C string formatting. Chunk source
+names stop at NUL before entering the parser.
+
+The source SHA-256 values are:
+
+| Redis file | SHA-256 |
+| --- | --- |
+| llex.c | 3eb3be8bf8808469a8825ecfc23319ebbd68b0762d12f272599b0076604b3664 |
+| lparser.c | abd12d9c8a707b48b4eea42257edb466a72c9b8792c9cfc69a1203a0ef40364a |
+| lcode.c | 027030bbef34115588bd4a64cf4c8c18236a56936835475a154277478767bac5 |
+| ldump.c | 80a322fa7528be6cc7f598f5b9049b89acda206b1a54a33dc3af85f298093c93 |
+| ldebug.c | 62af4ed93404345bcbf2c3fefc3677d85492d848c217ad58f53cb1ea5ae00c1c |
+
 Translate the canonical program once into the existing uint64 VM words. Keep
 the reverse VM-PC to Lua-PC map and resolve runtime names through ldebug.c's
 getobjname and symbexec when an error needs them. A register reference in cold
@@ -20,6 +41,15 @@ The translation consumes CLOSURE binding words and SETLIST block words as
 data. Raw instructions and debug ranges retain those words for dumping.
 Conditional operations preserve Lua's companion-JMP behavior. The existing
 call/return paths retain their ABI and protected-call semantics.
+
+Comparisons encode three operations, two RK flags and the accepted boolean in
+opcodes 192 through 215. Operands occupy bytes one and two of the packed word.
+The following mapped JMP supplies the accepted target; rejection skips that
+word. This keeps the original JMP entry available to other branches. Poll
+insertion counts emitted work and defers a checkpoint across a companion
+word, rather than testing PC divisibility. Long chains of empty conditionals
+therefore still poll. Low opcodes bypass the numerical families with one
+range check.
 
 The VM initializes the complete register window on function entry because
 Lua's compiler can omit an initial LOADNIL. Both direct call paths perform the
@@ -46,6 +76,9 @@ Capture's -dump mode records the full prototype of every corpus source up to
 4 KiB as hex. The Compiler workflow captures those answers on Redis 7.2.16,
 compares canonical dumps and runs the existing nine-scenario measurement with
 five alternating samples. No recorded answer is constructed by the compiler.
+Additional captured cases cover signed-jump overflow and SETLIST's extra block
+word with 26000 constructor entries. The latter also executes a nested closure
+after the data word and compares the entire dump in hex.
 
 Measurements, mutation failures and final CI references will be recorded here
 before submission. P2's separate 37-scenario work is outside this change.

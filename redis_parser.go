@@ -27,7 +27,7 @@ func (p *redisParser) peek() token {
 	return *p.lookahead
 }
 func (p *redisParser) fail(message string) {
-	panic(syntaxError(p.lexer.chunk, p.lexer.line, message+" near '"+p.current.text+"'"))
+	panic(syntaxError(p.lexer.chunk, p.lexer.line, message+" near '"+lexerTokenText(p.current.text)+"'"))
 }
 func (p *redisParser) lexerror(message string) {
 	panic(syntaxError(p.lexer.chunk, p.lexer.line, message))

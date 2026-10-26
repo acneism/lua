@@ -146,148 +146,150 @@ func (s *State) execute(stop int) (result []Value) {
 			word := code[pc]
 			pc++
 			op, register := opcode(word), uint8(word>>8)
-			if op >= comparisonBase && op < comparisonEnd {
-				mode := op - comparisonBase
-				left, right := &registers[uint8(word>>8)], &registers[uint8(word>>16)]
-				if mode&1 != 0 {
-					left = &constants[uint8(word>>8)]
-				}
-				if mode&2 != 0 {
-					right = &constants[uint8(word>>16)]
-				}
-				var matched bool
-				if left.object == &numberMarker && right.object == &numberMarker {
-					switch mode / 8 {
-					case 0:
-						matched = left.number == right.number
-					case 1:
-						matched = left.number < right.number
-					case 2:
-						matched = left.number <= right.number
+			if op >= numericBase {
+				if op >= comparisonBase && op < comparisonEnd {
+					mode := op - comparisonBase
+					left, right := &registers[uint8(word>>8)], &registers[uint8(word>>16)]
+					if mode&1 != 0 {
+						left = &constants[uint8(word>>8)]
 					}
-				} else {
-					t.frames[frameIndex].pc = int32(pc)
-					s.steps = s.options.HookEvery - remaining
-					i := p.instruction(pc - 1)
-					matched = s.binary(i.text, *left, *right, i.left, i.right).Truth()
-					f = &t.frames[frameIndex]
-					registers = (*[256]Value)(t.stack[base : base+256])
-					remaining = s.options.HookEvery - s.steps
-				}
-				if matched == (mode&4 != 0) {
-					target := int(uint32(code[pc] >> 16))
-					if target < pc {
-						remaining -= vmCallWeight
-						if remaining <= 0 {
-							t.frames[frameIndex].pc = int32(pc)
-							s.pollHook()
-							f = &t.frames[frameIndex]
-							registers = (*[256]Value)(t.stack[base : base+256])
-							remaining = s.options.HookEvery - s.steps
+					if mode&2 != 0 {
+						right = &constants[uint8(word>>16)]
+					}
+					var matched bool
+					if left.object == &numberMarker && right.object == &numberMarker {
+						switch mode / 8 {
+						case 0:
+							matched = left.number == right.number
+						case 1:
+							matched = left.number < right.number
+						case 2:
+							matched = left.number <= right.number
 						}
+					} else {
+						t.frames[frameIndex].pc = int32(pc)
+						s.steps = s.options.HookEvery - remaining
+						i := p.instruction(pc - 1)
+						matched = s.binary(i.text, *left, *right, i.left, i.right).Truth()
+						f = &t.frames[frameIndex]
+						registers = (*[256]Value)(t.stack[base : base+256])
+						remaining = s.options.HookEvery - s.steps
 					}
-					pc = target
-				} else {
-					pc++
-				}
-				continue
-			}
-			if op >= numericBase && op < numericEnd || op >= numericJumpBase && op < numericJumpEnd {
-				operation := op
-				fused := op >= numericJumpBase
-				if fused {
-					operation -= numericJumpBase - (numericBase + 6*4)
-				}
-				left, right := &registers[uint8(word>>16)], &registers[uint8(word>>32)]
-				if operation&1 != 0 {
-					left = &constants[uint16(word>>16)]
-				}
-				if operation&2 != 0 {
-					right = &constants[uint16(word>>32)]
-				}
-				if left.object == &numberMarker && right.object == &numberMarker {
-					x, y := left.number, right.number
-					var value Value
-					switch (operation - numericBase) / 4 {
-					case 0:
-						value = Number(luaNaN(x+y, x, y))
-					case 1:
-						value = Number(luaNaN(x-y, x, y))
-					case 2:
-						value = Number(luaNaN(x*y, x, y))
-					case 3:
-						value = Number(luaDivide(x, y))
-					case 4:
-						value = Number(luaModulo(x, y))
-					case 5:
-						value = Number(luaPower(x, y))
-					case 6:
-						value = Bool(x < y)
-					case 7:
-						value = Bool(x <= y)
-					case 8:
-						value = Bool(x > y)
-					case 9:
-						value = Bool(x >= y)
-					case 10:
-						value = Bool(x == y)
-					case 11:
-						value = Bool(x != y)
-					}
-					registers[register] = value
-					if fused {
-						branch := code[pc]
-						pc++
-						if value.Truth() == (opcode(branch) == opJumpTrue) {
-							target := int(uint32(branch >> 16))
-							if target < pc {
-								remaining -= vmCallWeight
-								if remaining <= 0 {
-									t.frames[frameIndex].pc = int32(pc)
-									s.pollHook()
-									f = &t.frames[frameIndex]
-									registers = (*[256]Value)(t.stack[base : base+256])
-									remaining = s.options.HookEvery - s.steps
-								}
+					if matched == (mode&4 != 0) {
+						target := int(uint32(code[pc] >> 16))
+						if target < pc {
+							remaining -= vmCallWeight
+							if remaining <= 0 {
+								t.frames[frameIndex].pc = int32(pc)
+								s.pollHook()
+								f = &t.frames[frameIndex]
+								registers = (*[256]Value)(t.stack[base : base+256])
+								remaining = s.options.HookEvery - s.steps
 							}
-							pc = target
 						}
+						pc = target
+					} else {
+						pc++
 					}
 					continue
 				}
-				index := int((operation - numericBase) / 4)
-				if index < 6 {
-					method := s.binaryTableMethod(*left, index)
-					if method.IsNil() {
-						method = s.binaryTableMethod(*right, index)
+				if op < numericEnd || op >= numericJumpBase && op < numericJumpEnd {
+					operation := op
+					fused := op >= numericJumpBase
+					if fused {
+						operation -= numericJumpBase - (numericBase + 6*4)
 					}
-					if method.Type() == TypeFunction && method.object.function.proto != nil {
-						arguments := [2]Value{*left, *right}
-						t.frames[frameIndex].pc = int32(pc)
-						remaining -= vmCallWeight
-						if remaining <= 0 {
-							s.pollHook()
-							remaining = s.options.HookEvery - s.steps
+					left, right := &registers[uint8(word>>16)], &registers[uint8(word>>32)]
+					if operation&1 != 0 {
+						left = &constants[uint16(word>>16)]
+					}
+					if operation&2 != 0 {
+						right = &constants[uint16(word>>32)]
+					}
+					if left.object == &numberMarker && right.object == &numberMarker {
+						x, y := left.number, right.number
+						var value Value
+						switch (operation - numericBase) / 4 {
+						case 0:
+							value = Number(luaNaN(x+y, x, y))
+						case 1:
+							value = Number(luaNaN(x-y, x, y))
+						case 2:
+							value = Number(luaNaN(x*y, x, y))
+						case 3:
+							value = Number(luaDivide(x, y))
+						case 4:
+							value = Number(luaModulo(x, y))
+						case 5:
+							value = Number(luaPower(x, y))
+						case 6:
+							value = Bool(x < y)
+						case 7:
+							value = Bool(x <= y)
+						case 8:
+							value = Bool(x > y)
+						case 9:
+							value = Bool(x >= y)
+						case 10:
+							value = Bool(x == y)
+						case 11:
+							value = Bool(x != y)
 						}
-						t.cDepth++
-						if t.cDepth == 200 {
-							s.runtimeError("C stack overflow")
+						registers[register] = value
+						if fused {
+							branch := code[pc]
+							pc++
+							if value.Truth() == (opcode(branch) == opJumpTrue) {
+								target := int(uint32(branch >> 16))
+								if target < pc {
+									remaining -= vmCallWeight
+									if remaining <= 0 {
+										t.frames[frameIndex].pc = int32(pc)
+										s.pollHook()
+										f = &t.frames[frameIndex]
+										registers = (*[256]Value)(t.stack[base : base+256])
+										remaining = s.options.HookEvery - s.steps
+									}
+								}
+								pc = target
+							}
 						}
-						if t.cDepth >= 225 {
-							panic(plainError("error in error handling"))
-						}
-						previousTop := t.top
-						callee := method.object.function
-						s.push(callee, arguments[:], base+int(register), 1, nil)
-						t.boundary++
-						frameIndex++
-						f = &t.frames[frameIndex]
-						f.metacallTop = int32(previousTop + 1)
-						p = callee.proto
-						base, pc = int(f.base), 0
-						code, constants = p.code, p.constants
-						registers = (*[256]Value)(t.stack[base : base+256])
 						continue
+					}
+					index := int((operation - numericBase) / 4)
+					if index < 6 {
+						method := s.binaryTableMethod(*left, index)
+						if method.IsNil() {
+							method = s.binaryTableMethod(*right, index)
+						}
+						if method.Type() == TypeFunction && method.object.function.proto != nil {
+							arguments := [2]Value{*left, *right}
+							t.frames[frameIndex].pc = int32(pc)
+							remaining -= vmCallWeight
+							if remaining <= 0 {
+								s.pollHook()
+								remaining = s.options.HookEvery - s.steps
+							}
+							t.cDepth++
+							if t.cDepth == 200 {
+								s.runtimeError("C stack overflow")
+							}
+							if t.cDepth >= 225 {
+								panic(plainError("error in error handling"))
+							}
+							previousTop := t.top
+							callee := method.object.function
+							s.push(callee, arguments[:], base+int(register), 1, nil)
+							t.boundary++
+							frameIndex++
+							f = &t.frames[frameIndex]
+							f.metacallTop = int32(previousTop + 1)
+							p = callee.proto
+							base, pc = int(f.base), 0
+							code, constants = p.code, p.constants
+							registers = (*[256]Value)(t.stack[base : base+256])
+							continue
+						}
 					}
 				}
 			}
