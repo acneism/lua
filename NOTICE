@@ -54,3 +54,11 @@ Source: https://netlib.org/fdlibm/
 
 The LGPL trigonometric implementations are outside this repository.
 Hosts can supply them through Options.Math without a production dependency.
+
+Redis 7.2.16, src/eval.c
+Copyright (c) 2009-2012, Salvatore Sanfilippo <antirez at gmail dot com>
+All rights reserved.
+License: BSD-3-Clause; full terms in LICENSES/Redis-eval.txt.
+
+frame_test.go compiles the original EVAL error-handler Lua source from eval.c
+to verify observable error locations and recursive handler behavior.
