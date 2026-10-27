@@ -130,7 +130,12 @@ func (m *patternMatcher) match(source, pattern int) int {
 		m.fail("pattern too complex")
 	}
 	m.depth++
-	defer func() { m.depth-- }()
+	result := m.matchBody(source, pattern)
+	m.depth--
+	return result
+}
+
+func (m *patternMatcher) matchBody(source, pattern int) int {
 	for {
 		m.state.tick()
 		switch m.char(pattern) {
