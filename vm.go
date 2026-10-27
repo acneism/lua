@@ -172,9 +172,9 @@ func (s *State) execute(stop int) (result []Value) {
 	for len(t.frames) > stop {
 		frameIndex := len(t.frames) - 1
 		f := &t.frames[frameIndex]
-		p := f.function.proto
+		proto := f.function.proto
 		base, pc := int(f.base), int(f.pc)
-		code, constants := p.code, p.constants
+		code, constants := proto.code, proto.constants
 		registers := (*[256]Value)(t.stack[base : base+256])
 		remaining := s.options.HookEvery - s.steps
 		for {
@@ -204,7 +204,7 @@ func (s *State) execute(stop int) (result []Value) {
 					} else {
 						t.frames[frameIndex].pc = int32(pc)
 						s.steps = s.options.HookEvery - remaining
-						i := p.instruction(pc - 1)
+						i := f.function.proto.instruction(pc - 1)
 						matched = s.binary(i.text, *left, *right, i.left, i.right).Truth()
 						f = &t.frames[frameIndex]
 						registers = (*[256]Value)(t.stack[base : base+256])
@@ -344,9 +344,9 @@ func (s *State) execute(stop int) (result []Value) {
 							frameIndex++
 							f = &t.frames[frameIndex]
 							f.metacallTop = int32(previousTop + 1)
-							p = callee.proto
+							proto = callee.proto
 							base, pc = int(f.base), 0
-							code, constants = p.code, p.constants
+							code, constants = proto.code, proto.constants
 							registers = (*[256]Value)(t.stack[base : base+256])
 							continue
 						}
@@ -446,9 +446,8 @@ func (s *State) execute(stop int) (result []Value) {
 					t.used, t.top = start+size, start+parameters
 					frameIndex++
 					f = &t.frames[frameIndex]
-					p = proto
 					base, pc = start, 0
-					code, constants = p.code, p.constants
+					code, constants = proto.code, proto.constants
 					registers = (*[256]Value)(t.stack[base : base+256])
 					continue
 				}
@@ -491,9 +490,9 @@ func (s *State) execute(stop int) (result []Value) {
 						t.used, t.top = start+callee.proto.maxRegisters, start+parameters
 						frameIndex++
 						f = &t.frames[frameIndex]
-						p = callee.proto
+						proto = callee.proto
 						base, pc = start, 0
-						code, constants = p.code, p.constants
+						code, constants = proto.code, proto.constants
 						registers = (*[256]Value)(t.stack[base : base+256])
 						continue
 					}
@@ -536,9 +535,9 @@ func (s *State) execute(stop int) (result []Value) {
 					}
 					frameIndex--
 					f = &t.frames[frameIndex]
-					p = f.function.proto
+					proto = f.function.proto
 					base, pc = int(f.base), int(f.pc)
-					code, constants = p.code, p.constants
+					code, constants = proto.code, proto.constants
 					registers = (*[256]Value)(t.stack[base : base+256])
 					next := code[pc]
 					if opcode(next) == opMove {
@@ -705,7 +704,7 @@ func (s *State) execute(stop int) (result []Value) {
 			}
 			t.frames[frameIndex].pc = int32(pc)
 			s.steps = s.options.HookEvery - remaining
-			i := p.instruction(pc - 1)
+			i := f.function.proto.instruction(pc - 1)
 			if i.op == opTailCall || i.op == opForCall {
 				remaining -= vmCallWeight
 				if remaining <= 0 {
@@ -720,24 +719,24 @@ func (s *State) execute(stop int) (result []Value) {
 			a, b, c := base+i.a, base+i.b, base+i.c
 			switch i.op {
 			case opGetGlobal:
-				t.stack[a] = s.get(f.function.env.Value(), p.constants[i.b], nameInfo{})
+				t.stack[a] = s.get(f.function.env.Value(), constants[i.b], nameInfo{})
 			case opSetGlobal:
-				s.set(f.function.env.Value(), p.constants[i.a], t.stack[b], nameInfo{})
+				s.set(f.function.env.Value(), constants[i.a], t.stack[b], nameInfo{})
 			case opGetTable:
 				t.stack[a] = s.get(t.stack[b], t.stack[c], i.left)
 			case opGetTableK:
-				t.stack[a] = s.get(t.stack[b], p.constants[i.c], i.left)
+				t.stack[a] = s.get(t.stack[b], constants[i.c], i.left)
 			case opSetTable:
 				s.set(t.stack[a], t.stack[b], t.stack[c], i.left)
 			case opSetTableRK:
 				var key, value Value
 				if i.b < 0 {
-					key = p.constants[-1-i.b]
+					key = constants[-1-i.b]
 				} else {
 					key = t.stack[b]
 				}
 				if i.c < 0 {
-					value = p.constants[-1-i.c]
+					value = constants[-1-i.c]
 				} else {
 					value = t.stack[c]
 				}
@@ -746,7 +745,7 @@ func (s *State) execute(stop int) (result []Value) {
 				value := t.stack[b]
 				var key Value
 				if i.c < 0 {
-					key = p.constants[-1-i.c]
+					key = constants[-1-i.c]
 				} else {
 					key = t.stack[c]
 				}
@@ -781,7 +780,7 @@ func (s *State) execute(stop int) (result []Value) {
 					table.sequence = -1
 				}
 			case opClosure:
-				child := p.children[i.b]
+				child := f.function.proto.children[i.b]
 				upvalues := make([]*upvalue, len(child.upvalues))
 				for index, descriptor := range child.upvalues {
 					if descriptor.local {
@@ -798,12 +797,12 @@ func (s *State) execute(stop int) (result []Value) {
 			case opBinary:
 				var left, right Value
 				if i.b < 0 {
-					left = p.constants[-1-i.b]
+					left = constants[-1-i.b]
 				} else {
 					left = t.stack[b]
 				}
 				if i.c < 0 {
-					right = p.constants[-1-i.c]
+					right = constants[-1-i.c]
 				} else {
 					right = t.stack[c]
 				}
