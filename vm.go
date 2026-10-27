@@ -498,6 +498,24 @@ func (s *State) execute(stop int) (result []Value) {
 					}
 				}
 			case opReturn:
+				if int16(word>>16) == 1 && f.want == 1 && f.returnDest >= 0 && f.metacallTop == 0 && frameIndex != stop && (t.open == nil || t.open.index < base) {
+					dest := int(f.returnDest)
+					t.stack[dest] = registers[register]
+					t.used, t.top = int(f.start), dest+1
+					t.frames = t.frames[:frameIndex]
+					frameIndex--
+					f = &t.frames[frameIndex]
+					proto = f.function.proto
+					base, pc = int(f.base), int(f.pc)
+					code, constants = proto.code, proto.constants
+					registers = (*[256]Value)(t.stack[base : base+256])
+					next := code[pc]
+					if opcode(next) == opMove {
+						registers[uint8(next>>8)] = registers[uint8(next>>16)]
+						pc++
+					}
+					continue
+				}
 				if f.returnDest >= 0 {
 					count := int(int16(word >> 16))
 					if count < 0 {
