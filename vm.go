@@ -412,8 +412,14 @@ func (s *State) execute(stop int) (result []Value) {
 						argument = constants[uint16(word>>24)]
 					}
 				}
+				var callee *function
+				var proto *Proto
+				if object := value.object; object != nil && object.kind == TypeFunction {
+					callee = object.function
+					proto = callee.proto
+				}
 				start := max(t.used, t.top)
-				if value.Type() == TypeFunction && value.object.function.proto != nil && !value.object.function.proto.vararg && len(t.frames) < freshCalls-1 && start+256 <= len(t.stack) && (argument.Type() != TypeString || len(argument.Text()) <= s.options.MaxString) {
+				if proto != nil && !proto.vararg && len(t.frames) < freshCalls-1 && start+256 <= len(t.stack) && (argument.Type() != TypeString || len(argument.Text()) <= s.options.MaxString) {
 					pc += 2
 					remaining -= vmCallWeight
 					if remaining <= 0 {
@@ -421,12 +427,11 @@ func (s *State) execute(stop int) (result []Value) {
 						remaining = s.options.HookEvery - s.steps
 					}
 					t.frames[frameIndex].pc = int32(pc)
-					callee := value.object.function
-					parameters := callee.proto.parameters
+					parameters, size := proto.parameters, proto.maxRegisters
 					if parameters > 0 {
 						t.stack[start] = argument
 					}
-					clearRegisters(t.stack[start+min(parameters, 1) : start+callee.proto.maxRegisters])
+					clearRegisters(t.stack[start+min(parameters, 1) : start+size])
 					depth := len(t.frames)
 					if depth == cap(t.frames) {
 						t.frames = append(t.frames, frame{})
@@ -438,10 +443,10 @@ func (s *State) execute(stop int) (result []Value) {
 					entered.start, entered.base, entered.pc = int32(start), int32(start), 0
 					entered.returnDest, entered.want = int32(base+int(uint8(word>>40))), int32(int16(word>>48))
 					entered.metacallTop, entered.tailcalls = 0, 0
-					t.used, t.top = start+callee.proto.maxRegisters, start+parameters
+					t.used, t.top = start+size, start+parameters
 					frameIndex++
 					f = &t.frames[frameIndex]
-					p = callee.proto
+					p = proto
 					base, pc = start, 0
 					code, constants = p.code, p.constants
 					registers = (*[256]Value)(t.stack[base : base+256])
