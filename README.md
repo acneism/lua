@@ -21,9 +21,10 @@ trigonometric functions through `Options.Math`. Without it, Go math provides
 them; acos uses asin near the endpoints. The 36 exact trigonometric probes in
 `testdata/libm.json` are reserved for the separate lua-libm module.
 
-The redis package is implementing B1: host callbacks, RESP replies, the EVAL
-sandbox, EVAL/EVALSHA, and SCRIPT methods. Its acceptance checks are in
-progress. FUNCTION and the Redis extension libraries belong to later stages.
+The redis package provides host callbacks, RESP2 replies, the EVAL sandbox,
+EVAL/EVALSHA, and SCRIPT methods. It runs Redis's error handler verbatim, so
+error replies match Redis's. RESP3 replies, FUNCTION, and the Redis extension
+libraries belong to later stages.
 
 `State.Frame` exposes Lua, native, and lost tail-call levels. `CallWithHandler`
 runs an error handler at the original failure point before unwinding; xpcall
@@ -41,6 +42,45 @@ The compiler ports Redis's Lua 5.1 parser and code generator. `string.dump`
 reproduces its x86-64 binary format, including debug information, on every
 platform. Binary chunks remain unsupported as input. See the
 [compiler decision](docs/adr/0011-redis-compiler.md).
+
+## Performance
+
+Each scenario runs as a Go benchmark in process and as EVAL in Redis 7.2.16
+(jemalloc build) on the same machine. The figure is Go time divided by Redis
+time, the median of five alternating runs; below 1 means faster than Redis.
+The limit for every scenario is 1.5.
+
+Measured on 2026-10-27 at 4643bb2 on GitHub Actions runners: 12 runs, the
+median per processor.
+
+| Scenario | AMD EPYC 7763 (7 runs) | AMD EPYC 9V45 (4 runs) | Intel Xeon Platinum 8573C (1 run) | Worst run |
+| --- | ---: | ---: | ---: | ---: |
+| Loop | 0.92 | 1.19 | 1.00 | 1.31 |
+| Fib27 | 1.18 | 1.19 | 1.36 | 1.36 |
+| LuaCalls | 1.29 | 1.23 | 1.33 | 1.33 |
+| TableInsert | 0.70 | 0.63 | 0.95 | 0.95 |
+| TableHash | 0.93 | 0.92 | 0.86 | 0.99 |
+| Sort | 1.03 | 0.97 | 1.06 | 1.09 |
+| GSub | 0.85 | 0.83 | 0.85 | 0.90 |
+| StringConcat | 0.74 | 0.72 | 0.65 | 0.83 |
+| Metamethod | 1.30 | 1.19 | 1.23 | 1.32 |
+
+The scenarios:
+
+- Loop: a numeric for loop of 10 million additions.
+- Fib27: recursive Fibonacci of 27.
+- LuaCalls: one million calls of a one-line Lua function.
+- TableInsert: one million appends with `t[#t+1]`.
+- TableHash: 100,000 string keys, then a pairs traversal.
+- Sort: table.sort of 100,000 numbers in reverse order.
+- GSub: string.gsub over 1 MiB of words.
+- StringConcat: tostring of 100,000 numbers and table.concat.
+- Metamethod: one million `__add` calls to a Lua function.
+
+The ratio varies with the processor and between runs on the same processor
+type, because Redis and Go react differently to each machine. Loop's 9V45
+median comes from runs where two measurements in the same run differed by up
+to 25%. See [benchmarks](docs/benchmarks.md) for the method and history.
 
 ## Interpreter example
 
