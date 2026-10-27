@@ -109,14 +109,18 @@ jobs:
           cache: false
       - run: mkdir -p work
       - name: Capture reference evidence
-        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -out work/reference-captured.json testdata/snippets.json testdata/libm.json luatest/testdata/environment.json
+        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -out work/reference-captured.json testdata/snippets.json testdata/libm.json luatest/testdata/environment.json testdata/compiler-limits.json
       - uses: actions/upload-artifact@v7
         with:
           name: reference-captured
           path: work/reference-captured.json
           retention-days: 7
       - name: Verify every recorded answer
-        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -verify testdata/snippets.json testdata/libm.json luatest/testdata/environment.json
+        run: |
+          go run ./internal/cmd/capture -addr 127.0.0.1:6379 -verify testdata/snippets.json testdata/libm.json luatest/testdata/environment.json
+          go run ./internal/cmd/capture -addr 127.0.0.1:6379 -verify testdata/compiler-limits.json
+      - name: Verify every recorded compiler dump
+        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -dump -verify testdata/compiler-dump.json
       - name: Verify engine wire answers and command traces
         run: go run ./internal/cmd/redis-capture -addr 127.0.0.1:6379 -verify redis/testdata/engine.json redis/testdata/protocol.json redis/testdata/handler.json redis/testdata/appendix.json
 

@@ -1,0 +1,5 @@
+[
+ "local src = 'local x=true return x' .. string.rep(' and x', 65537) local f, e = loadstring(src, '@jump_limit_and') return e",
+ "local src = 'local x=false return x' .. string.rep(' or x', 65537) local f, e = loadstring(src, '@jump_limit_or') return e",
+ "local src = 'local t={' .. string.rep('1,', 26000) .. '} local f=function() return t[26000] end return #t,f()' local f = assert(loadstring(src, '=setlist-extra')) local a,b=f() local hex=(string.dump(f):gsub('.',function(c) return string.format('%02x',c:byte()) end)) return a .. ':' .. b .. ':' .. hex"
+]

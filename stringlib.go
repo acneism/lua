@@ -1,8 +1,6 @@
 package lua
 
 import (
-	"encoding/binary"
-	"math"
 	"strings"
 )
 
@@ -120,74 +118,5 @@ func stringDump(s *State, args []Value) ([]Value, error) {
 	if fn.proto == nil {
 		s.raise("unable to dump given function", 1)
 	}
-	var out strings.Builder
-	out.WriteString("\x1bLuaQ\x00")
-	putInt := func(value int) {
-		var bytes [8]byte
-		binary.LittleEndian.PutUint64(bytes[:], uint64(value))
-		out.Write(bytes[:])
-	}
-	putText := func(text string) {
-		putInt(len(text))
-		out.WriteString(text)
-	}
-	var putProto func(*Proto)
-	putProto = func(proto *Proto) {
-		putText(proto.chunk)
-		putInt(proto.parameters)
-		putInt(proto.maxRegisters)
-		putInt(proto.line)
-		putInt(proto.argRegister)
-		for _, flag := range []bool{proto.vararg, proto.usesVararg, proto.needsArg} {
-			if flag {
-				out.WriteByte(1)
-			} else {
-				out.WriteByte(0)
-			}
-		}
-		putInt(len(proto.upvalues))
-		for _, upvalue := range proto.upvalues {
-			putInt(upvalue.index)
-			putText(upvalue.name)
-			if upvalue.local {
-				out.WriteByte(1)
-			} else {
-				out.WriteByte(0)
-			}
-		}
-		putInt(len(proto.code))
-		for pc := range proto.code {
-			code := proto.instruction(pc)
-			s.tick()
-			out.WriteByte(byte(code.op))
-			for _, value := range []int{code.a, code.b, code.c, code.d, int(proto.lines[pc])} {
-				putInt(value)
-			}
-			putText(code.text)
-			putText(code.left.kind)
-			putText(code.left.name)
-			putText(code.right.kind)
-			putText(code.right.name)
-			if code.method {
-				out.WriteByte(1)
-			} else {
-				out.WriteByte(0)
-			}
-		}
-		putInt(len(proto.constants))
-		for _, value := range proto.constants {
-			out.WriteByte(byte(value.Type()))
-			if value.Type() == TypeString {
-				putText(value.Text())
-			} else {
-				putInt(int(math.Float64bits(value.number)))
-			}
-		}
-		putInt(len(proto.children))
-		for _, child := range proto.children {
-			putProto(child)
-		}
-	}
-	putProto(fn.proto)
-	return s.stringResult(out.String())
+	return s.stringResult(string(dumpRedis(fn.proto.canonical)))
 }

@@ -25,6 +25,17 @@ func TestHookStraightLine(t *testing.T) {
 	}
 }
 
+func TestHookConditionalPairs(t *testing.T) {
+	cause := errors.New("conditional chain interrupted")
+	calls := 0
+	s := NewState(Options{HookEvery: 100, Hook: func() error { calls++; return cause }})
+	source := "local x=true " + strings.Repeat("if x then end ", 10000) + "return 1"
+	_, err := s.Call(s.Load(compileTest(t, source), nil))
+	if !errors.Is(err, cause) || calls != 1 {
+		t.Fatalf("conditional chain did not poll: %v, callbacks %d", err, calls)
+	}
+}
+
 func TestHookReentryGrowsRegisterStack(t *testing.T) {
 	var state *State
 	var nested Value

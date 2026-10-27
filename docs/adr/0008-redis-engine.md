@@ -76,9 +76,9 @@ and pcall statements over random keys, types, and arguments, including
 errors, read-only runs, and no-writes shebangs, and compares replies and DUMP
 snapshots. LuaDifferential generates programs of arithmetic and coercion,
 tostring and tonumber, string.format, patterns from a random grammar, string,
-table, and math functions. Numbers in generated arithmetic pass through a
-function so that both sides evaluate them at run time: constant folding and
-signed-zero constants belong to the compiler port.
+table, and math functions. Generated arithmetic mixes literal numbers, which
+exercise constant folding and signed-zero constants, with numbers passed through
+a function and evaluated at run time.
 
 Reply conversion follows Lua's 8,000-slot C API limit. The EVAL reply starts
 with two stack entries and checks room for four. Arrays add one live slot per

@@ -14,6 +14,7 @@ type Error struct {
 	cDepth       int
 	handlerOwner *handlerOwner
 	handlerID    uint64
+	memory       bool
 }
 
 func (e *Error) Error() string {

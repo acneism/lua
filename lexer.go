@@ -14,10 +14,11 @@ type token struct {
 }
 
 type lexer struct {
-	source string
-	chunk  string
-	pos    int
-	line   int
+	source     string
+	chunk      string
+	pos        int
+	line       int
+	errorToken *token
 }
 
 func isDigit(c byte) bool { return c >= '0' && c <= '9' }
@@ -30,6 +31,15 @@ func (l *lexer) current() int {
 	return int(l.source[l.pos])
 }
 
+func (l *lexer) checkNext(set string) bool {
+	c := l.current()
+	if c < 0 || c != 0 && !strings.ContainsRune(set, rune(c)) {
+		return false
+	}
+	l.pos++
+	return true
+}
+
 func (l *lexer) newline() {
 	old := l.current()
 	l.pos++
@@ -37,10 +47,27 @@ func (l *lexer) newline() {
 		l.pos++
 	}
 	l.line++
+	if l.line >= redisMaxInt {
+		l.syntaxError("chunk has too many lines", l.errorToken)
+	}
+}
+
+func (l *lexer) syntaxError(message string, current *token) {
+	if current != nil && current.kind != "" && current.kind != "\x00" {
+		message += " near '" + lexerTokenText(current.text) + "'"
+	}
+	panic(syntaxError(l.chunk, l.line, message))
 }
 
 func (l *lexer) fail(message, near string) {
-	panic(syntaxError(l.chunk, l.line, message+" near '"+near+"'"))
+	panic(syntaxError(l.chunk, l.line, message+" near '"+lexerTokenText(near)+"'"))
+}
+
+func lexerTokenText(text string) string {
+	if zero := strings.IndexByte(text, 0); zero >= 0 {
+		return text[:zero]
+	}
+	return text
 }
 
 func (l *lexer) delimiter(pos int, bracket byte) (int, int) {
@@ -169,17 +196,14 @@ func (l *lexer) numeral() token {
 	for l.current() == '.' || l.current() >= '0' && l.current() <= '9' {
 		l.pos++
 	}
-	if l.current() == 'e' || l.current() == 'E' {
-		l.pos++
-		if l.current() == '+' || l.current() == '-' {
-			l.pos++
-		}
+	if l.checkNext("Ee") {
+		l.checkNext("+-")
 	}
 	for c := l.current(); c >= 0 && (isAlpha(byte(c)) || isDigit(byte(c))); c = l.current() {
 		l.pos++
 	}
 	text := l.source[start:l.pos]
-	n, ok := parseNumber(text)
+	n, ok := parseNumber(lexerTokenText(text))
 	if !ok {
 		l.fail("malformed number", text)
 	}
@@ -238,6 +262,17 @@ func (l *lexer) next() token {
 			}
 			return token{kind: kind, text: text, line: l.line}
 		}
+		if c == '.' {
+			l.pos++
+			text := "."
+			if l.checkNext(".") {
+				text = ".."
+				if l.checkNext(".") {
+					text = "..."
+				}
+			}
+			return token{kind: text, text: text, line: l.line}
+		}
 		line := l.line
 		l.pos++
 		text := l.source[l.pos-1 : l.pos]
@@ -247,13 +282,6 @@ func (l *lexer) next() token {
 			case "==", "~=", "<=", ">=":
 				text = pair
 				l.pos++
-			case "..":
-				text = pair
-				l.pos++
-				if l.current() == '.' {
-					text = "..."
-					l.pos++
-				}
 			}
 		}
 		if c < 32 || c == 127 {

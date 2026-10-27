@@ -11,7 +11,7 @@ A3 completes reference compatibility for the interpreter core, base, coroutine, 
 libraries, immutable prototypes, Lua tables, metatables, closures, varargs,
 tail calls, error locations, read-only tables, and an interruption hook.
 
-The corpus has 4230 snippets. All execute through the original capture wrapper.
+The corpus has 4283 snippets. All execute through the original capture wrapper.
 `testdata/pending.json` is empty. The reference verifier checks every recorded
 answer against Redis.
 
@@ -36,6 +36,11 @@ when finished. See [weak tables](docs/adr/0010-weak-tables.md).
 The interpreter uses 24-byte values, packed instructions, cached register
 windows, and reusable Lua call frames. See the [performance decision](docs/adr/0007-vm-performance.md)
 for the implementation and its Redis comparisons.
+
+The compiler ports Redis's Lua 5.1 parser and code generator. `string.dump`
+reproduces its x86-64 binary format, including debug information, on every
+platform. Binary chunks remain unsupported as input. See the
+[compiler decision](docs/adr/0011-redis-compiler.md).
 
 ## Interpreter example
 

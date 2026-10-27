@@ -1,0 +1,113 @@
+name: Compiler
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: compiler-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  differential:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      redis:
+        image: redis:7.2.16
+        ports: [6379:6379]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - run: mkdir -p work
+      - name: Record the measurement machine
+        run: |
+          uname -a | tee work/machine.txt
+          lscpu | tee -a work/machine.txt
+      - name: Capture compiler boundary probes
+        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -out work/compiler-limits.json internal/cmd/capture/testdata/compiler-limits.json
+      - name: Capture compiler vector limits
+        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -out work/compiler-vector-limits.json testdata/compiler-limits.json
+      - name: Compare compiler vector limits
+        env:
+          LUA_COMPILER_LIMITS_FIXTURE: work/compiler-vector-limits.json
+        run: go test -run '^TestRedisCompilerLimits$' .
+      - name: Verify the compiler vector-limit mutation
+        env:
+          LUA_COMPILER_LIMITS_FIXTURE: work/compiler-vector-limits.json
+        run: |
+          cp redis_bytecode.go work/redis_bytecode.original
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('redis_bytecode.go')
+          source = path.read_text()
+          original = 'if length >= limit {'
+          assert source.count(original) == 1
+          path.write_text(source.replace(original, 'if false && length >= limit {'))
+          PY
+          set +e
+          go test -run '^TestRedisCompilerLimits$' -count=1 -v . >work/mutation-vector-limits.log 2>&1
+          result=$?
+          set -e
+          cp work/redis_bytecode.original redis_bytecode.go
+          cat work/mutation-vector-limits.log
+          test "$result" -ne 0
+          python3 - <<'PY'
+          from pathlib import Path
+          log = Path('work/mutation-vector-limits.log').read_text()
+          for case in (2, 3, 4):
+              assert f'--- FAIL: TestRedisCompilerLimits/{case} ' in log
+          PY
+      - name: Capture every corpus prototype up to 4 KiB
+        run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -dump -out work/compiler-dump.json testdata/snippets.json testdata/libm.json luatest/testdata/environment.json internal/cmd/capture/testdata/compiler-lexer.json testdata/compiler-limits.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: compiler-dump-captured
+          path: |
+            work/compiler-dump.json
+            work/compiler-limits.json
+            work/compiler-vector-limits.json
+            work/mutation-vector-limits.log
+          retention-days: 7
+      - name: Compare the full compiler output with Redis
+        env:
+          LUA_DUMP_FIXTURE: work/compiler-dump.json
+        run: go test -run '^TestRedisCompilerDump$' .
+      - name: Measure the nine core scenarios
+        run: go run ./internal/cmd/bench -addr 127.0.0.1:6379 -output work/p2a-bench.json -rounds 5
+      - name: Profile core loops and Lua calls
+        run: |
+          go run ./internal/cmd/bench -addr 127.0.0.1:6379 -scenario Loop -rounds 30 -cpuprofile work/loop.pprof -output work/loop-profile.json
+          go run ./internal/cmd/bench -addr 127.0.0.1:6379 -scenario Fib27 -rounds 30 -cpuprofile work/fib.pprof -output work/fib-profile.json
+          go run ./internal/cmd/bench -addr 127.0.0.1:6379 -scenario LuaCalls -rounds 30 -cpuprofile work/calls.pprof -output work/calls-profile.json
+          go run ./internal/cmd/bench -addr 127.0.0.1:6379 -scenario Metamethod -rounds 30 -cpuprofile work/metamethod.pprof -output work/metamethod-profile.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: compiler-performance
+          path: |
+            work/p2a-bench.json
+            work/machine.txt
+            work/*.pprof
+            work/*-profile.json
+          retention-days: 7
+      - name: Enforce the core performance limit
+        run: |
+          python3 - <<'PY'
+          import json
+          results = json.load(open('work/p2a-bench.json'))['Results']
+          failures = [r['Name'] for r in results if r['Ratio'] > 1.5]
+          assert len(results) == 9, 'expected nine core scenarios'
+          assert not failures, 'core scenarios exceed 1.5x: ' + ', '.join(failures)
+          PY

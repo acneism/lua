@@ -22,7 +22,11 @@ func TestLongBinaryChains(t *testing.T) {
 		{"or", "false", Bool(false)},
 	} {
 		t.Run(item.op, func(t *testing.T) {
-			source := "local x=" + item.initial + " return x" + strings.Repeat(" "+item.op+" x", count)
+			chainLength := count
+			if item.op == "and" || item.op == "or" {
+				chainLength = min(chainLength, 60000)
+			}
+			source := "local x=" + item.initial + " return x" + strings.Repeat(" "+item.op+" x", chainLength)
 			p, err := Compile([]byte(source), "@chain")
 			if err != nil {
 				t.Fatal(err)

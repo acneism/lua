@@ -18,13 +18,16 @@ func argument(args []Value, index int) Value {
 func (s *State) argError(index int, message string) {
 	f := s.current.frames[len(s.current.frames)-1]
 	name := ""
+	method := false
 	if f.site != nil {
-		name = f.site.left.name
+		info := s.resolveName(f.site.left)
+		name = info.name
+		method = f.site.method || info.kind == "method"
 	}
 	if name == "" {
 		name = "?"
 	}
-	if f.site != nil && f.site.method {
+	if method {
 		index--
 		if index == 0 {
 			s.raise(fmt.Sprintf("calling '%s' on bad self (%s)", name, message), 1)
@@ -329,8 +332,13 @@ func baseLoadString(s *State, args []Value) ([]Value, error) {
 		chunk = s.checkText(args, 1)
 	}
 	s.checkString(len(source))
-	proto, err := compile([]byte(source), chunk, max(0, s.current.cDepth-1))
+	proto, err := compile([]byte(source), chunk, s.current.cDepth)
 	if err != nil {
+		if failure, ok := err.(*Error); ok && failure.memory {
+			if raised, ok := s.processPanic(failure).(*Error); ok {
+				return []Value{Nil(), raised.Value}, nil
+			}
+		}
 		return []Value{Nil(), String(err.Error())}, nil
 	}
 	return []Value{s.Load(proto, s.globals)}, nil

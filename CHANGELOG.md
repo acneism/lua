@@ -39,6 +39,9 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 
 ### Changed
 
+- Port the Redis Lua 5.1 compiler and exact binary dumps with debug information.
+- Compare complete corpus prototypes against captured Redis dumps in hex.
+
 - Compact 24-byte values, packed opcodes, cached register windows, and reusable frames.
 - A 48-byte frame retains the observable count of collapsed Lua tail calls.
 - Direct Lua calls and arithmetic metamethod continuations with reusable registers.
@@ -62,6 +65,9 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 
 - xpcall invokes its handler at the original error point, including recursive failures.
 - Error levels include lost Lua tail calls and preserve native callback frames.
+- Embedded NUL scanning and zero-token diagnostics match Redis's C lexer.
+- Canonical compiler vectors preserve Redis's local, constant and prototype limits.
+
 - Unused corpus metadata is rejected, with per-fixture instruction-limit sidecars.
 - Negative log10 NaN normalization has one authoritative implementation.
 - Architecture-independent NaN propagation and inherited loadstring syntax depth.

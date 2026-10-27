@@ -5,10 +5,15 @@
   },
   {
     "src": "local f, e = loadstring('local x = 1 return x' .. string.rep(' == x', 1000000)) if not f then return e end return tostring(f())",
-    "steps": 2000000
+    "steps": 8000000
   },
   {
     "src": "local f, e = loadstring('local x = 2 return x' .. string.rep(' * 1', 1000000)) if not f then return e end return f()",
     "steps": 2000000
+  },
+  {
+    "src": "local src = 'local t={' .. string.rep('1,', 26000) .. '} local f=function() return t[26000] end return #t,f()' local f = assert(loadstring(src, '=setlist-extra')) local a,b=f() local hex=(string.dump(f):gsub('.',function(c) return string.format('%02x',c:byte()) end)) return a .. ':' .. b .. ':' .. hex",
+    "steps": 8000000
   }
 ]
+

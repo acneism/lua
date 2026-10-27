@@ -1,0 +1,18 @@
+[
+  {
+    "src": "local src=string.rep(\"do local x end \",32767) local f,e=loadstring(src,\"@local-limit\") return type(f),e",
+    "want": "function,nil"
+  },
+  {
+    "src": "local src=string.rep(\"do local x end \",32768) local f,e=loadstring(src,\"@local-limit\") return type(f),e",
+    "want": "nil,too many local variables"
+  },
+  {
+    "src": "local src=string.rep(\"a=function() end \",262144) local f,e=loadstring(src,\"@child-limit\") return type(f),e",
+    "want": "nil,constant table overflow"
+  },
+  {
+    "src": "local t={} for i=1,262144 do t[i]=\"a[\"..i..\"]=\"..i end local src=\"local a={} \"..table.concat(t,\" \") local f,e=loadstring(src,\"@constant-limit\") return type(f),e",
+    "want": "nil,constant table overflow"
+  }
+]

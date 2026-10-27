@@ -33,7 +33,7 @@ func scriptCommand(random *rand.Rand) string {
 	k := func() string { return pick(random, "KEYS[1]", "KEYS[2]", "'k2'", "'k3'") }
 	v := func() string {
 		return pick(random, "'v'", "''", "'a b'", "'x\\0y'", "'10'", "'-3'", "'1.5'", "'abc'", "'0x10'", "' 7 '", "ARGV[1]", "ARGV[2]",
-			"0", "1", "-1", "42", "-17", "1.5", "-2.25", "0.1", "1e20", "2^53", "2^63", "-2^63", "1/0", "-1/0", "0/0", "1e-7", "123456789012", "3.14159265358979")
+			"0", "1", "-1", "42", "-17", "1.5", "-2.25", "0.1", "1e20", "2^53", "2^63", "-2^63", "1/0", "-1/0", "0/0", "-0.0", "1e-7", "123456789012", "3.14159265358979")
 	}
 	n := func() string { return pick(random, "0", "1", "-1", "2", "5", "-3", "'2'", "1.5", "'x'", "100", "2^31") }
 	f := func() string { return pick(random, "'f1'", "'f2'", "'f3'", "1") }
@@ -166,7 +166,7 @@ func scriptCase(random *rand.Rand) redistest.Case {
 
 func luaNumber(random *rand.Rand) string {
 	return pick(random, "0", "1", "-1", "2", "3", "7", "-7", "10", "255", "1.5", "-2.25", "0.1", "1/3", "2/3", "1e15", "1e16", "1e100", "-1e-5",
-		"2^53", "2^63", "2^31", "3.14159265358979", "123456789012345", "0.5", "1/0", "-1/0", "0/0", "100", "17", "-3.5", "1e-300")
+		"2^53", "2^63", "2^31", "3.14159265358979", "123456789012345", "0.5", "-0.0", "1/0", "-1/0", "0/0", "100", "17", "-3.5", "1e-300")
 }
 
 func luaString(random *rand.Rand) string {
@@ -187,8 +187,11 @@ func luaOperand(random *rand.Rand) string {
 }
 
 func luaValue(random *rand.Rand) string {
-	if random.IntN(2) == 0 {
+	switch random.IntN(4) {
+	case 0:
 		return "I(" + luaNumber(random) + ")"
+	case 1:
+		return luaNumber(random)
 	}
 	return pick(random, luaString(random), luaString(random), "nil", "true")
 }

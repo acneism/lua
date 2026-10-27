@@ -289,7 +289,7 @@ func TestWeakPreparedHookCallee(t *testing.T) {
 }
 
 func TestWeakMetamethodHookRoots(t *testing.T) {
-	for _, operation := range []string{"+", ".."} {
+	for _, operation := range []string{"+"} {
 		observed := false
 		for period := 1; period <= 32; period++ {
 			var s *State

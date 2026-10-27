@@ -16,6 +16,10 @@ import (
 
 const referenceVersion = "7.2.16"
 
+const dumpWrapper = `local f, e = loadstring(%s, "@user_script")
+if not f then return "ERR " .. tostring(e) end
+return (string.dump(f):gsub('.', function(c) return string.format('%%02x', c:byte()) end))`
+
 const wrapper = `local function __capture__(ok, ...)
   if not ok then return "ERR " .. tostring((...)) end
   local n = select('#', ...)
@@ -38,6 +42,7 @@ func run(args []string, out io.Writer) error {
 	addr := flags.String("addr", "127.0.0.1:6390", "Redis 7.2.16 address")
 	dest := flags.String("out", "", "capture output JSON file")
 	verify := flags.Bool("verify", false, "verify recorded answers without writing files")
+	dump := flags.Bool("dump", false, "capture string.dump in hex for sources up to 4 KiB")
 	timeout := flags.Duration("timeout", 30*time.Second, "deadline for each Redis request")
 	if err := flags.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -58,6 +63,15 @@ func run(args []string, out io.Writer) error {
 	if err != nil {
 		return err
 	}
+	if *dump {
+		filtered := cases[:0]
+		for _, item := range cases {
+			if len(item.Src) <= 4096 {
+				filtered = append(filtered, item)
+			}
+		}
+		cases = filtered
+	}
 	client, err := connect(*addr, *timeout)
 	if err != nil {
 		return err
@@ -68,7 +82,11 @@ func run(args []string, out io.Writer) error {
 	}
 	mismatches := 0
 	for i := range cases {
-		got, err := client.command("EVAL", fmt.Sprintf(wrapper, quote(cases[i].Src)), "0")
+		format := wrapper
+		if *dump {
+			format = dumpWrapper
+		}
+		got, err := client.command("EVAL", fmt.Sprintf(format, quote(cases[i].Src)), "0")
 		if err != nil {
 			return fmt.Errorf("snippet %d: %w", i+1, err)
 		}

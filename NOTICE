@@ -9,10 +9,18 @@ License: MIT; full terms in LICENSES/Lua-5.1.5.txt.
 
 The Go interpreter adapts algorithms and behavior from deps/lua/src/ltable.c,
 llex.c, lparser.c, lcode.c, lvm.c, ldo.c, ldebug.c, lobject.c, lbaselib.c,
-lfunc.c, lstate.h, lua.h, luaconf.h, lstrlib.c, ltablib.c, lmathlib.c, and lgc.c
+lfunc.c, lstate.h, lua.h, luaconf.h, lstrlib.c, ltablib.c, lmathlib.c, lgc.c,
+ldump.c and lopcodes.h
 in Redis 7.2.16.
 The register instruction representation and coroutine stack implementation
 are specific to this Go implementation.
+
+The parser and code generator are translated from Redis's lparser.c and
+lcode.c. The lexer follows llex.c in that same source tree. The binary dumper
+ports ldump.c, and runtime object names port getobjname/symbexec in ldebug.c.
+The original Lua copyrights and MIT terms above apply to these translations.
+Redis modifications also retain the BSD-3-Clause terms in
+LICENSES/Redis-Lua-modifications.txt.
 
 Redis 7.2.16, src/script_lua.c
 Copyright (c) 2009-2021, Redis Ltd. All rights reserved.

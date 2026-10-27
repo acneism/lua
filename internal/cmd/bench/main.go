@@ -24,6 +24,8 @@ type sample struct {
 }
 type result struct {
 	Name          string
+	Source        string
+	Repetitions   int
 	Samples       []sample
 	RedisNS, GoNS int64
 	Ratio         float64
@@ -101,7 +103,17 @@ func run(address, output string, rounds int, selected, profile string) error {
 		if selected != "" && selected != item.Name {
 			continue
 		}
-		proto, err := lua.Compile([]byte(item.Source), "@benchmark")
+		calibration := time.Now()
+		if _, err = client.command("EVAL", item.Source, "0"); err != nil {
+			return err
+		}
+		duration := time.Since(calibration)
+		repetitions := max(1, int((35*time.Millisecond+duration-1)/duration))
+		source := item.Source
+		if repetitions > 1 {
+			source = fmt.Sprintf("local function __benchmark__() %s end local __result for __round=1,%d do __result=__benchmark__() end return __result", source, repetitions)
+		}
+		proto, err := lua.Compile([]byte(source), "@benchmark")
 		if err != nil {
 			return err
 		}
@@ -110,10 +122,10 @@ func run(address, output string, rounds int, selected, profile string) error {
 		if _, err = state.Call(function); err != nil {
 			return err
 		}
-		if _, err = client.command("EVAL", item.Source, "0"); err != nil {
+		if _, err = client.command("EVAL", source, "0"); err != nil {
 			return err
 		}
-		result := result{Name: item.Name}
+		result := result{Name: item.Name, Source: source, Repetitions: repetitions}
 		for round := 0; round < rounds; round++ {
 			var entry sample
 			var redisAnswer, goAnswer string
@@ -122,7 +134,7 @@ func run(address, output string, rounds int, selected, profile string) error {
 					return err
 				}
 				start := time.Now()
-				value, err := client.command("EVAL", item.Source, "0")
+				value, err := client.command("EVAL", source, "0")
 				entry.RedisNS = time.Since(start).Nanoseconds()
 				redisAnswer = value
 				return err

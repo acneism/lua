@@ -10,3 +10,4 @@
 - [Redis execution environment](0008-redis-engine.md)
 - [Error handlers and observable frames](0009-error-handlers.md)
 - [Explicit Lua collection and host roots](0010-weak-tables.md)
+- [Redis compiler and binary dumps](0011-redis-compiler.md)

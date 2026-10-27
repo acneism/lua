@@ -418,6 +418,7 @@ func (s *State) raise(message string, level int) {
 func (s *State) runtimeError(message string) { s.raise(message, 0) }
 
 func (s *State) typeError(action string, value Value, info nameInfo) {
+	info = s.resolveName(info)
 	if info.name != "" {
 		s.runtimeError(fmt.Sprintf("attempt to %s %s '%s' (a %s value)", action, info.kind, info.name, value.Type()))
 	}

@@ -7,6 +7,8 @@ const numericBase opcode = 64
 const numericEnd opcode = numericBase + 12*4
 const numericJumpBase opcode = 160
 const numericJumpEnd opcode = numericJumpBase + 6*4
+const comparisonBase opcode = 192
+const comparisonEnd opcode = comparisonBase + 3*8
 const (
 	opNegate opcode = 128 + iota
 	opNot
@@ -69,6 +71,24 @@ func (c *compiler) freeze() {
 			word = uint64(op) | uint64(uint8(source.a))<<8 | uint64(uint16(source.b))<<16 | uint64(uint16(source.c))<<32 | uint64(uint8(source.d))<<48
 		}
 		switch op {
+		case opCompare:
+			operation := 0
+			switch source.text {
+			case "<":
+				operation = 1
+			case "<=":
+				operation = 2
+			}
+			left, right, mode := source.b, source.c, source.a*4
+			if left < 0 {
+				left = -1 - left
+				mode |= 1
+			}
+			if right < 0 {
+				right = -1 - right
+				mode |= 2
+			}
+			word = uint64(comparisonBase+opcode(operation*8+mode)) | uint64(uint8(left))<<8 | uint64(uint8(right))<<16
 		case opBinary:
 			operation := numericOperation(source.text)
 			left, right, mode := source.b, source.c, 0
@@ -114,10 +134,14 @@ func (c *compiler) freeze() {
 	for pc := 0; pc+2 < len(p.code); pc++ {
 		load, argument, call := p.code[pc], p.code[pc+1], p.code[pc+2]
 		loadOp, argumentOp := opcode(load), opcode(argument)
-		if (loadOp != opMove && loadOp != opGetUpvalue) || (argumentOp != opMove && argumentOp != opConstant) || opcode(call) != opCall || uint8(load>>8) != uint8(call>>8) || uint8(argument>>8) != uint8(call>>8)+1 || int16(call>>16) != 1 {
+		arithmetic := argumentOp >= numericBase && argumentOp < numericBase+6*4
+		if (loadOp != opMove && loadOp != opGetUpvalue) || (argumentOp != opMove && argumentOp != opConstant && !arithmetic) || opcode(call) != opCall || uint8(load>>8) != uint8(call>>8) || uint8(argument>>8) != uint8(call>>8)+1 || int16(call>>16) != 1 {
 			continue
 		}
 		arg := uint32(argument >> 16)
+		if arithmetic {
+			arg = 0
+		}
 		if arg > 65535 {
 			continue
 		}
@@ -127,6 +151,12 @@ func (c *compiler) freeze() {
 		}
 		if argumentOp == opConstant {
 			op += 2
+		}
+		if arithmetic {
+			op = opCallArithmetic
+			if loadOp == opGetUpvalue {
+				op = opCallArithmeticUpvalue
+			}
 		}
 		p.code[pc] = uint64(op) | uint64(uint8(load>>8))<<8 | uint64(uint8(load>>16))<<16 | uint64(uint16(arg))<<24 | uint64(uint8(call>>48))<<40 | uint64(uint16(call>>32))<<48
 	}
