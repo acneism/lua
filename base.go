@@ -201,7 +201,7 @@ func baseError(s *State, args []Value) ([]Value, error) {
 	if text, ok := value.toString(); ok && level > 0 {
 		s.raise(text, level)
 	}
-	panic(&Error{Value: value, Message: value.String(), Line: s.currentLine()})
+	panic(s.processPanic(&Error{Value: value, Message: value.String(), Line: s.currentLine()}))
 }
 
 func baseToString(s *State, args []Value) ([]Value, error) {
@@ -394,7 +394,8 @@ func baseCollectGarbage(s *State, args []Value) ([]Value, error) {
 		runtime.ReadMemStats(&stats)
 		return []Value{Number(float64(stats.Alloc) / 1024)}, nil
 	case "step":
-		return []Value{Bool(false)}, nil
+		s.collect()
+		return []Value{Bool(true)}, nil
 	case "setpause", "setstepmul":
 		return []Value{Number(200)}, nil
 	case "collect":

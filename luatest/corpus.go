@@ -91,7 +91,8 @@ func RunCorpus(t *testing.T, files []string, options lua.Options) {
 		var rules []normalization
 		readJSON(t, filepath.Join(directory, "normalization.json"), &rules)
 		for _, item := range rules {
-			if _, duplicate := normalizations[item.Src]; duplicate || item.Rule != "nan-sign" {
+			valid := item.Rule == "nan-sign" || item.Rule == "gc-step-full" && item.Src == "return collectgarbage('step'), collectgarbage()"
+			if _, duplicate := normalizations[item.Src]; duplicate || !valid {
 				t.Fatalf("invalid normalization: %+v", item)
 			}
 			normalizations[item.Src] = item.Rule
@@ -159,7 +160,9 @@ func runSnippet(t *testing.T, item snippet, options lua.Options, limit int, rule
 		t.Fatalf("unexpected wrapper result: %v", values)
 	}
 	got := strings.TrimPrefix(values[0].Text(), "ERR ")
-	if got != item.Want && (rule != "nan-sign" || runtime.GOARCH != "arm64" || !equalNaNFields(got, item.Want)) {
+	allowed := rule == "nan-sign" && runtime.GOARCH == "arm64" && equalNaNFields(got, item.Want)
+	allowed = allowed || rule == "gc-step-full" && got == "true,0" && item.Want == "false,0"
+	if got != item.Want && !allowed {
 		t.Fatalf("want %q\ngot  %q\nsource: %s", item.Want, got, item.Src)
 	}
 }

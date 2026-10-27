@@ -11,7 +11,7 @@ A3 completes reference compatibility for the interpreter core, base, coroutine, 
 libraries, immutable prototypes, Lua tables, metatables, closures, varargs,
 tail calls, error locations, read-only tables, and an interruption hook.
 
-The corpus has 4228 snippets. All execute through the original capture wrapper.
+The corpus has 4230 snippets. All execute through the original capture wrapper.
 `testdata/pending.json` is empty. The reference verifier checks every recorded
 answer against Redis.
 

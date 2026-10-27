@@ -1,1 +1,6 @@
-[]
+[
+  {
+    "src": "return collectgarbage('step'), collectgarbage()",
+    "rule": "gc-step-full"
+  }
+]

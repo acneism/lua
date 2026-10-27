@@ -5,7 +5,7 @@ Status: implemented for B0 review.
 ## Decision
 
 Run an iterative Lua object mark and weak-table clearing pass for
-collectgarbage() and collectgarbage("collect"). Do not call runtime.GC,
+collectgarbage(), collectgarbage("collect"), and collectgarbage("step"). Do not call runtime.GC,
 inspect the Go heap, use finalizers, or depend on Go weak pointers.
 The pass follows Lua objects and table/stack slots rather than unrelated Go
 allocations. Go still owns physical allocation and reclamation.
@@ -22,11 +22,18 @@ masks them. Their values live in reusable thread storage until the scope ends.
 
 For a frame suspended at a call, trace its vararg span and registers through
 the function slot. Arguments remain reachable through the callee stack or its
-native argument slice. Other execution points retain their full register span.
+native argument span. Pending result destinations contain abandoned values and
+are excluded until the call returns. Other execution points retain their full register span.
 This excludes abandoned temporary registers above the Lua call top. Marking
 the full backing slice would keep the reviewer's temporary weak keys alive.
-Native argument slices use reusable thread storage and are removed on every
-return, error, or yield. The frame layout remains 48 bytes.
+Native frames reuse their otherwise unused start/base fields for argument spans
+in the Lua stack. Calls from Go stage arguments above the active stack. Stack
+growth records original slices only for active native frames, preserving the
+Go callback's arguments across reallocation and later mutation. Collection
+traces those original slices instead of stale relocated copies. Native return
+removes relocation roots; public calls copy native results before stack cleanup.
+Ordinary native calls do not write a separate argument-root list. The frame
+layout remains 48 bytes.
 
 Before a reentrant host hook, copy the pending callee and arguments into a
 reusable per-thread root buffer. Prepared calls materialize their original
@@ -46,7 +53,11 @@ tracking without invoking Lua writes or read-only guards. Preserve hash-chain
 tombstones, as normal table deletion does; their keys are not marking edges.
 
 Collection runs synchronously without invoking Lua callbacks or metamethods.
-There is no automatic collection or incremental step cycle. count and gcinfo
+There is no automatic collection or incremental step cycle. step always performs
+the full pass and returns true, including argument 0. This is owner-approved
+difference 11. The original captured false,0 answer remains unchanged; its one
+source has an explicit gc-step-full normalization. Both new step/weak-table
+probes compare directly with freshly captured Redis answers. count and gcinfo
 continue to report Go allocation figures. Compatibility notes state these
 differences and the absence of table finalizers.
 

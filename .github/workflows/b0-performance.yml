@@ -1,0 +1,65 @@
+name: B0 performance
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: b0-performance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compare:
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'stage-b0-error-context'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          path: candidate
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: a34960b10037dd2a9a84abbf8f0502f82c2342e7
+          path: main
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: efad81791686a0825dc1d56617156a49bec8bc1f
+          path: before
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: candidate/go.mod
+          cache: false
+      - name: Record machine and build the three versions
+        run: |
+          mkdir -p work
+          uname -a > work/machine.txt
+          lscpu >> work/machine.txt
+          go version >> work/machine.txt
+          for version in main before; do cp candidate/b0_performance_test.go "$version/b0_performance_test.go"; done
+          for version in main before candidate; do
+            (cd "$version" && git rev-parse HEAD) >> work/machine.txt
+            (cd "$version" && go test -c -o "../work/$version.test" .)
+          done
+          (cd candidate && go build -gcflags=-m=2 .) 2> work/inlining.txt
+          grep -F 'cannot inline (*State).pollBinaryHook:' work/inlining.txt
+          grep -F 'cannot inline (*State).pollPreparedHook:' work/inlining.txt
+      - name: Compare thirteen scenarios and capture CPU profiles
+        run: python3 candidate/scripts/bench-b0.py --main work/main.test --candidate work/candidate.test --before work/before.test --rounds 8 --output work
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: b0-performance
+          path: work/
+          retention-days: 7
+      - name: Enforce B0 relative to main
+        run: |
+          python3 - <<'PY'
+          import json
+          rows = json.load(open('work/b0-performance.json'))['Results']
+          assert len(rows) == 13
+          failures = [r['Name'] for r in rows if r['Ratio'] > 1.05]
+          assert not failures, 'B0/main exceeds 1.05: ' + ', '.join(failures)
+          PY

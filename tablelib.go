@@ -7,7 +7,7 @@ import (
 
 func (s *State) tableWrite(table *Table, index int, value Value) {
 	if err := table.RawSet(Number(float64(index)), value); err != nil {
-		panic(plainError(err.Error()))
+		panic(s.processPanic(plainError(err.Error())))
 	}
 }
 
@@ -28,7 +28,7 @@ func (s *State) openTable() {
 			result := 0.0
 			for key, _, err := table.Next(Nil()); !key.IsNil(); key, _, err = table.Next(key) {
 				if err != nil {
-					panic(plainError(err.Error()))
+					panic(s.processPanic(plainError(err.Error())))
 				}
 				s.tick()
 				if key.Type() == TypeNumber && key.number > result {
@@ -45,7 +45,7 @@ func (s *State) openTable() {
 			table, fn := s.checkTable(args, 0), s.checkFunction(args, 1)
 			for key, value, err := table.Next(Nil()); !key.IsNil(); key, value, err = table.Next(key) {
 				if err != nil {
-					panic(plainError(err.Error()))
+					panic(s.processPanic(plainError(err.Error())))
 				}
 				result := s.invokeOne(fn, []Value{key, value})
 				if !result.IsNil() {

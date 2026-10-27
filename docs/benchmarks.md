@@ -1,5 +1,20 @@
 # Benchmarks
 
+## B0 regression checks
+
+The B0 performance workflow builds main a34960b, the returned efad817 version,
+and the candidate with the same Go version. It copies the four reviewer
+benchmarks unchanged into all three test binaries. Eight alternating rounds
+compare the candidate with main for those four workloads and the nine core
+workloads. Each measurement uses three benchmark iterations after warmup.
+The median candidate/main ratio must not exceed 1.05 for any workload.
+
+CPU profiles are separate two-second runs for native calls, pcall, a Go
+__index metamethod, and coroutine.wrap/yield. Artifacts retain the raw samples,
+machine details, compiled binaries, profiles, source listings, and inlining
+diagnostics. The cold hook helpers must not inline. Results will be recorded
+after the remote comparison completes.
+
 ## P interpreter
 
 Machine: Azure Standard_B4as_v2, AMD EPYC 7763, four vCPUs, 16 GiB RAM.

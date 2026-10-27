@@ -20,10 +20,12 @@ checks all recorded answers against Redis, including pending entries.
   installation of the Redis sandbox belongs to B.
 - Binary chunks are parsed as text and rejected.
 - Weak k, v, and kv tables clear unreachable tables, functions, and threads
-  during collectgarbage() and collectgarbage("collect"). Strings and scalar
+  during collectgarbage(), collectgarbage("collect"), and collectgarbage("step"). Strings and scalar
   values remain. Strong values keep weak keys alive, as in Lua 5.1.
 - There is no automatic or incremental Lua collection. stop/restart do not
-  change the explicit collection pass; step returns false. count and gcinfo
+  change the explicit collection pass. step performs that full pass for any
+  argument and returns true. Redis can return false without clearing entries
+  for step with argument 0; this is owner-approved difference 11. count and gcinfo
   report Go allocation figures. Collection never requests a full Go GC.
 - Hosts register external Lua roots with State.Retain and release them when
   no longer needed. Native arguments are roots while the function executes.

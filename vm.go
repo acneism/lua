@@ -45,19 +45,39 @@ func (s *State) push(fn *function, args []Value, dest, want int, site *instructi
 
 func (s *State) native(fn *function, args []Value, site *instruction) []Value {
 	t := s.current
+	if site != nil {
+		f := &t.frames[len(t.frames)-1]
+		index := int(f.base) + site.a
+		if t.stack[index].Type() == TypeFunction {
+			return s.nativeStack(fn, args, site, index+1)
+		}
+	}
+	return s.nativeHost(fn, args, site)
+}
+
+func (s *State) nativeHost(fn *function, args []Value, site *instruction) []Value {
+	t := s.current
+	used, top := t.used, t.top
+	start := max(used, top)
+	end := start + len(args)
+	t.ensure(end)
+	copy(t.stack[start:end], args)
+	t.used, t.top = end, end
+	defer func() { t.used, t.top = used, top }()
+	return s.nativeStack(fn, t.stack[start:end], site, start)
+}
+
+func (s *State) nativeStack(fn *function, args []Value, site *instruction, start int) []Value {
+	t := s.current
 	depth := len(t.frames)
-	t.frames = append(t.frames, frame{function: fn, site: site})
+	t.frames = append(t.frames, frame{function: fn, site: site, start: int32(start), base: int32(start + len(args))})
 	t.nativeDepth++
-	t.nativeArgs = append(t.nativeArgs, args)
 	defer func() {
 		t.nativeDepth--
 		t.frames = t.frames[:depth]
-		t.nativeArgs[len(t.nativeArgs)-1] = nil
-		t.nativeArgs = t.nativeArgs[:len(t.nativeArgs)-1]
-	}()
-	defer func() {
-		if raised := recover(); raised != nil {
-			panic(s.processPanic(raised))
+		for len(t.nativeRoots) > 0 && t.nativeRoots[len(t.nativeRoots)-1].frame >= depth {
+			t.nativeRoots[len(t.nativeRoots)-1] = nativeRoot{}
+			t.nativeRoots = t.nativeRoots[:len(t.nativeRoots)-1]
 		}
 	}()
 	s.tick()
@@ -73,7 +93,7 @@ func (s *State) native(fn *function, args []Value, site *instruction) []Value {
 			if failure.Line == 0 {
 				failure.Line = s.currentLine()
 			}
-			panic(failure)
+			panic(s.processPanic(failure))
 		}
 		panic(&Error{Message: err.Error(), Value: String(err.Error()), Abort: err, Line: s.currentLine()})
 	}
@@ -135,7 +155,7 @@ func (s *State) execute(stop int) (result []Value) {
 				t.status = "suspended"
 				result = signal.values
 			} else {
-				panic(s.processPanic(raised))
+				panic(raised)
 			}
 		}
 	}()
@@ -231,8 +251,7 @@ func (s *State) execute(stop int) (result []Value) {
 						t.frames[frameIndex].pc = int32(pc)
 						remaining -= vmCallWeight
 						if remaining <= 0 {
-							roots := [3]Value{method, arguments[0], arguments[1]}
-							s.pollHookRoots(roots[:])
+							s.pollBinaryHook(method, arguments[0], arguments[1])
 							remaining = s.options.HookEvery - s.steps
 						}
 						t.cDepth++
@@ -285,9 +304,7 @@ func (s *State) execute(stop int) (result []Value) {
 					pc += 2
 					remaining -= vmCallWeight
 					if remaining <= 0 {
-						registers[register], registers[register+1] = value, argument
-						t.frames[frameIndex].pc = int32(pc)
-						s.pollHook()
+						s.pollPreparedHook(frameIndex, pc, int(register), value, argument)
 						remaining = s.options.HookEvery - s.steps
 					}
 					t.frames[frameIndex].pc = int32(pc)
@@ -606,8 +623,7 @@ func (s *State) execute(stop int) (result []Value) {
 				if method.Type() == TypeFunction && method.object.function.proto != nil {
 					remaining -= vmCallWeight
 					if remaining <= 0 {
-						roots := [3]Value{method, left, right}
-						s.pollHookRoots(roots[:])
+						s.pollBinaryHook(method, left, right)
 						remaining = s.options.HookEvery - s.steps
 					}
 					s.steps = s.options.HookEvery - remaining

@@ -86,23 +86,37 @@ func (g *collector) stack(t *thread) {
 		f := &t.frames[index]
 		g.add(f.function)
 		if f.function.proto == nil {
+			if f.pc == 0 {
+				for _, value := range t.stack[f.start:f.base] {
+					g.value(value)
+				}
+			}
 			continue
 		}
 		p := f.function.proto
 		limit := int(f.base) + p.maxRegisters
+		resultStart, resultEnd := -1, -1
 		pc := int(f.pc) - 1
 		if pc >= 0 && pc < len(p.code) {
 			site := p.instruction(pc)
 			if site.op == opCall || site.op == opTailCall {
 				limit = int(f.base) + site.a + 1
+				resultStart = int(f.base) + site.d
+				resultEnd = resultStart + max(1, site.c)
+				if site.c < 0 {
+					resultEnd = limit - 1
+				}
 			}
 		}
-		for _, value := range t.stack[int(f.start):min(limit, len(t.stack))] {
-			g.value(value)
+		for slot := int(f.start); slot < min(limit, len(t.stack)); slot++ {
+			if slot >= resultStart && slot < resultEnd && slot < limit-1 {
+				continue
+			}
+			g.value(t.stack[slot])
 		}
 	}
-	for _, args := range t.nativeArgs {
-		for _, value := range args {
+	for _, root := range t.nativeRoots {
+		for _, value := range root.values {
 			g.value(value)
 		}
 	}

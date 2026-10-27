@@ -76,8 +76,63 @@ func TestWeakNativeArguments(t *testing.T) {
 		t.Fatal("collection happened without an explicit request")
 	}
 	collectTest(t, s)
-	if !w.RawGet(Number(1)).IsNil() || len(s.main.nativeArgs) != 0 {
+	if !w.RawGet(Number(1)).IsNil() || len(s.main.nativeRoots) != 0 {
 		t.Fatal("native argument retained after return")
+	}
+}
+
+func TestWeakNativeArgumentsAfterGrowth(t *testing.T) {
+	for _, route := range []string{"host", "Lua", "callable"} {
+		t.Run(route, func(t *testing.T) {
+			s := NewState(Options{})
+			w := weakTestTable(t, s, "v")
+			original, replacement := s.NewTable(0, 0).Value(), s.NewTable(0, 0).Value()
+			_ = w.RawSet(Number(1), original)
+			_ = w.RawSet(Number(2), replacement)
+			grow := s.Load(compileTest(t, "local function f(n) if n==0 then return 0 end return n+f(n-1) end return f(100)"), nil)
+			fn := s.Function("host", func(s *State, args []Value) ([]Value, error) {
+				index := 0
+				if route == "callable" {
+					index = 1
+				}
+				if _, err := s.Call(grow); err != nil {
+					return nil, err
+				}
+				if len(s.current.nativeRoots) == 0 {
+					t.Fatal("native arguments did not cross stack growth")
+				}
+				if !args[index].Equal(original) {
+					t.Fatal("native argument changed during reentry")
+				}
+				args[index] = replacement
+				collectTest(t, s)
+				if route == "host" && !w.RawGet(Number(1)).IsNil() || !w.RawGet(Number(2)).Equal(replacement) {
+					t.Fatal("collector traced the relocated copy instead of active arguments")
+				}
+				return args[index:], nil
+			})
+			var values []Value
+			var err error
+			if route == "host" {
+				values, err = s.Call(fn, original)
+			} else {
+				if route == "callable" {
+					object, meta := s.NewTable(0, 0), s.NewTable(0, 1)
+					_ = meta.RawSet(String("__call"), fn)
+					_ = object.SetMetatable(meta)
+					fn = object.Value()
+				}
+				_ = s.Globals().RawSet(String("host"), fn)
+				values, err = s.Call(s.Load(compileTest(t, "return host(...)"), nil), original)
+			}
+			if err != nil || len(values) != 1 || !values[0].Equal(replacement) {
+				t.Fatal("native return aliased a cleared stack", values, err)
+			}
+			collectTest(t, s)
+			if !w.RawGet(Number(2)).IsNil() || len(s.main.nativeRoots) != 0 {
+				t.Fatal("finished native arguments stayed rooted")
+			}
+		})
 	}
 }
 

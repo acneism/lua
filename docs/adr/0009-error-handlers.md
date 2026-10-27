@@ -20,10 +20,15 @@ layout optimizations must retain its observable behavior.
 
 CallWithHandler and xpcall install a scoped, thread-local handler. Public Call
 and pcall mask it. Coroutine entry starts without a handler. Internal Lua
-metamethod calls inherit it. Native and interpreter panic boundaries invoke
-the handler before frame cleanup, so native callbacks and open upvalues
+metamethod calls inherit it. raise, error, and returned native Lua errors invoke
+the handler before starting stack unwinding, so native callbacks and open upvalues
 remain visible. Handler failures re-enter the same handler until the existing
 C-depth reserve produces error in error handling.
+
+Native calls have no recovering defer. A yield unwinds once to execute, which
+handles it without a second panic. Protected boundaries retain recovery for
+API errors and internal host panics. Cold hook root construction lives outside
+execute in helpers that the Go compiler does not inline.
 
 Each handler scope receives a monotonically increasing identity within a
 state-local owner. Errors retain that small owner and identity, preventing a

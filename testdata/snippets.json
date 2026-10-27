@@ -16910,5 +16910,13 @@
   {
     "src": "local w=setmetatable({}, {__mode='v'}) local c=coroutine.wrap(function() w[1]=coroutine.running() coroutine.yield() end) c() collectgarbage() local alive=w[1]~=nil c=nil collectgarbage() return alive,tostring(w[1])",
     "want": "true,nil"
+  },
+  {
+    "src": "local t = setmetatable({}, {__mode = 'k'}) t[{}] = 1 local r = collectgarbage('step', 100000) return tostring(r), tostring(next(t) == nil)",
+    "want": "true,true"
+  },
+  {
+    "src": "local t = setmetatable({}, {__mode = 'k'}) t[{}] = 1 while not collectgarbage('step') do end return tostring(next(t) == nil)",
+    "want": "true"
   }
 ]

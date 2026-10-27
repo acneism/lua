@@ -69,7 +69,7 @@ type thread struct {
 	entry         Value
 	started       bool
 	nativeDepth   int
-	nativeArgs    [][]Value
+	nativeRoots   []nativeRoot
 	hookRoots     []Value
 	cDepth        int
 	boundary      int
@@ -189,7 +189,11 @@ func (s *State) call(fn Value, args []Value, handler Value, active bool) (values
 		s.current.boundary++
 		defer func() { s.current.boundary-- }()
 	}
-	return s.protectedHandler(fn, args, handler, active)
+	values, err = s.protectedHandler(fn, args, handler, active)
+	if fn.Type() != TypeFunction || fn.object.function.proto == nil {
+		values = append([]Value(nil), values...)
+	}
+	return values, err
 }
 
 func (s *State) protected(fn Value, args []Value) (values []Value, err error) {
@@ -269,7 +273,7 @@ func (s *State) invokeOne(fn Value, args []Value) Value {
 		fn, args = s.callable(fn, args, nameInfo{})
 	}
 	if fn.object.function.native != nil {
-		return first(s.native(fn.object.function, append([]Value(nil), args...), nil))
+		return first(s.native(fn.object.function, args, nil))
 	}
 	depth, used, top := len(t.frames), t.used, t.top
 	dest := max(used, top)
@@ -312,8 +316,24 @@ func (s *State) cleanup() {
 
 func (t *thread) ensure(size int) {
 	if size > len(t.stack) {
-		t.stack = append(t.stack, make([]Value, size-len(t.stack))...)
+		t.growStack(size)
 	}
+}
+
+type nativeRoot struct {
+	frame  int
+	values []Value
+}
+
+func (t *thread) growStack(size int) {
+	for index := range t.frames {
+		f := &t.frames[index]
+		if f.function.proto == nil && f.pc == 0 && f.base > f.start {
+			t.nativeRoots = append(t.nativeRoots, nativeRoot{frame: index, values: t.stack[f.start:f.base]})
+			f.pc = 1
+		}
+	}
+	t.stack = append(t.stack, make([]Value, size-len(t.stack))...)
 }
 
 func (t *thread) capture(index int) *upvalue {
@@ -356,7 +376,7 @@ func (s *State) raise(message string, level int) {
 	}
 	err.Line = s.currentLine()
 	err.cDepth = t.cDepth
-	panic(err)
+	panic(s.processPanic(err))
 }
 
 func (s *State) runtimeError(message string) { s.raise(message, 0) }
@@ -377,6 +397,26 @@ func (s *State) tick() {
 }
 
 func (s *State) pollHook() {
+	s.pollHookRoots(nil)
+}
+
+func (s *State) pollBinaryHook(method, left, right Value) {
+	t := s.current
+	base := len(t.hookRoots)
+	t.hookRoots = append(t.hookRoots, method, left, right)
+	defer func() {
+		clear(t.hookRoots[base:])
+		t.hookRoots = t.hookRoots[:base]
+	}()
+	s.pollHook()
+}
+
+func (s *State) pollPreparedHook(frameIndex, pc, register int, fn, arg Value) {
+	t := s.current
+	f := &t.frames[frameIndex]
+	base := int(f.base) + register
+	t.stack[base], t.stack[base+1] = fn, arg
+	f.pc = int32(pc)
 	s.pollHookRoots(nil)
 }
 
