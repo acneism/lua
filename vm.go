@@ -324,7 +324,17 @@ func (s *State) execute(stop int) (result []Value) {
 									t.stack[start+1] = *right
 								}
 								clearRegisters(t.stack[start+provided : start+callee.proto.maxRegisters])
-								t.frames = append(t.frames, frame{function: callee, start: int32(start), base: int32(start), returnDest: int32(base + int(register)), want: 1})
+								depth := len(t.frames)
+								if depth == cap(t.frames) {
+									t.frames = append(t.frames, frame{})
+								} else {
+									t.frames = t.frames[:depth+1]
+								}
+								entered := &t.frames[depth]
+								entered.function, entered.site = callee, nil
+								entered.start, entered.base, entered.pc = int32(start), int32(start), 0
+								entered.returnDest, entered.want = int32(base+int(register)), 1
+								entered.metacallTop, entered.tailcalls = 0, 0
 								t.used, t.top = start+callee.proto.maxRegisters, start+parameters
 							} else {
 								arguments := [2]Value{*left, *right}
@@ -417,7 +427,17 @@ func (s *State) execute(stop int) (result []Value) {
 						t.stack[start] = argument
 					}
 					clearRegisters(t.stack[start+min(parameters, 1) : start+callee.proto.maxRegisters])
-					t.frames = append(t.frames, frame{function: callee, base: int32(start), start: int32(start), returnDest: int32(base + int(uint8(word>>40))), want: int32(int16(word >> 48))})
+					depth := len(t.frames)
+					if depth == cap(t.frames) {
+						t.frames = append(t.frames, frame{})
+					} else {
+						t.frames = t.frames[:depth+1]
+					}
+					entered := &t.frames[depth]
+					entered.function, entered.site = callee, nil
+					entered.start, entered.base, entered.pc = int32(start), int32(start), 0
+					entered.returnDest, entered.want = int32(base+int(uint8(word>>40))), int32(int16(word>>48))
+					entered.metacallTop, entered.tailcalls = 0, 0
 					t.used, t.top = start+callee.proto.maxRegisters, start+parameters
 					frameIndex++
 					f = &t.frames[frameIndex]
@@ -452,7 +472,17 @@ func (s *State) execute(stop int) (result []Value) {
 							t.stack[start+argument] = registers[int(register)+1+argument]
 						}
 						clearRegisters(t.stack[start+provided : start+callee.proto.maxRegisters])
-						t.frames = append(t.frames, frame{function: callee, base: int32(start), start: int32(start), returnDest: int32(base + int(uint8(word>>48))), want: int32(int16(word >> 32))})
+						depth := len(t.frames)
+						if depth == cap(t.frames) {
+							t.frames = append(t.frames, frame{})
+						} else {
+							t.frames = t.frames[:depth+1]
+						}
+						entered := &t.frames[depth]
+						entered.function, entered.site = callee, nil
+						entered.start, entered.base, entered.pc = int32(start), int32(start), 0
+						entered.returnDest, entered.want = int32(base+int(uint8(word>>48))), int32(int16(word>>32))
+						entered.metacallTop, entered.tailcalls = 0, 0
 						t.used, t.top = start+callee.proto.maxRegisters, start+parameters
 						frameIndex++
 						f = &t.frames[frameIndex]
