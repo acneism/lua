@@ -61,8 +61,8 @@ jobs:
             (cd "$version" && go test -c -o "../work/$version.test" .)
           done
           (cd candidate && go build -gcflags=-m=2 .) 2> work/inlining.txt
-          grep -F 'cannot inline (*State).pollBinaryHook:' work/inlining.txt
-          grep -F 'cannot inline (*State).pollPreparedHook:' work/inlining.txt
+          grep -Fq 'cannot inline (*State).pollBinaryHook:' work/inlining.txt
+          grep -Fq 'cannot inline (*State).pollPreparedHook:' work/inlining.txt
       - name: Compare thirteen scenarios and capture CPU profiles
         run: python3 candidate/scripts/bench-b0.py --main work/main.test --candidate work/candidate.test --before work/before.test --rounds 8 --output work
       - uses: actions/upload-artifact@v7

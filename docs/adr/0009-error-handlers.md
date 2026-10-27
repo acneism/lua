@@ -30,6 +30,11 @@ handles it without a second panic. Protected boundaries retain recovery for
 API errors and internal host panics. Cold hook root construction lives outside
 execute in helpers that the Go compiler does not inline.
 
+pcall takes the ordinary protected path when no handler is active. Only calls
+that must mask an active handler enter the handler-scope bookkeeping. VM calls
+enter native stack frames directly; host and callable-object arguments use the
+separate staging path.
+
 Each handler scope receives a monotonically increasing identity within a
 state-local owner. Errors retain that small owner and identity, preventing a
 second handler invocation as the same error crosses internal recovery layers.

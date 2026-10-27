@@ -22,6 +22,16 @@ func weakTestTable(t *testing.T, s *State, mode string) *Table {
 	return w
 }
 
+func TestStepZeroCollects(t *testing.T) {
+	s := NewState(Options{})
+	w := weakTestTable(t, s, "v")
+	_ = w.RawSet(Number(1), s.NewTable(0, 0).Value())
+	values, err := s.Call(s.Globals().RawGet(String("collectgarbage")), String("step"), Number(0))
+	if err != nil || len(values) != 1 || values[0].Type() != TypeBoolean || !values[0].Truth() || !w.RawGet(Number(1)).IsNil() {
+		t.Fatal("step with zero did not follow the full-collection rule", values, err)
+	}
+}
+
 func TestWeakHostRoots(t *testing.T) {
 	s := NewState(Options{})
 	w := weakTestTable(t, s, "k")
