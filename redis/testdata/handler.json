@@ -1,0 +1,856 @@
+[
+  {
+    "name": "gsub_calls_error",
+    "src": "string.gsub('a', 'a', error)",
+    "want": "LUVSUiBhIHNjcmlwdDogMjA0ODA0ZTFmMjgyNzM4NThiZTk1N2E4YTgwMzFmY2ZiMmU2M2MyNywgb24gPVtDXTotMS4NCg=="
+  },
+  {
+    "name": "sort_calls_error",
+    "src": "table.sort({3, 1, 2}, error)",
+    "want": "LUVSUiAyIHNjcmlwdDogZThjYzg2ZTJlNGNjYTI2Mzk3YWEyZWQ2ZjU5Mjg0MDY2MjA2MzkyMSwgb24gPVtDXTotMS4NCg=="
+  },
+  {
+    "name": "loadstring_named",
+    "src": "loadstring('error(\"x\")', '=mychunk')()",
+    "want": "LUVSUiBteWNodW5rOjE6IHggc2NyaXB0OiAxNjA2ZTBlMWJmYjJlNzRiNmVhNThkZDg4MTNlYTZjZWVlNDFhY2Y5LCBvbiA9bXljaHVuazoxLg0K"
+  },
+  {
+    "name": "loadstring_at",
+    "src": "loadstring('error(\"x\")', '@other.lua')()",
+    "want": "LUVSUiBvdGhlci5sdWE6MTogeCBzY3JpcHQ6IGY0OTljNjMzMGIwMjc2NTgwNmY5YzFmODE0NjEyZmJiYjk3NGM1ZjAsIG9uIEBvdGhlci5sdWE6MS4NCg=="
+  },
+  {
+    "name": "loadstring_unnamed",
+    "src": "loadstring('error(1)')()",
+    "want": "LUVSUiBbc3RyaW5nICJlcnJvcigxKSJdOjE6IDEgc2NyaXB0OiBlNGY5YWFiNjJjNWRmMDdiOTUwN2I2ZTA0MmM1ZDYyMzY3MmU0ZDhlLCBvbiBlcnJvcigxKToxLg0K"
+  },
+  {
+    "name": "loadstring_runtime",
+    "src": "loadstring('local t = nil return t.x', 'chunk text')()",
+    "want": "LUVSUiBbc3RyaW5nICJjaHVuayB0ZXh0Il06MTogYXR0ZW1wdCB0byBpbmRleCBsb2NhbCAndCcgKGEgbmlsIHZhbHVlKSBzY3JpcHQ6IGEzZTEzM2IwZTQ0ZmMxNTVmOTQ4OGYzZmI2NzYzMjk5YmFkMjU3YjUsIG9uIGNodW5rIHRleHQ6MS4NCg=="
+  },
+  {
+    "name": "direct_call",
+    "src": "local t = __redis__err__handler('x') return t.source .. ':' .. t.line",
+    "want": "JDE0DQpAdXNlcl9zY3JpcHQ6MQ0K"
+  },
+  {
+    "name": "direct_tail",
+    "src": "local function f() return __redis__err__handler('x') end local t = f() return t.source .. ':' .. t.line",
+    "want": "JDE1DQo9KHRhaWwgY2FsbCk6LTENCg=="
+  },
+  {
+    "name": "direct_pcall",
+    "src": "local ok, t = pcall(__redis__err__handler, 'x') return t.source .. ':' .. t.line",
+    "want": "JDE0DQpAdXNlcl9zY3JpcHQ6MQ0K"
+  },
+  {
+    "name": "direct_coroutine",
+    "src": "local t = coroutine.wrap(__redis__err__handler)('x') return tostring(t.source) .. ':' .. tostring(t.line) .. ':' .. t.err",
+    "want": "JDEzDQpuaWw6bmlsOkVSUiB4DQo="
+  },
+  {
+    "name": "direct_table",
+    "src": "local e = {err = 'E'} local t = __redis__err__handler(e) return tostring(rawequal(e, t)) .. ':' .. e.source .. ':' .. e.line",
+    "want": "JDE5DQp0cnVlOkB1c2VyX3NjcmlwdDoxDQo="
+  },
+  {
+    "name": "direct_number",
+    "src": "local t = __redis__err__handler(12.5) return t.err",
+    "want": "JDgNCkVSUiAxMi41DQo="
+  },
+  {
+    "name": "xpcall_multiline",
+    "src": "local ok, e = xpcall(function()\nerror('x')\nend, __redis__err__handler)\nreturn e.source .. ':' .. e.line .. ':' .. e.err",
+    "want": "JDM1DQpAdXNlcl9zY3JpcHQ6MjpFUlIgdXNlcl9zY3JpcHQ6MjogeA0K"
+  },
+  {
+    "name": "xpcall_mutates",
+    "src": "local e = {err = 'custom'}\nlocal ok, r = xpcall(function()\n  error(e)\nend, __redis__err__handler)\nreturn e.source .. ':' .. e.line",
+    "want": "JDE0DQpAdXNlcl9zY3JpcHQ6Mw0K"
+  },
+  {
+    "name": "error_level2_tail",
+    "src": "local function f() error('x', 2) end local function g() return f() end g()",
+    "want": "LUVSUiB4IHNjcmlwdDogNjAwOTNkZTVmYWMwNmI0YWMyOGJjNTRmNTUxODk5Yzg0MWE3MzRmMSwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "error_level2_tail_ml",
+    "src": "local function f()\n  error('x', 2)\nend\nlocal function g()\n  return f()\nend\ng()",
+    "want": "LUVSUiB4IHNjcmlwdDogZjc3ZGU3OGYzNzljNTFhNDE0MzQ3NzU3ZDVhYWZlMjQ3MWIwMGEyMCwgb24gQHVzZXJfc2NyaXB0OjIuDQo="
+  },
+  {
+    "name": "runtime_multiline",
+    "src": "local function f()\nlocal x = nil\nreturn x.y\nend\nf()",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDozOiBhdHRlbXB0IHRvIGluZGV4IGxvY2FsICd4JyAoYSBuaWwgdmFsdWUpIHNjcmlwdDogODVmYTlmYWViOWE3NzI1ZWY4ZTFkOWY3NmQ4MTU4OGQyY2MzYmJkYSwgb24gQHVzZXJfc2NyaXB0OjMuDQo="
+  },
+  {
+    "name": "redis_call_multiline",
+    "src": "local a = 1\nredis.call('nosuchcommand')",
+    "want": "LUVSUiBVbmtub3duIFJlZGlzIGNvbW1hbmQgY2FsbGVkIGZyb20gc2NyaXB0IHNjcmlwdDogNDI5ZTU5MGY2Mjk4MTBiYjY2OWY2MWFkZWUyMjlkNjhlMDU4MjkyOCwgb24gQHVzZXJfc2NyaXB0OjIuDQo=",
+    "trace": [
+      {
+        "argv": [
+          "nosuchcommand"
+        ],
+        "command": {
+          "Name": "",
+          "Arity": 0,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": false
+      }
+    ]
+  },
+  {
+    "name": "error_nil",
+    "src": "error(nil)",
+    "want": "LUVSUiBuaWwgc2NyaXB0OiBjNDAyYWE0OTk1MmM4NmMzOGYzNWZiMzExZDU0OTc3ZDA4ZjNiZjAxLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "error_true",
+    "src": "error(true)",
+    "want": "LUVSUiB0cnVlIHNjcmlwdDogNGZhZmUyMTQ5ZjY4YTE2MThhM2VlZjQwYWVlZjU1ZjVhZjY5NTFkYSwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "error_number",
+    "src": "error(12.5)",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiAxMi41IHNjcmlwdDogYzMxMWE2NTkxMGFmMmZiOTQ0NjE5NGM0ZGU5MWMzNGU1MDAxYzQwZCwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "error_with_fields",
+    "src": "error({err = 'X', source = 's', line = 5})",
+    "want": "LVggc2NyaXB0OiAwMzgwOTM4YWM0MWM5N2U4ZmY1OWFhMzQ3ZGM1YmE1NzY0MjI0MDlkLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "handler_concat_error",
+    "src": "local u = newproxy(true) getmetatable(u).__tostring = function() return {} end error(u)",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBTY3JpcHQgYXR0ZW1wdGVkIHRvIGFjY2VzcyBub25leGlzdGVudCBnbG9iYWwgdmFyaWFibGUgJ25ld3Byb3h5JyBzY3JpcHQ6IGMzYzY1NzE0OTBmZTY2MGFkYjYxZmZkZTUwYzlkYWUxMzI4NjM5MjIsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "handler_recursion",
+    "src": "local u = newproxy(true) getmetatable(u).__tostring = function() error(u) end error(u)",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBTY3JpcHQgYXR0ZW1wdGVkIHRvIGFjY2VzcyBub25leGlzdGVudCBnbG9iYWwgdmFyaWFibGUgJ25ld3Byb3h5JyBzY3JpcHQ6IGRmNDVjNGJhNmVlZTlhYzI2NjM3ZDQ1Zjg0MGQ3NzE4N2ExOTk1NzEsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "error_readonly_redis",
+    "src": "error(redis)",
+    "want": "LUVSUiBlcnJfaGFuZGxlcl9kZWY6MTA6IEF0dGVtcHQgdG8gbW9kaWZ5IGEgcmVhZG9ubHkgdGFibGUgc2NyaXB0OiA5YzY2M2JjNDhhNmU0YWExODM0ZDI1OWUyMzZhOWRjZTU2N2MyNmJlLCBvbiBAZXJyX2hhbmRsZXJfZGVmOjEwLg0K"
+  },
+  {
+    "name": "error_readonly_G",
+    "src": "error(_G)",
+    "want": "LUVSUiBlcnJfaGFuZGxlcl9kZWY6MTA6IEF0dGVtcHQgdG8gbW9kaWZ5IGEgcmVhZG9ubHkgdGFibGUgc2NyaXB0OiBlNmE2M2MzMmRmZmRkMmY3YzA5OGIwODlhOGNlYWQ5ZGY0ODU1YmQ4LCBvbiBAZXJyX2hhbmRsZXJfZGVmOjEwLg0K"
+  },
+  {
+    "name": "error_readonly_ml",
+    "src": "local a = 1\nerror(math)",
+    "want": "LUVSUiBlcnJfaGFuZGxlcl9kZWY6MTA6IEF0dGVtcHQgdG8gbW9kaWZ5IGEgcmVhZG9ubHkgdGFibGUgc2NyaXB0OiAxZDNkNDlhZmI0NzM0OGViNjQyYjU4ZTI5OTc5N2Q4YzUyMzU2ZDExLCBvbiBAZXJyX2hhbmRsZXJfZGVmOjEwLg0K"
+  },
+  {
+    "name": "direct_readonly",
+    "src": "local ok, e = pcall(__redis__err__handler, math) return tostring(ok) .. ':' .. tostring(e)",
+    "want": "JDYwDQpmYWxzZTplcnJfaGFuZGxlcl9kZWY6MTA6IEF0dGVtcHQgdG8gbW9kaWZ5IGEgcmVhZG9ubHkgdGFibGUNCg=="
+  },
+  {
+    "name": "handler_type",
+    "src": "return type(__redis__err__handler)",
+    "want": "JDgNCmZ1bmN0aW9uDQo="
+  },
+  {
+    "name": "handler_dump",
+    "src": "return tostring(pcall(string.dump, __redis__err__handler))",
+    "want": "JDQNCnRydWUNCg=="
+  },
+  {
+    "name": "handler_tostring_prefix",
+    "src": "return string.sub(tostring(__redis__err__handler), 1, 9)",
+    "want": "JDkNCmZ1bmN0aW9uOg0K"
+  },
+  {
+    "name": "debug_global",
+    "src": "return tostring(debug)",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBTY3JpcHQgYXR0ZW1wdGVkIHRvIGFjY2VzcyBub25leGlzdGVudCBnbG9iYWwgdmFyaWFibGUgJ2RlYnVnJyBzY3JpcHQ6IGQ5NTNkZDY3YTRiYjk1OTJiZGNlNDFjYzVmNjZhMzczMDcxODg3ODUsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "error_function",
+    "src": "error(print)",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBTY3JpcHQgYXR0ZW1wdGVkIHRvIGFjY2VzcyBub25leGlzdGVudCBnbG9iYWwgdmFyaWFibGUgJ3ByaW50JyBzY3JpcHQ6IGFmNGNkMjAwZTdjZDQ1YTI3NTA3M2U0YjdmZjk0Y2E5ZTdhOGVjMDIsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "error_level0",
+    "src": "error('x', 0)",
+    "want": "LUVSUiB4IHNjcmlwdDogYTgzMjVhYjQ5OGM5NGYzOGIxYjNlODY4NjI2OTdhMzEzYjZkYmUzNSwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "error_level3",
+    "src": "local function f() error('x', 3) end local function g() f() end g()",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiB4IHNjcmlwdDogNTE4Mjc5MzEzMjI0ZjFkMWU2MTM1Yjk2MzkxMWU2ZWQwYTQ3NTVhMywgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "load_reader_handler_type",
+    "src": "local f, e = load(function() error('r') end) return type(e)",
+    "want": "JDUNCnRhYmxlDQo="
+  },
+  {
+    "name": "load_reader_handler_fields",
+    "src": "local f, e = load(function() error('r') end) return e.err .. '|' .. e.source .. ':' .. e.line",
+    "want": "JDM1DQpFUlIgdXNlcl9zY3JpcHQ6MTogcnxAdXNlcl9zY3JpcHQ6MQ0K"
+  },
+  {
+    "name": "load_reader_handler_ml",
+    "src": "local f, e = load(function()\n  error('r')\nend)\nreturn e.err .. '|' .. e.source .. ':' .. e.line",
+    "want": "JDM1DQpFUlIgdXNlcl9zY3JpcHQ6MjogcnxAdXNlcl9zY3JpcHQ6Mg0K"
+  },
+  {
+    "name": "load_reader_in_pcall",
+    "src": "local ok, f, e = pcall(load, function() error('r') end) return type(e)",
+    "want": "JDYNCnN0cmluZw0K"
+  },
+  {
+    "name": "load_reader_not_string",
+    "src": "local f, e = load(function() return {} end) return type(e) .. '|' .. tostring(e.err) .. '|' .. tostring(e.source) .. ':' .. tostring(e.line)",
+    "want": "JDc2DQp0YWJsZXxFUlIgdXNlcl9zY3JpcHQ6MTogcmVhZGVyIGZ1bmN0aW9uIG11c3QgcmV0dXJuIGEgc3RyaW5nfEB1c2VyX3NjcmlwdDoxDQo="
+  },
+  {
+    "name": "load_reader_syntax",
+    "src": "local n = 0 local f, e = load(function() n = n + 1 if n == 1 then return 'return ' end return nil end) return type(e)",
+    "want": "JDMNCm5pbA0K"
+  },
+  {
+    "name": "load_reader_runtime",
+    "src": "local f, e = load(function() local t = nil return t.x end) return e.err .. '|' .. e.source .. ':' .. e.line",
+    "want": "JDc0DQpFUlIgdXNlcl9zY3JpcHQ6MTogYXR0ZW1wdCB0byBpbmRleCBsb2NhbCAndCcgKGEgbmlsIHZhbHVlKXxAdXNlcl9zY3JpcHQ6MQ0K"
+  },
+  {
+    "name": "wrap_error",
+    "src": "coroutine.wrap(function() error('x') end)()",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiB1c2VyX3NjcmlwdDoxOiB4IHNjcmlwdDogYTJlZWU2YjJjMWY1MWE2NmFhYTdlN2ZmZDUyZjY3NzQyODdmNmU4ZSwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "wrap_error_ml",
+    "src": "local co = coroutine.wrap(function()\n  error('x')\nend)\nco()",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDo0OiB1c2VyX3NjcmlwdDoyOiB4IHNjcmlwdDogY2M5NzM3NDRiODQzMmM3Zjc3Y2FkOTllNzhhYWZhYmEzY2IzYjk4Mywgb24gQHVzZXJfc2NyaXB0OjQuDQo="
+  },
+  {
+    "name": "wrap_runtime",
+    "src": "coroutine.wrap(function() local t = nil return t.x end)()",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiB1c2VyX3NjcmlwdDoxOiBhdHRlbXB0IHRvIGluZGV4IGxvY2FsICd0JyAoYSBuaWwgdmFsdWUpIHNjcmlwdDogNTNlMzkzMWY5YTRkMmUwZmUxYTlhYzA3NmY4NTNjNTFjY2E3MjE5Ziwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "wrap_table_error",
+    "src": "coroutine.wrap(function() error({err = 'T'}) end)()",
+    "want": "LVQgc2NyaXB0OiAwZjg1MzhmMjhlOTA5MTFmMTdkMjJlMDZiNzQwZThlMTRhMTRkNGNlLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "resume_error_value",
+    "src": "local co = coroutine.create(function() error('x') end) local ok, e = coroutine.resume(co) return type(e) .. '|' .. tostring(e)",
+    "want": "JDIzDQpzdHJpbmd8dXNlcl9zY3JpcHQ6MTogeA0K"
+  },
+  {
+    "name": "sort_comparator_error",
+    "src": "table.sort({3, 1, 2}, function(a, b)\n  error('cmp')\nend)",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoyOiBjbXAgc2NyaXB0OiBhNzU3ZDFmZWZjYjdiMGZmNmUwYzY2MTEyZTA5NDIzYzhkOTM2MmM3LCBvbiBAdXNlcl9zY3JpcHQ6Mi4NCg=="
+  },
+  {
+    "name": "index_metamethod_error",
+    "src": "local t = setmetatable({}, {__index = function(t, k)\n  error('idx')\nend})\nreturn t.x",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoyOiBpZHggc2NyaXB0OiAzN2IxNzlhODhlYjAzMjI1NWQ3OTJkZmY0MTY4N2FhOGYyNjVkYTc2LCBvbiBAdXNlcl9zY3JpcHQ6Mi4NCg=="
+  },
+  {
+    "name": "tostring_error",
+    "src": "local t = setmetatable({}, {__tostring = function()\n  error('ts')\nend})\nreturn tostring(t)",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoyOiB0cyBzY3JpcHQ6IDhkMTAyNjQ2YjgyZTgzNDFiODM4MzFmZWM5NDMxYjhiNTY3M2UwYWQsIG9uIEB1c2VyX3NjcmlwdDoyLg0K"
+  },
+  {
+    "name": "gsub_function_error",
+    "src": "string.gsub('abc', '%w', function(c)\n  error('g')\nend)",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoyOiBnIHNjcmlwdDogMDMyM2JkYWFiMGUxODY4MDY0OGZiOTdiYmYwMTUxYTdkY2FkMmNlZiwgb24gQHVzZXJfc2NyaXB0OjIuDQo="
+  },
+  {
+    "name": "arith_metamethod_error",
+    "src": "local t = setmetatable({}, {__add = function(a, b)\n  error('add')\nend})\nreturn t + 1",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoyOiBhZGQgc2NyaXB0OiAxNmY2ZjNhYTQxNDYxMTg5MjM2NjNlODEwNzA0MzljZjI0NGQ2MjkyLCBvbiBAdXNlcl9zY3JpcHQ6Mi4NCg=="
+  },
+  {
+    "name": "arith_metamethod_runtime",
+    "src": "local t = setmetatable({}, {__add = function(a, b)\n  local x = nil\n  return x.y\nend})\nreturn t + 1",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDozOiBhdHRlbXB0IHRvIGluZGV4IGxvY2FsICd4JyAoYSBuaWwgdmFsdWUpIHNjcmlwdDogMjZkNDNjYTIyY2JjMjljNThhMWQyZDg5OWQ1ZDgxYjJmM2U4MWFjZSwgb24gQHVzZXJfc2NyaXB0OjMuDQo="
+  },
+  {
+    "name": "concat_metamethod_error",
+    "src": "local t = setmetatable({}, {__concat = function(a, b)\n  local x = nil\n  return x.y\nend})\nreturn t .. 'a'",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDozOiBhdHRlbXB0IHRvIGluZGV4IGxvY2FsICd4JyAoYSBuaWwgdmFsdWUpIHNjcmlwdDogYTk5YWY1OTExMTI3Yzc2ZTBhYjNjMzdkYjdmOTlmNWViMjdjNzViOCwgb24gQHVzZXJfc2NyaXB0OjMuDQo="
+  },
+  {
+    "name": "call_metamethod_error",
+    "src": "local t = setmetatable({}, {__call = function(self)\n  error('call')\nend})\nt()",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoyOiBjYWxsIHNjcmlwdDogOTFiMDE4ZWUxNjI4MTYxYzFlYTAwNWE5YmZjYTE4YTU5Y2MwMmVmOCwgb24gQHVzZXJfc2NyaXB0OjIuDQo="
+  },
+  {
+    "name": "lt_metamethod_error",
+    "src": "local mt = {__lt = function(a, b)\n  error('lt')\nend}\nlocal a, b = setmetatable({}, mt), setmetatable({}, mt)\nreturn a \u003c b",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoyOiBsdCBzY3JpcHQ6IDk5OTQ5OWIyMmEyZjFiMGQ5MGE1NjdmMTUzMTEzYjJiNTg3NTZhMWQsIG9uIEB1c2VyX3NjcmlwdDoyLg0K"
+  },
+  {
+    "name": "deep_tail_then_error",
+    "src": "local function a()\n  error('deep')\nend\nlocal function b() return a() end\nlocal function c() return b() end\nc()",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoyOiBkZWVwIHNjcmlwdDogY2FhZWFhYzZhODc4NmFiNmE5MWEyODk0OTQwNzY1YTE0NTVjZTMzNywgb24gQHVzZXJfc2NyaXB0OjIuDQo="
+  },
+  {
+    "name": "deep_tail_runtime",
+    "src": "local function a()\n  local x = nil\n  return x.y\nend\nlocal function b() return a() end\nb()",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDozOiBhdHRlbXB0IHRvIGluZGV4IGxvY2FsICd4JyAoYSBuaWwgdmFsdWUpIHNjcmlwdDogZjI3MDkwOTE4NWMyMzFjNjhhYTFiZDk0YTk3OGVmNDU0MTM3MTE0Nywgb24gQHVzZXJfc2NyaXB0OjMuDQo="
+  },
+  {
+    "name": "error_level2_plain",
+    "src": "local function f()\n  error('x', 2)\nend\nf()",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDo0OiB4IHNjcmlwdDogYzdkMThmMGI5NzNjNzBhYzdkMTNjN2Q2OTNlMDkxZjBkNTk5MTJjNCwgb24gQHVzZXJfc2NyaXB0OjIuDQo="
+  },
+  {
+    "name": "xpcall_handler_errors",
+    "src": "local ok, e = xpcall(function() error('x') end, function(m) error('h') end) return tostring(ok) .. '|' .. tostring(e)",
+    "want": "JDI5DQpmYWxzZXxlcnJvciBpbiBlcnJvciBoYW5kbGluZw0K"
+  },
+  {
+    "name": "xpcall_nonfunction_handler",
+    "src": "local ok, e = xpcall(function() error('x') end, 42) return tostring(ok) .. '|' .. tostring(e)",
+    "want": "JDI5DQpmYWxzZXxlcnJvciBpbiBlcnJvciBoYW5kbGluZw0K"
+  },
+  {
+    "name": "nested_xpcall",
+    "src": "local ok, e = xpcall(function() local ok2, e2 = xpcall(function() error('in') end, function(m) return 'inner:' .. m end) error(e2, 0) end, function(m) return 'outer:' .. m end) return e",
+    "want": "JDI5DQpvdXRlcjppbm5lcjp1c2VyX3NjcmlwdDoxOiBpbg0K"
+  },
+  {
+    "name": "xpcall_in_handler_scope_pcall",
+    "src": "local ok, e = xpcall(function() local ok2, e2 = pcall(error, 'p') return e2 end, function(m) return 'H' end) return tostring(ok) .. '|' .. tostring(e)",
+    "want": "JDYNCnRydWV8cA0K"
+  },
+  {
+    "name": "handler_upvalue_live",
+    "src": "local x = 1\nlocal ok, e = xpcall(function()\n  local y = 2\n  error('u')\nend, __redis__err__handler)\nreturn e.line",
+    "want": "OjQNCg=="
+  },
+  {
+    "name": "error_after_handler_return",
+    "src": "local ok, e = xpcall(function() error('x') end, __redis__err__handler) error(e)",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiB4IHNjcmlwdDogMzk2NGRhZmQ3ZjEzMDU5MDE1MDJlZTUxMmU0OTliZDk3YWZkZTRiZiwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "reraise_handled_table",
+    "src": "local ok, e = xpcall(function() error('x') end, __redis__err__handler) error(e, 0)",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiB4IHNjcmlwdDogYjc0NmI2OGFiYjM1MDk3OWMxNWNhZTA0MzNkZmZiZjUwNDMwYWNlNywgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "nul_chunkname_eq",
+    "src": "loadstring('error(1)', '=a\\0b')()",
+    "want": "LUVSUiBhOjE6IDEgc2NyaXB0OiAxMDg1MmM4ZWI5NjM1NzQwYzg1NmZiNjk3Yjg5YWJjYzFlMzU1MDg1LCBvbiA9YToxLg0K"
+  },
+  {
+    "name": "nul_chunkname_at",
+    "src": "loadstring('error(1)', '@x\\0y')()",
+    "want": "LUVSUiB4OjE6IDEgc2NyaXB0OiAwNjcxOGY2MzM3MjQyYzVjNzc1Y2MyYTQ3OWIxNmI3ODQ2MDA4MjBmLCBvbiBAeDoxLg0K"
+  },
+  {
+    "name": "nul_chunkname_text",
+    "src": "loadstring('error(1) --\\0junk')()",
+    "want": "LUVSUiBbc3RyaW5nICJlcnJvcigxKSAtLSJdOjE6IDEgc2NyaXB0OiBhMTc1ZmQ0NzIxMmE4NmE4NzRjZmExZjdkMmM1MjFkY2VhZjA1ZWZlLCBvbiBlcnJvcigxKSAtLToxLg0K"
+  },
+  {
+    "name": "nul_chunkname_handler",
+    "src": "local f = loadstring('return __redis__err__handler(1)', '=a\\0b') local t = f() return t.source",
+    "want": "JDEyDQo9KHRhaWwgY2FsbCkNCg=="
+  },
+  {
+    "name": "nul_chunkname_direct",
+    "src": "local f = loadstring('local t = __redis__err__handler(1) return t.source', '=a\\0b') return f()",
+    "want": "JDINCj1hDQo="
+  },
+  {
+    "name": "nul_load_reader_name",
+    "src": "local done = false local f = load(function() if done then return nil end done = true return 'error(1)' end, '=r\\0s') f()",
+    "want": "LUVSUiByOjE6IDEgc2NyaXB0OiAzOWUxZjJkM2EwNTNlZGExZTgyNmI0M2RjZTc5NzM5ZjYzNGJlMWZhLCBvbiA9cjoxLg0K"
+  },
+  {
+    "name": "err_number",
+    "src": "error({err = 5})",
+    "want": "LTUgc2NyaXB0OiA1YjU4ZGE1YWFjMzdmNTc3Nzk1OTI5ZjZiYmVjZThkYjlkYzhjZWZjLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "err_string",
+    "src": "error({err = 'X'})",
+    "want": "LVggc2NyaXB0OiAwZmMwMmQ2N2U4ODkyM2M2NjAzZDk0ZWFkODY0ZmY1MjVmMmJkNDc1LCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "err_via_index",
+    "src": "error(setmetatable({}, {__index = function(t, k) if k == 'err' then return 'M' end end}))",
+    "want": "LU0gc2NyaXB0OiBjYTgzNTBkYTg0ZDg3MDI5Yjg0MmRmNTM0MDg5MGQ3ZTRlZjZjMGNmLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "err_in_pcall",
+    "src": "local ok, e = pcall(error, {}) return type(e)",
+    "want": "JDUNCnRhYmxlDQo="
+  },
+  {
+    "name": "xpcall_handler_empty",
+    "src": "local ok, e = xpcall(function() error({}) end, __redis__err__handler) return type(e) .. '|' .. tostring(e.err) .. '|' .. e.source",
+    "want": "JDIyDQp0YWJsZXxuaWx8QHVzZXJfc2NyaXB0DQo="
+  },
+  {
+    "name": "returned_empty",
+    "src": "return {err = nil, code = 1}",
+    "want": "KjANCg=="
+  },
+  {
+    "name": "error_reply_bad",
+    "src": "return redis.error_reply({})",
+    "want": "LUVSUiB3cm9uZyBudW1iZXIgb3IgdHlwZSBvZiBhcmd1bWVudHMNCg=="
+  },
+  {
+    "name": "index_only_err",
+    "src": "error(setmetatable({}, {__index = function(t, k) if k == 'err' then return 'M' end return nil end}))",
+    "want": "LU0gc2NyaXB0OiAyODgzOGMzOGExNzRhNDViZjNkZjYzMjE5NWE2YTYyYmNhMjMyOWM0LCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "newindex_swallows",
+    "src": "error(setmetatable({err = 'N'}, {__newindex = function() end}))",
+    "want": "LU4NCg=="
+  },
+  {
+    "name": "newindex_raises",
+    "src": "error(setmetatable({err = 'N'}, {__newindex = function() error('nw') end}))",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBudyBzY3JpcHQ6IGZlOTM3M2Y1ZDViZDk0Y2RlOTFhMGU2YmI2NTFlMGM0YmZlMmI1NTUsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "err_empty_string",
+    "src": "error({err = ''})",
+    "want": "LSBzY3JpcHQ6IDZhOTFkMmQ0OTA3YzQ4OTQ5ZmQ4Y2Y4YTcyY2JmODc1ZWRhOWM5ODgsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "err_nan",
+    "src": "error({err = 0/0})",
+    "want": "LS1uYW4gc2NyaXB0OiBiZWY4YmFlNGE0ZjRhNDJlMmY1NzkwNzY1NjJlM2IyYWM4ZTUyMDY5LCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "pcall_err_number",
+    "src": "local r = {pcall(error, {err = 5})} return type(r[2]) .. '|' .. tostring(r[2]) .. '|' .. select('#', unpack(r))",
+    "want": "JDEwDQpudW1iZXJ8NXwyDQo="
+  },
+  {
+    "name": "pcall_err_true",
+    "src": "return type(select(2, pcall(error, {err = true}))) .. '|' .. tostring(select(3, pcall(error, {err = true}))) .. '|' .. select('#', pcall(error, {err = true}))",
+    "want": "JDEyDQp0YWJsZXx0cnVlfDMNCg=="
+  },
+  {
+    "name": "pcall_err_index",
+    "src": "local r = {pcall(error, setmetatable({}, {__index = function(t, k) return 'via_' .. k end}))} return type(r[2]) .. '|' .. tostring(r[2])",
+    "want": "JDE0DQpzdHJpbmd8dmlhX2Vycg0K"
+  },
+  {
+    "name": "pcall_err_index_raises",
+    "src": "local ok, e = pcall(pcall, error, setmetatable({}, {__index = function(t, k) error('boom') end})) return tostring(ok) .. '|' .. tostring(e)",
+    "want": "JDI1DQpmYWxzZXx1c2VyX3NjcmlwdDoxOiBib29tDQo="
+  },
+  {
+    "name": "pcall_err_index_level2",
+    "src": "local ok, e = pcall(pcall, error, setmetatable({}, {__index = function(t, k) error('boom', 2) end})) return tostring(ok) .. '|' .. tostring(e)",
+    "want": "JDEwDQpmYWxzZXxib29tDQo="
+  },
+  {
+    "name": "pcall_empty_table_count",
+    "src": "return select('#', pcall(error, {}))",
+    "want": "OjMNCg=="
+  },
+  {
+    "name": "pcall_err_table",
+    "src": "local r = {pcall(error, {err = {}})} return type(r[2]) .. '|' .. type(r[3]) .. '|' .. select('#', pcall(error, {err = {}}))",
+    "want": "JDEzDQp0YWJsZXx0YWJsZXwzDQo="
+  },
+  {
+    "name": "pcall_redis_call",
+    "src": "local ok, e = pcall(redis.call, 'nosuchcmd') return type(e) .. '|' .. tostring(e)",
+    "want": "JDUxDQpzdHJpbmd8RVJSIFVua25vd24gUmVkaXMgY29tbWFuZCBjYWxsZWQgZnJvbSBzY3JpcHQNCg==",
+    "trace": [
+      {
+        "argv": [
+          "nosuchcmd"
+        ],
+        "command": {
+          "Name": "",
+          "Arity": 0,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": false
+      }
+    ]
+  },
+  {
+    "name": "redis_pcall_unknown_fields",
+    "src": "local e = redis.pcall('nosuchcmd') local r = {} for k, v in pairs(e) do r[#r + 1] = k .. '=' .. tostring(v) end return table.concat(r, ',')",
+    "want": "JDc5DQppZ25vcmVfZXJyb3Jfc3RhdHNfdXBkYXRlPXRydWUsZXJyPUVSUiBVbmtub3duIFJlZGlzIGNvbW1hbmQgY2FsbGVkIGZyb20gc2NyaXB0DQo=",
+    "trace": [
+      {
+        "argv": [
+          "nosuchcmd"
+        ],
+        "command": {
+          "Name": "",
+          "Arity": 0,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": false
+      }
+    ]
+  },
+  {
+    "name": "redis_pcall_noargs_fields",
+    "src": "local e = redis.pcall() local r = {} for k, v in pairs(e) do r[#r + 1] = k .. '=' .. tostring(v) end return table.concat(r, ',')",
+    "want": "JDY4DQplcnI9RVJSIFBsZWFzZSBzcGVjaWZ5IGF0IGxlYXN0IG9uZSBhcmd1bWVudCBmb3IgdGhpcyByZWRpcyBsaWIgY2FsbA0K"
+  },
+  {
+    "name": "redis_pcall_arity_fields",
+    "src": "local e = redis.pcall('incr', 'zzpcallkey', 'x') local r = {} for k, v in pairs(e) do r[#r + 1] = k .. '=' .. tostring(v) end return table.concat(r, ',')",
+    "want": "JDkzDQppZ25vcmVfZXJyb3Jfc3RhdHNfdXBkYXRlPXRydWUsZXJyPUVSUiBXcm9uZyBudW1iZXIgb2YgYXJncyBjYWxsaW5nIFJlZGlzIGNvbW1hbmQgZnJvbSBzY3JpcHQNCg==",
+    "trace": [
+      {
+        "argv": [
+          "incr",
+          "zzpcallkey",
+          "x"
+        ],
+        "command": {
+          "Name": "incr",
+          "Arity": 2,
+          "Write": true,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true
+      }
+    ]
+  },
+  {
+    "name": "redis_pcall_badarg_fields",
+    "src": "local e = redis.pcall('set', 'zz', {}) local r = {} for k, v in pairs(e) do r[#r + 1] = k .. '=' .. tostring(v) end return table.concat(r, ',')",
+    "want": "JDY3DQplcnI9RVJSIEx1YSByZWRpcyBsaWIgY29tbWFuZCBhcmd1bWVudHMgbXVzdCBiZSBzdHJpbmdzIG9yIGludGVnZXJzDQo="
+  },
+  {
+    "name": "redis_pcall_reply_fields",
+    "src": "local e = redis.pcall('hget', 'zzstring', 'f') local r = {} for k, v in pairs(e) do r[#r + 1] = k .. '=' .. tostring(v) end return table.concat(r, ',')",
+    "setup": [
+      [
+        "SET",
+        "zzstring",
+        "v"
+      ]
+    ],
+    "want": "JDEwMA0KaWdub3JlX2Vycm9yX3N0YXRzX3VwZGF0ZT10cnVlLGVycj1XUk9OR1RZUEUgT3BlcmF0aW9uIGFnYWluc3QgYSBrZXkgaG9sZGluZyB0aGUgd3Jvbmcga2luZCBvZiB2YWx1ZQ0K",
+    "trace": [
+      {
+        "argv": [
+          "hget",
+          "zzstring",
+          "f"
+        ],
+        "call": true,
+        "command": {
+          "Name": "hget",
+          "Arity": 3,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "LVdST05HVFlQRSBPcGVyYXRpb24gYWdhaW5zdCBhIGtleSBob2xkaW5nIHRoZSB3cm9uZyBraW5kIG9mIHZhbHVlDQo="
+      }
+    ]
+  },
+  {
+    "name": "pairs_redis",
+    "src": "local r = {} for k in pairs(redis) do r[#r + 1] = k end return table.concat(r, ',')",
+    "want": "JDI0Mw0KbG9nLExPR19XQVJOSU5HLGVycm9yX3JlcGx5LFJFUExfQU9GLGNhbGwsUkVQTF9BTEwsUkVESVNfVkVSU0lPTl9OVU0sUkVQTF9TTEFWRSxwY2FsbCxMT0dfTk9USUNFLHNldF9yZXBsLGRlYnVnLExPR19ERUJVRyxzaGExaGV4LFJFRElTX1ZFUlNJT04sc3RhdHVzX3JlcGx5LGFjbF9jaGVja19jbWQsUkVQTF9SRVBMSUNBLGJyZWFrcG9pbnQsc2V0cmVzcCxyZXBsaWNhdGVfY29tbWFuZHMsTE9HX1ZFUkJPU0UsUkVQTF9OT05FDQo="
+  },
+  {
+    "name": "pairs_string",
+    "src": "local r = {} for k in pairs(string) do r[#r + 1] = k end return table.concat(r, ',')",
+    "want": "JDgyDQpzdWIsdXBwZXIsbGVuLGdmaW5kLHJlcCxmaW5kLG1hdGNoLGNoYXIsZHVtcCxnbWF0Y2gscmV2ZXJzZSxieXRlLGZvcm1hdCxnc3ViLGxvd2VyDQo="
+  },
+  {
+    "name": "pairs_math",
+    "src": "local r = {} for k in pairs(math) do r[#r + 1] = k end return table.concat(r, ',')",
+    "want": "JDE1Mw0KbG9nLG1heCxhY29zLGh1Z2UsbGRleHAscGksY29zLHRhbmgscG93LGRlZyx0YW4sY29zaCxzaW5oLHJhbmRvbSxyYW5kb21zZWVkLGZyZXhwLGNlaWwsZmxvb3IscmFkLGFicyxzcXJ0LG1vZGYsYXNpbixtaW4sbW9kLGZtb2QsbG9nMTAsYXRhbjIsZXhwLHNpbixhdGFuDQo="
+  },
+  {
+    "name": "pairs_table",
+    "src": "local r = {} for k in pairs(table) do r[#r + 1] = k end return table.concat(r, ',')",
+    "want": "JDU3DQpzZXRuLGluc2VydCxnZXRuLGZvcmVhY2hpLG1heG4sZm9yZWFjaCxjb25jYXQsc29ydCxyZW1vdmUNCg=="
+  },
+  {
+    "name": "pairs_coroutine",
+    "src": "local r = {} for k in pairs(coroutine) do r[#r + 1] = k end return table.concat(r, ',')",
+    "want": "JDM5DQpyZXN1bWUseWllbGQsc3RhdHVzLHdyYXAsY3JlYXRlLHJ1bm5pbmcNCg=="
+  },
+  {
+    "name": "returned_err_crlf",
+    "src": "return {err = 'x\\r\\n'}",
+    "want": "LXgNCg=="
+  },
+  {
+    "name": "returned_err_inner_newline",
+    "src": "return {err = 'a\\nb\\r\\n'}",
+    "want": "LWEgYg0K"
+  },
+  {
+    "name": "returned_err_leading_newline",
+    "src": "return {err = '\\nlead'}",
+    "want": "LSBsZWFkDQo="
+  },
+  {
+    "name": "returned_err_nul",
+    "src": "return {err = 'a\\0b'}",
+    "want": "LWENCg=="
+  },
+  {
+    "name": "returned_ok_newline",
+    "src": "return {ok = 'a\\nb'}",
+    "want": "K2EgYg0K"
+  },
+  {
+    "name": "raised_err_newline",
+    "src": "error({err = 'a\\nb\\n'})",
+    "want": "LWEgYiAgc2NyaXB0OiBhMTkxY2FiMWZhZTc3YjRmNzEwOGUzMDk4N2FkNDQ5MDBhMWM0MmYwLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "raised_err_nul",
+    "src": "error({err = 'a\\0b'})",
+    "want": "LWEgc2NyaXB0OiA2ZWVjYmZkYTU4NzVmMDM1NGU2MzZkMWJhNjdlMzkxNGVlZjVmZmE5LCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "raised_source_nul",
+    "src": "error(setmetatable({err = 'E'}, {__newindex = function(t, k, v) if k == 'source' then rawset(t, k, 's\\0x') else rawset(t, k, v) end end}))",
+    "want": "LUUgc2NyaXB0OiAyMDcwOWMwMTQxNmNlNzBkMjgwNzBlYzI3MDU3N2EyZGRjZDVkMzU1LCBvbiBzOjEuDQo="
+  },
+  {
+    "name": "redis_error_reply_code",
+    "src": "return redis.error_reply('MYCODE something bad')",
+    "want": "LU1ZQ09ERSBzb21ldGhpbmcgYmFkDQo="
+  },
+  {
+    "name": "redis_error_reply_nospace",
+    "src": "return redis.error_reply('MYCODE')",
+    "want": "LUVSUiBNWUNPREUNCg=="
+  },
+  {
+    "name": "redis_status_reply",
+    "src": "return redis.status_reply('FINE')",
+    "want": "K0ZJTkUNCg=="
+  },
+  {
+    "name": "error_line_number_float",
+    "src": "error(setmetatable({err = 'E'}, {__newindex = function(t, k, v) if k == 'line' then rawset(t, k, 1.5) else rawset(t, k, v) end end}))",
+    "want": "LUUgc2NyaXB0OiA4MzUxMWUwZDU3ZTRkNTlhNjczNzIwNjJhMTk3MDI0MWJiOGI2YzFkLCBvbiBAdXNlcl9zY3JpcHQ6MS41Lg0K"
+  },
+  {
+    "name": "error_no_line",
+    "src": "error(setmetatable({err = 'E'}, {__newindex = function(t, k, v) if k ~= 'line' then rawset(t, k, v) end end}))",
+    "want": "LUUNCg=="
+  },
+  {
+    "name": "xp_tostring_table",
+    "src": "local u = setmetatable({}, {__tostring = function() return {} end}) local ok, e = xpcall(function() error(u) end, __redis__err__handler) return tostring(ok) .. '|' .. type(e) .. '|' .. tostring(rawequal(e, u)) .. '|' .. tostring(rawget(e, 'err')) .. '|' .. tostring(rawget(e, 'source'))",
+    "want": "JDMzDQpmYWxzZXx0YWJsZXx0cnVlfG5pbHxAdXNlcl9zY3JpcHQNCg=="
+  },
+  {
+    "name": "xp_tostring_raise",
+    "src": "local u = setmetatable({}, {__tostring = function() error('t') end}) local ok, e = xpcall(function() error(u) end, __redis__err__handler) return tostring(ok) .. '|' .. type(e) .. '|' .. tostring(rawequal(e, u)) .. '|' .. tostring(rawget(e, 'err'))",
+    "want": "JDIwDQpmYWxzZXx0YWJsZXx0cnVlfG5pbA0K"
+  },
+  {
+    "name": "xp_plain_handler_fail",
+    "src": "local ok, e = xpcall(function() error('x') end, function(m) error('h') end) return tostring(ok) .. '|' .. type(e) .. '|' .. tostring(e)",
+    "want": "JDM2DQpmYWxzZXxzdHJpbmd8ZXJyb3IgaW4gZXJyb3IgaGFuZGxpbmcNCg=="
+  },
+  {
+    "name": "coroutine_overflow_depth",
+    "src": "local n = 0 local co = coroutine.wrap(function() local function f() n = n + 1 f() end local ok, e = pcall(f) return n .. '|' .. tostring(e) end) return co()",
+    "want": "JDM1DQoxNjM4MXx1c2VyX3NjcmlwdDoxOiBzdGFjayBvdmVyZmxvdw0K"
+  },
+  {
+    "name": "overflow_handler_room",
+    "src": "local function f() f() end local ok, e = xpcall(f, function(m) return 'H:' .. m end) return tostring(ok) .. '|' .. tostring(e)",
+    "want": "JDM3DQpmYWxzZXxIOnVzZXJfc2NyaXB0OjE6IHN0YWNrIG92ZXJmbG93DQo="
+  },
+  {
+    "name": "overflow_handler_overflows",
+    "src": "local function f() f() end local ok, e = xpcall(f, function(m) local function g() return g() + 1 end return g() end) return tostring(ok) .. '|' .. tostring(e)",
+    "want": "JDI5DQpmYWxzZXxlcnJvciBpbiBlcnJvciBoYW5kbGluZw0K"
+  },
+  {
+    "name": "assert_nul_message",
+    "src": "return {pcall(assert, false, 'x\\0y')}",
+    "want": "KjINCiQtMQ0KJDENCngNCg=="
+  },
+  {
+    "name": "global_nul_name",
+    "src": "return _G['a\\0b']",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBTY3JpcHQgYXR0ZW1wdGVkIHRvIGFjY2VzcyBub25leGlzdGVudCBnbG9iYWwgdmFyaWFibGUgJ2EnIHNjcmlwdDogY2U5ZGZhODE3N2FjYjk4YzJkYWUyZjM5MGEwMWFmMDY3YzIzYWQyOCwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "number_c_string_a",
+    "src": "return tostring(tonumber('5\\0x'))",
+    "want": "JDENCjUNCg=="
+  },
+  {
+    "name": "number_c_string_b",
+    "src": "return tostring('5\\0x' + 1)",
+    "want": "JDENCjYNCg=="
+  },
+  {
+    "name": "number_c_string_c",
+    "src": "return tostring(tonumber('x\\0y', 34))",
+    "want": "JDINCjMzDQo="
+  },
+  {
+    "name": "number_c_string_d",
+    "src": "return tostring(tonumber('\\0'))",
+    "want": "JDMNCm5pbA0K"
+  },
+  {
+    "name": "number_c_string_e",
+    "src": "return tostring(tonumber(' 7 \\0 9'))",
+    "want": "JDENCjcNCg=="
+  },
+  {
+    "name": "number_c_string_f",
+    "src": "return tostring(tonumber('0x\\0'))",
+    "want": "JDMNCm5pbA0K"
+  },
+  {
+    "name": "number_c_string_g",
+    "src": "return tostring(tonumber('12\\0', 16))",
+    "want": "JDINCjE4DQo="
+  },
+  {
+    "name": "number_c_string_h",
+    "src": "return string.format('%d', '5\\0x')",
+    "want": "JDENCjUNCg=="
+  },
+  {
+    "name": "number_c_string_i",
+    "src": "return tostring(math.floor('2.5\\0z'))",
+    "want": "JDENCjINCg=="
+  },
+  {
+    "name": "number_c_string_j",
+    "src": "return tostring(('3\\0' * '2\\0'))",
+    "want": "JDENCjYNCg=="
+  },
+  {
+    "name": "number_c_string_k",
+    "src": "return tostring(tonumber('\\0', 10))",
+    "want": "JDMNCm5pbA0K"
+  },
+  {
+    "name": "number_c_string_l",
+    "src": "return tostring(tonumber('', 10))",
+    "want": "JDMNCm5pbA0K"
+  },
+  {
+    "name": "number_c_string_m",
+    "src": "return tostring(tonumber('1e\\0'))",
+    "want": "JDMNCm5pbA0K"
+  },
+  {
+    "name": "ro_pfcount",
+    "src": "return redis.call('pfcount', 'hll')",
+    "readonly": true,
+    "want": "LUVSUiBXcml0ZSBjb21tYW5kcyBhcmUgbm90IGFsbG93ZWQgZnJvbSByZWFkLW9ubHkgc2NyaXB0cy4gc2NyaXB0OiA0ZjIwN2ZmMjc0MTJmYjBlNzQ3Y2I3OTVlZTgxNGNmZWU0ODlkMmNmLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg==",
+    "trace": [
+      {
+        "argv": [
+          "pfcount",
+          "hll"
+        ],
+        "command": {
+          "Name": "pfcount",
+          "Arity": -2,
+          "Write": false,
+          "MayReplicate": true,
+          "NoScript": false
+        },
+        "found": true
+      }
+    ]
+  },
+  {
+    "name": "ro_get",
+    "src": "return redis.call('get', 'k')",
+    "readonly": true,
+    "want": "JC0xDQo=",
+    "trace": [
+      {
+        "argv": [
+          "get",
+          "k"
+        ],
+        "call": true,
+        "command": {
+          "Name": "get",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JC0xDQo="
+      }
+    ]
+  },
+  {
+    "name": "evalsha_short_bad_numkeys",
+    "src": "",
+    "want": "LU5PU0NSSVBUIE5vIG1hdGNoaW5nIHNjcmlwdC4gUGxlYXNlIHVzZSBFVkFMLg0K",
+    "request": [
+      "EVALSHA",
+      "abc",
+      "x"
+    ]
+  },
+  {
+    "name": "evalsha_unknown_bad_numkeys",
+    "src": "",
+    "want": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2UNCg==",
+    "request": [
+      "EVALSHA",
+      "0000000000000000000000000000000000000000",
+      "x"
+    ]
+  },
+  {
+    "name": "evalsha_unknown_negative",
+    "src": "",
+    "want": "LUVSUiBOdW1iZXIgb2Yga2V5cyBjYW4ndCBiZSBuZWdhdGl2ZQ0K",
+    "request": [
+      "EVALSHA",
+      "0000000000000000000000000000000000000000",
+      "-1"
+    ]
+  },
+  {
+    "name": "evalsha_unknown",
+    "src": "",
+    "want": "LU5PU0NSSVBUIE5vIG1hdGNoaW5nIHNjcmlwdC4gUGxlYXNlIHVzZSBFVkFMLg0K",
+    "request": [
+      "EVALSHA",
+      "0000000000000000000000000000000000000000",
+      "0"
+    ]
+  }
+]

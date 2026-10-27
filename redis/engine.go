@@ -30,9 +30,9 @@ type Run struct {
 	Proto    int
 }
 type Command struct {
-	Name            string
-	Arity           int
-	Write, NoScript bool
+	Name                          string
+	Arity                         int
+	Write, MayReplicate, NoScript bool
 }
 type Host interface {
 	Lookup(argv [][]byte) (Command, bool)
@@ -213,7 +213,7 @@ func (e *Engine) execute(entry *compiledScript, keys, args [][]byte, run Run) Re
 		e.mu.Unlock()
 	}()
 	s.arguments(keys, args)
-	values, err := s.state.Call(s.state.Load(entry.proto, s.globals))
+	values, err := s.state.CallWithHandler(s.state.Load(entry.proto, s.globals), s.handler)
 	if x.abort != nil {
 		return *x.abort
 	}
@@ -226,13 +226,7 @@ func (e *Engine) execute(entry *compiledScript, keys, args [][]byte, run Run) Re
 			if failure.Abort != nil {
 				return Abort(failure.Abort)
 			}
-			message := "ERR " + failure.Error()
-			if table := failure.Value.Table(); table != nil {
-				if field := table.RawGet(lua.String("err")); field.Type() == lua.TypeString {
-					message = field.Text()
-				}
-			}
-			return scriptError(message, entry.sha, failure.Line)
+			return s.errorReply(failure.Value, entry.sha)
 		}
 		return Error("ERR " + err.Error())
 	}

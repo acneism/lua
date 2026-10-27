@@ -1,0 +1,42 @@
+[
+  {
+    "name": "empty_table",
+    "src": "error({})",
+    "want": "-ERR unknown error script: <sha>, on @user_script:1.\r\n"
+  },
+  {
+    "name": "table_code",
+    "src": "error({code = 1})",
+    "want": "-ERR unknown error script: <sha>, on @user_script:1.\r\n"
+  },
+  {
+    "name": "err_true",
+    "src": "error({err = true})",
+    "want": "-ERR unknown error script: <sha>, on @user_script:1.\r\n"
+  },
+  {
+    "name": "err_table",
+    "src": "error({err = {}})",
+    "want": "-ERR unknown error script: <sha>, on @user_script:1.\r\n"
+  },
+  {
+    "name": "index_raises",
+    "src": "error(setmetatable({}, {__index = function() error('boom') end}))",
+    "want": "-ERR unknown error script: <sha>, on @user_script:1.\r\n"
+  },
+  {
+    "name": "index_non_string",
+    "src": "error(setmetatable({}, {__index = function(t, k) return true end}))",
+    "want": "-ERR unknown error script: <sha>, on @user_script:1.\r\n"
+  },
+  {
+    "name": "handler_tostring_table",
+    "src": "local u = setmetatable({}, {__tostring = function() return {} end}) error(u)",
+    "want": "-ERR unknown error script: <sha>, on @user_script:1.\r\n"
+  },
+  {
+    "name": "handler_tostring_raises",
+    "src": "local u = setmetatable({}, {__tostring = function() error('t') end}) error(u)",
+    "want": "-ERR unknown error script: <sha>, on @user_script:1.\r\n"
+  }
+]

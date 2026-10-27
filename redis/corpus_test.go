@@ -61,13 +61,17 @@ func (h *replayHost) Call(_ [][]byte, proto int) redis.Reply {
 }
 
 func TestEngineCorpus(t *testing.T) {
-	data, err := os.ReadFile("testdata/engine.json")
-	if err != nil {
-		t.Fatal(err)
-	}
 	var entries []redistest.Case
-	if err = json.Unmarshal(data, &entries); err != nil {
-		t.Fatal(err)
+	for _, file := range []string{"testdata/engine.json", "testdata/handler.json", "testdata/appendix.json"} {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var cases []redistest.Case
+		if err = json.Unmarshal(data, &cases); err != nil {
+			t.Fatal(err)
+		}
+		entries = append(entries, cases...)
 	}
 	engine := redis.NewEngine(redis.Config{})
 	for _, item := range entries {

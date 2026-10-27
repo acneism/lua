@@ -13,13 +13,8 @@ func (e *Engine) Command(argv [][]byte, run Run) Reply {
 		if len(argv) < 3 {
 			return wrong(name)
 		}
-		if strings.HasPrefix(name, "evalsha") {
-			e.mu.Lock()
-			found := e.scripts[strings.ToLower(string(argv[1]))] != nil
-			e.mu.Unlock()
-			if !found {
-				return Error("NOSCRIPT No matching script. Please use EVAL.")
-			}
+		if strings.HasPrefix(name, "evalsha") && len(argv[1]) != 40 {
+			return Error("NOSCRIPT No matching script. Please use EVAL.")
 		}
 		keys, args, failure := ParseNumKeys(string(argv[2]), argv[3:])
 		if failure != nil {

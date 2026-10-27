@@ -118,7 +118,7 @@ jobs:
       - name: Verify every recorded answer
         run: go run ./internal/cmd/capture -addr 127.0.0.1:6379 -verify testdata/snippets.json testdata/libm.json luatest/testdata/environment.json
       - name: Verify engine wire answers and command traces
-        run: go run ./internal/cmd/redis-capture -addr 127.0.0.1:6379 -verify redis/testdata/engine.json redis/testdata/protocol.json
+        run: go run ./internal/cmd/redis-capture -addr 127.0.0.1:6379 -verify redis/testdata/engine.json redis/testdata/protocol.json redis/testdata/handler.json redis/testdata/appendix.json
 
   differential:
     runs-on: ubuntu-latest

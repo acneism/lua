@@ -12,6 +12,10 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 - Explicit Lua weak-table collection and State.Retain for external host roots.
 - Full weak-table collection with a true result for every collectgarbage("step").
 - Redis Engine, Host, Reply, script cache, sandbox, EVAL/EVALSHA, and SCRIPT methods.
+- Redis's EVAL error handler, run verbatim through State.CallWithHandler, and replies built as in luaCallFunction.
+- State.Index, which reads a field with metamethods, and State.SetGlobals.
+- Command.MayReplicate for commands that read-only scripts reject.
+- Captured fixtures for the handler probes, appendices B and C, and owner decisions on reference crashes.
 - RESP wire parsing and rendering, actual-wire capture, and offline command traces.
 - Engine lifecycle, concurrent execution, abort, memory, and kill-policy tests.
 - Script and Lua differential tests with Redis snapshots.
@@ -50,6 +54,11 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 
 - Reader failures returned by load preserve the active error handler.
 - Chunk names stop at the first zero byte, including implicit source names.
+- pcall reads err of a caught table through __index, accepts a number, and returns a non-string err as the third value, as Redis's pcall does.
+- string, math, and table register their functions in Lua's order, so pairs visits them as Redis does.
+- loadstring and load give new chunks the current globals.
+- Stack overflow follows Lua's call-array growth: new coroutines overflow at Redis's depth, and the error handler keeps room to run.
+- Strings convert to numbers up to the first zero byte, and assert messages stop there, as in C.
 
 - xpcall invokes its handler at the original error point, including recursive failures.
 - Error levels include lost Lua tail calls and preserve native callback frames.

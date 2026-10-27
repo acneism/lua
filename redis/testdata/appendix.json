@@ -1,0 +1,836 @@
+[
+  {
+    "name": "b_arith_nil",
+    "src": "return nil + 1",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBhdHRlbXB0IHRvIHBlcmZvcm0gYXJpdGhtZXRpYyBvbiBhIG5pbCB2YWx1ZSBzY3JpcHQ6IGQxM2JjNDhkODk1YmE1N2YyOTdjNGRiNzBjMWQyNTY1NDhhNTRlMmQsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_error_string",
+    "src": "error('boom')",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBib29tIHNjcmlwdDogODI5MDNhMDQzNGYxNTAzZTE1MmY4OWMwM2M5YWNkODgxYTBlODE1MCwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "b_error_table",
+    "src": "error({err='MY err'})",
+    "want": "LU1ZIGVyciBzY3JpcHQ6IDY0OGM2NGEwZjc2ZDcwMzY0ZDhkNjgwYjQ4YjFjMmYyODJlYjg2MDAsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_error_level2",
+    "src": "local function f() error('lvl', 2) end f()",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBsdmwgc2NyaXB0OiA3YTEzMDNlYmI0Y2IyNTgyMjM2NWYyZjUzMTMwMmM5NjMxZWZiODI1LCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "b_error_level0",
+    "src": "error('nolevel', 0)",
+    "want": "LUVSUiBub2xldmVsIHNjcmlwdDogMDAzMjVlNDQwYmNjOTNkMTk1OGM4MjU4MTNkYWM4NmMxMzVkZjM3Yywgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "b_error_number",
+    "src": "error(42)",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiA0MiBzY3JpcHQ6IGFjYzcxNDJhNTNkODQwODQ2NDQ5YTBhOGM2MDU1ZjVhNjc0ODA5ZmQsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_error_none",
+    "src": "error()",
+    "want": "LUVSUiBuaWwgc2NyaXB0OiBhY2E5MGQ5MTQ1MTlmZGI5ODI1MzUyYmRjMGJlZmI1OWY3Yzg1MTBmLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "b_call_error_line3",
+    "src": "local a = 1\nlocal b = 2\nredis.call('INCR','s')",
+    "setup": [
+      [
+        "SET",
+        "s",
+        "hello"
+      ]
+    ],
+    "want": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2Ugc2NyaXB0OiBmZWZiYmU0MDkxNjQ1YzkzNWI5ZTg2NDkxZjRkNjI1N2VjZThmOTJhLCBvbiBAdXNlcl9zY3JpcHQ6My4NCg==",
+    "trace": [
+      {
+        "argv": [
+          "INCR",
+          "s"
+        ],
+        "call": true,
+        "command": {
+          "Name": "incr",
+          "Arity": 2,
+          "Write": true,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2UNCg=="
+      }
+    ]
+  },
+  {
+    "name": "b_call_error_local_function",
+    "src": "local function f()\nredis.call('INCR','s')\nend\nf()",
+    "setup": [
+      [
+        "SET",
+        "s",
+        "hello"
+      ]
+    ],
+    "want": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2Ugc2NyaXB0OiAwNjdjMjY5ZWNjODVmYWUzMmUwOGRmZTAyZTkwZTA1M2EyZjJjNDRjLCBvbiBAdXNlcl9zY3JpcHQ6Mi4NCg==",
+    "trace": [
+      {
+        "argv": [
+          "INCR",
+          "s"
+        ],
+        "call": true,
+        "command": {
+          "Name": "incr",
+          "Arity": 2,
+          "Write": true,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2UNCg=="
+      }
+    ]
+  },
+  {
+    "name": "b_reraise_level0",
+    "src": "local ok, err = pcall(function() error('inner') end)\nerror(err, 0)",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBpbm5lciBzY3JpcHQ6IDNhOWUxZjAxZjNkOTBkNDBkYWNlMDg0MDg4ZDY5N2VkZjc3YWU5MjgsIG9uIEB1c2VyX3NjcmlwdDoyLg0K"
+  },
+  {
+    "name": "b_call_arity",
+    "src": "redis.call('GET')",
+    "want": "LUVSUiBXcm9uZyBudW1iZXIgb2YgYXJncyBjYWxsaW5nIFJlZGlzIGNvbW1hbmQgZnJvbSBzY3JpcHQgc2NyaXB0OiA3YjllOTY1YzBjODhlNmQwMDczYTZhYjk2YmZhMmNmN2UyZmIyM2M2LCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg==",
+    "trace": [
+      {
+        "argv": [
+          "GET"
+        ],
+        "command": {
+          "Name": "get",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true
+      }
+    ]
+  },
+  {
+    "name": "b_call_unknown",
+    "src": "redis.call('NOPE')",
+    "want": "LUVSUiBVbmtub3duIFJlZGlzIGNvbW1hbmQgY2FsbGVkIGZyb20gc2NyaXB0IHNjcmlwdDogOTlhYjE1MzRjMmVhYTUyOWNiZjgyNzNjMDc0MDc5YzI4YzU3NTQ3Niwgb24gQHVzZXJfc2NyaXB0OjEuDQo=",
+    "trace": [
+      {
+        "argv": [
+          "NOPE"
+        ],
+        "command": {
+          "Name": "",
+          "Arity": 0,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": false
+      }
+    ]
+  },
+  {
+    "name": "b_call_number_name",
+    "src": "redis.call(1)",
+    "want": "LUVSUiBVbmtub3duIFJlZGlzIGNvbW1hbmQgY2FsbGVkIGZyb20gc2NyaXB0IHNjcmlwdDogMWY0MjJjZWFkNGVjNTYwYTI0NzNlMzk5NzRkNjRmOTY1Yjk5YjhiMCwgb24gQHVzZXJfc2NyaXB0OjEuDQo=",
+    "trace": [
+      {
+        "argv": [
+          "1"
+        ],
+        "command": {
+          "Name": "",
+          "Arity": 0,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": false
+      }
+    ]
+  },
+  {
+    "name": "b_call_no_args",
+    "src": "redis.call()",
+    "want": "LUVSUiBQbGVhc2Ugc3BlY2lmeSBhdCBsZWFzdCBvbmUgYXJndW1lbnQgZm9yIHRoaXMgcmVkaXMgbGliIGNhbGwgc2NyaXB0OiAyMzI1MTAzOWY0MDk5MmRhZGVmNDk2Y2JmZTNmM2QyM2E2ZDMxNGNlLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "b_call_multi",
+    "src": "redis.call('MULTI')",
+    "want": "LUVSUiBUaGlzIFJlZGlzIGNvbW1hbmQgaXMgbm90IGFsbG93ZWQgZnJvbSBzY3JpcHQgc2NyaXB0OiAxNmMzNjk5OThlZWJkZjlkYmE3NmYzZDZiODkwNTVmNzk0MjFiZGIzLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg==",
+    "trace": [
+      {
+        "argv": [
+          "MULTI"
+        ],
+        "command": {
+          "Name": "multi",
+          "Arity": 1,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": true
+        },
+        "found": true
+      }
+    ]
+  },
+  {
+    "name": "b_call_subscribe",
+    "src": "redis.call('SUBSCRIBE','c')",
+    "want": "LUVSUiBUaGlzIFJlZGlzIGNvbW1hbmQgaXMgbm90IGFsbG93ZWQgZnJvbSBzY3JpcHQgc2NyaXB0OiBmZWVmYTFhYzdjMThiNjY1ZGM2YTU3NzA4OGE5ZmY4MGU5YWZiZjMxLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg==",
+    "trace": [
+      {
+        "argv": [
+          "SUBSCRIBE",
+          "c"
+        ],
+        "command": {
+          "Name": "subscribe",
+          "Arity": -2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": true
+        },
+        "found": true
+      }
+    ]
+  },
+  {
+    "name": "b_call_eval",
+    "src": "redis.call('EVAL','return 1','0')",
+    "want": "LUVSUiBUaGlzIFJlZGlzIGNvbW1hbmQgaXMgbm90IGFsbG93ZWQgZnJvbSBzY3JpcHQgc2NyaXB0OiAyZmFmMzlhYjgwZjFkZjIzOGRjZDQwMWYyYmNiYmJkYmUzYjI4NWE3LCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg==",
+    "trace": [
+      {
+        "argv": [
+          "EVAL",
+          "return 1",
+          "0"
+        ],
+        "command": {
+          "Name": "eval",
+          "Arity": -3,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": true
+        },
+        "found": true
+      }
+    ]
+  },
+  {
+    "name": "b_call_arg_true",
+    "src": "redis.call('GET', true)",
+    "want": "LUVSUiBMdWEgcmVkaXMgbGliIGNvbW1hbmQgYXJndW1lbnRzIG11c3QgYmUgc3RyaW5ncyBvciBpbnRlZ2VycyBzY3JpcHQ6IDFjOGNkZThmOTIyYWFlYjQxOGMyYjg2MzUzOGQ0M2MzMTUyYjZlOTIsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_call_arg_nil",
+    "src": "redis.call('GET', nil)",
+    "want": "LUVSUiBMdWEgcmVkaXMgbGliIGNvbW1hbmQgYXJndW1lbnRzIG11c3QgYmUgc3RyaW5ncyBvciBpbnRlZ2VycyBzY3JpcHQ6IGJmYzJlNmFjYTg4ZjYxNDViMjZmMmIwZjQxYWI5YWI2MTUyMjA0ZDQsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_call_arg_table",
+    "src": "redis.call('GET', {})",
+    "want": "LUVSUiBMdWEgcmVkaXMgbGliIGNvbW1hbmQgYXJndW1lbnRzIG11c3QgYmUgc3RyaW5ncyBvciBpbnRlZ2VycyBzY3JpcHQ6IDIzZGE3ZmY4ODc4MGQzYTAyZmY5NzY1MjlhYTg1NzRmYWQ1NjRmZmMsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_pcall_redis_call",
+    "src": "return {pcall(redis.call,'INCR','s')}",
+    "setup": [
+      [
+        "SET",
+        "s",
+        "hello"
+      ]
+    ],
+    "want": "KjINCiQtMQ0KJDQzDQpFUlIgdmFsdWUgaXMgbm90IGFuIGludGVnZXIgb3Igb3V0IG9mIHJhbmdlDQo=",
+    "trace": [
+      {
+        "argv": [
+          "INCR",
+          "s"
+        ],
+        "call": true,
+        "command": {
+          "Name": "incr",
+          "Arity": 2,
+          "Write": true,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2UNCg=="
+      }
+    ]
+  },
+  {
+    "name": "b_redis_pcall_reply",
+    "src": "local e = redis.pcall('INCR','s') return {type(e), e.err}",
+    "setup": [
+      [
+        "SET",
+        "s",
+        "hello"
+      ]
+    ],
+    "want": "KjINCiQ1DQp0YWJsZQ0KJDQzDQpFUlIgdmFsdWUgaXMgbm90IGFuIGludGVnZXIgb3Igb3V0IG9mIHJhbmdlDQo=",
+    "trace": [
+      {
+        "argv": [
+          "INCR",
+          "s"
+        ],
+        "call": true,
+        "command": {
+          "Name": "incr",
+          "Arity": 2,
+          "Write": true,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "LUVSUiB2YWx1ZSBpcyBub3QgYW4gaW50ZWdlciBvciBvdXQgb2YgcmFuZ2UNCg=="
+      }
+    ]
+  },
+  {
+    "name": "b_redis_pcall_unknown",
+    "src": "local e = redis.pcall('NOPE') return {type(e), e.err}",
+    "want": "KjINCiQ1DQp0YWJsZQ0KJDQ0DQpFUlIgVW5rbm93biBSZWRpcyBjb21tYW5kIGNhbGxlZCBmcm9tIHNjcmlwdA0K",
+    "trace": [
+      {
+        "argv": [
+          "NOPE"
+        ],
+        "command": {
+          "Name": "",
+          "Arity": 0,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": false
+      }
+    ]
+  },
+  {
+    "name": "b_error_reply_code",
+    "src": "return redis.error_reply('MY bad')",
+    "want": "LU1ZIGJhZA0K"
+  },
+  {
+    "name": "b_error_reply_plain",
+    "src": "return redis.error_reply('bad thing')",
+    "want": "LWJhZCB0aGluZw0K"
+  },
+  {
+    "name": "b_return_err",
+    "src": "return {err='BAD'}",
+    "want": "LUJBRA0K"
+  },
+  {
+    "name": "b_syntax",
+    "src": "return +",
+    "want": "LUVSUiBFcnJvciBjb21waWxpbmcgc2NyaXB0IChuZXcgZnVuY3Rpb24pOiB1c2VyX3NjcmlwdDoxOiB1bmV4cGVjdGVkIHN5bWJvbCBuZWFyICcrJw0K"
+  },
+  {
+    "name": "b_global_assign",
+    "src": "x = 1",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBBdHRlbXB0IHRvIG1vZGlmeSBhIHJlYWRvbmx5IHRhYmxlIHNjcmlwdDogMzRiY2U1Zjc3NWRlOTdmNTU3YTM0MDg4NTA5YzhiZmUxZWExN2U1Miwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "b_string_assign",
+    "src": "string.foo = 1",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBBdHRlbXB0IHRvIG1vZGlmeSBhIHJlYWRvbmx5IHRhYmxlIHNjcmlwdDogNDZmOWJmMTY2YmM3ZTFhYjJlZDNiOWRlN2I5OWM0ZTFlN2RjMWY3ZCwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "b_redis_assign",
+    "src": "redis.call = nil",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBBdHRlbXB0IHRvIG1vZGlmeSBhIHJlYWRvbmx5IHRhYmxlIHNjcmlwdDogMjc4NmMzNWVkNzNkMzg2MDg1MWNmNTJlMGI1ZGZiYmMwYmRiNDgwMywgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "b_string_meta_assign",
+    "src": "getmetatable('').__index = nil",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBBdHRlbXB0IHRvIG1vZGlmeSBhIHJlYWRvbmx5IHRhYmxlIHNjcmlwdDogZDczYTFkZmI1MDQxMTg1MWViZTMyZTNlMDc1ZWIzN2UzNTAwOWVmZiwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "b_setmetatable_G",
+    "src": "setmetatable(_G, nil)",
+    "want": "LUVSUiBBdHRlbXB0IHRvIG1vZGlmeSBhIHJlYWRvbmx5IHRhYmxlIHNjcmlwdDogMjJmZGQzYjUxZGEyZDRiYzY3MDNkNzFkNjUxY2Q3ODJkOGU1YTM1Ziwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "b_rawset_G",
+    "src": "rawset(_G,'x',1)",
+    "want": "LUVSUiBBdHRlbXB0IHRvIG1vZGlmeSBhIHJlYWRvbmx5IHRhYmxlIHNjcmlwdDogOTA4NjBlZTU5NzA3Mzc4NWM3YTEyYzY2NzY2N2FiYzQ0OTVlMmM3OCwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "b_read_undefined",
+    "src": "return undefined_name",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBTY3JpcHQgYXR0ZW1wdGVkIHRvIGFjY2VzcyBub25leGlzdGVudCBnbG9iYWwgdmFyaWFibGUgJ3VuZGVmaW5lZF9uYW1lJyBzY3JpcHQ6IDFkZWQwM2E3YzEyY2VhMmNhY2ZjZjQ4YWRjMTczZTAzODMxN2MzOGYsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_read_os",
+    "src": "return os",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBTY3JpcHQgYXR0ZW1wdGVkIHRvIGFjY2VzcyBub25leGlzdGVudCBnbG9iYWwgdmFyaWFibGUgJ29zJyBzY3JpcHQ6IGYwM2I1YWQ2ZTdkNTg3ODZiNmE1ZTg3OWVmYmVhNGE0NDA4ZjVjMmYsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_read_debug",
+    "src": "return debug",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBTY3JpcHQgYXR0ZW1wdGVkIHRvIGFjY2VzcyBub25leGlzdGVudCBnbG9iYWwgdmFyaWFibGUgJ2RlYnVnJyBzY3JpcHQ6IDdmMGVlZDllYWE1MjNlYzllMWZmNjkxNTlmNDVhMzk5NDczZDk3NzEsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_read_print",
+    "src": "return print",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBTY3JpcHQgYXR0ZW1wdGVkIHRvIGFjY2VzcyBub25leGlzdGVudCBnbG9iYWwgdmFyaWFibGUgJ3ByaW50JyBzY3JpcHQ6IGRmNGM3NTJhNzU1ODAwNDY3NmJiZWU4N2UzOGI5MmUwYjkwNTZkNjgsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_read_setfenv",
+    "src": "return setfenv",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBTY3JpcHQgYXR0ZW1wdGVkIHRvIGFjY2VzcyBub25leGlzdGVudCBnbG9iYWwgdmFyaWFibGUgJ3NldGZlbnYnIHNjcmlwdDogM2ZmZWI5NTVjNjMyM2JiNzVlYjg3MmUwZTFiYzcyMTRlYTg3ODBkOSwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "b_stack_overflow",
+    "src": "local function f() return 1 + f() end return f()",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBzdGFjayBvdmVyZmxvdyBzY3JpcHQ6IDJjMzQ3YWUwYzdmZWFhNDBjNjJkODIwOGQ1OWU5NTRlZTlmZjc5ZmYsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_compare",
+    "src": "return 1 \u003c 'x'",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBhdHRlbXB0IHRvIGNvbXBhcmUgbnVtYmVyIHdpdGggc3RyaW5nIHNjcmlwdDogNmViMzliOTNhNTA4ZWYyMThjM2Q4MDJjMWU1MTYyYWQ4NzZkZmVjZiwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "b_call_local",
+    "src": "local x x()",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBhdHRlbXB0IHRvIGNhbGwgbG9jYWwgJ3gnIChhIG5pbCB2YWx1ZSkgc2NyaXB0OiA1MTRkOGVhNGViNjYxNTA5Mjk4NTUxNmIwNjgxMDA3MDEyYmE4MDU2LCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "b_index_local",
+    "src": "local x return x.y",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBhdHRlbXB0IHRvIGluZGV4IGxvY2FsICd4JyAoYSBuaWwgdmFsdWUpIHNjcmlwdDogNTAyNmFmYjkyNWU1NDE0YTNkNDU2MDFjZjg3NTZjNjFjMTJiYmNkMCwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "b_call_field",
+    "src": "local t = {} t.method()",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBhdHRlbXB0IHRvIGNhbGwgZmllbGQgJ21ldGhvZCcgKGEgbmlsIHZhbHVlKSBzY3JpcHQ6IGEzYjVmNWI2OGJhMTc2YWZlYjViNDk2ZTc3NjMzYmM4NzMyOGE3NmQsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_index_upvalue",
+    "src": "local u local function f() return u.x end return f()",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBhdHRlbXB0IHRvIGluZGV4IHVwdmFsdWUgJ3UnIChhIG5pbCB2YWx1ZSkgc2NyaXB0OiAyYzdlNzEwNmJmNWEzYzc5YTg2ZGRjNTBhYjYxM2Y4NGE4NDBhYzA0LCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "b_index_field",
+    "src": "local t = {} return t.foo.bar",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBhdHRlbXB0IHRvIGluZGV4IGZpZWxkICdmb28nIChhIG5pbCB2YWx1ZSkgc2NyaXB0OiAwZGQ2YzJiYmNlYzhmZWYwZjdiZDRlM2QxNWQ0NGQ0OWI3NGVhYzlhLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "b_call_method",
+    "src": "local t = {} t:nomethod()",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBhdHRlbXB0IHRvIGNhbGwgbWV0aG9kICdub21ldGhvZCcgKGEgbmlsIHZhbHVlKSBzY3JpcHQ6IDQ0YmUzNGExNjhjNTdkZDRlZDU5YzFkOGY1MWJkZTM4NWRkMmJlZDEsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_arith_field",
+    "src": "local t = {} return t.x + 1",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBhdHRlbXB0IHRvIHBlcmZvcm0gYXJpdGhtZXRpYyBvbiBmaWVsZCAneCcgKGEgbmlsIHZhbHVlKSBzY3JpcHQ6IGJiZWNhYmRhMTk2ZWQ1MjgxODE1YTgxYzk2MzZjMTc0ZGNjMzhmYTYsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_concat_local",
+    "src": "local s return 'a' .. s",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBhdHRlbXB0IHRvIGNvbmNhdGVuYXRlIGxvY2FsICdzJyAoYSBuaWwgdmFsdWUpIHNjcmlwdDogOTM3MzM5NmQzNzMyZTBjMThmMTNhNDA3NjY2MTViMDU0MzVjYmIxYiwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "b_arith_string",
+    "src": "return 'abc' + 1",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBhdHRlbXB0IHRvIHBlcmZvcm0gYXJpdGhtZXRpYyBvbiBhIHN0cmluZyB2YWx1ZSBzY3JpcHQ6IDM4NzNkNjg1YzE2N2ZlN2NiODk3ZTJlNmJhYTFhMDE0ZDkyNjczNzMsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_call_number",
+    "src": "local n = 5 n()",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBhdHRlbXB0IHRvIGNhbGwgbG9jYWwgJ24nIChhIG51bWJlciB2YWx1ZSkgc2NyaXB0OiAxMGM4NDUxZDhiNjlmMWJjYjQ5OTYzOTJhNjkzY2QwMTBlNzE1MWE4LCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "b_concat_boolean",
+    "src": "return 'a' .. true",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBhdHRlbXB0IHRvIGNvbmNhdGVuYXRlIGEgYm9vbGVhbiB2YWx1ZSBzY3JpcHQ6IDUyM2ZmYWYzNzlhYmZjMmQwM2Y4OTMyMGVkMjBmN2ExN2MzYmJmMWEsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_rep_no_value",
+    "src": "string.rep()",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBiYWQgYXJndW1lbnQgIzEgdG8gJ3JlcCcgKHN0cmluZyBleHBlY3RlZCwgZ290IG5vIHZhbHVlKSBzY3JpcHQ6IDJlYzkyYTViYzJiZTEwMjc5Yjc4OGM4NDg2MTEwMTc1NTAzN2IxMjAsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_rep_bad_number",
+    "src": "string.rep('x','y')",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBiYWQgYXJndW1lbnQgIzIgdG8gJ3JlcCcgKG51bWJlciBleHBlY3RlZCwgZ290IHN0cmluZykgc2NyaXB0OiAyZjUwNDZiZjA4ZTg4MzBhYTNkZmJhODgyOTgzODNjY2YxOGU3Yjg2LCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "b_index_nil",
+    "src": "local t = {} t[nil] = 1",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiB0YWJsZSBpbmRleCBpcyBuaWwgc2NyaXB0OiA2Nzc4ZWZjYmQzODNmN2ZlZWQ2NGFkM2UxN2Q1YmRhNjlkMWRlM2E0LCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "b_index_nan",
+    "src": "local t = {} t[0/0] = 1",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiB0YWJsZSBpbmRleCBpcyBOYU4gc2NyaXB0OiBiZDM2MGUxZjkzYTMxZGJlM2UxODM1MGY3OTg5ZTdmZGRjZjYzZTRhLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "b_next_invalid",
+    "src": "local t = {} next(t, 'zz')",
+    "want": "LUVSUiBpbnZhbGlkIGtleSB0byAnbmV4dCcgc2NyaXB0OiAxYzlhZDJmOWYzM2QzYzMwMjMwZDBkMzk1NWM5MmE0NTQzYjQzNWFlLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "b_assert_message",
+    "src": "assert(false, 'assert msg')",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBhc3NlcnQgbXNnIHNjcmlwdDogNzAwMDgwOThlNTY2YTQ4ZWRhY2Y4OTI4NTZiYTgyNWRjZjMyZWQ4NSwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "b_assert_nil",
+    "src": "assert(nil)",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBhc3NlcnRpb24gZmFpbGVkISBzY3JpcHQ6IDM3YjNiYTdiNzIwNjZiZDQyMWJjNjYxMGI4MDlkZmJkNTkzZmI4OTIsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_unpack_too_many",
+    "src": "unpack({}, 1, 10000)",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiB0b28gbWFueSByZXN1bHRzIHRvIHVucGFjayBzY3JpcHQ6IGEwOGMxZjkxYThmNjg0ZWNlOTA4YjM1YWRmZjY2NjU0YzgwZmM5MzksIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_setn",
+    "src": "local t = {} table.setn(t, 5)",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiAnc2V0bicgaXMgb2Jzb2xldGUgc2NyaXB0OiAzYTI4NmZkMzcyYmQ2NmQyMmE5MGM5OTI1YjFlODIwZTBlNmM0ZmFkLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg=="
+  },
+  {
+    "name": "b_format_invalid",
+    "src": "string.format('%z', 1)",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBpbnZhbGlkIG9wdGlvbiAnJXonIHRvICdmb3JtYXQnIHNjcmlwdDogYzNmYzRmYmQ1YTZhNWUzZTA5YTk2ZDgzMWI0YTA2NjMzMmYzMmJjNSwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "b_format_no_value",
+    "src": "string.format('%d')",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBiYWQgYXJndW1lbnQgIzIgdG8gJ2Zvcm1hdCcgKG5vIHZhbHVlKSBzY3JpcHQ6IGJjYWVhYTU5ZTgxNWYyMTQyOGFjYjFkOWJmZmY5ZWNkODUwNGM3NjksIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_gsub_replacement",
+    "src": "string.gsub('abc','%w',{b=true})",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBpbnZhbGlkIHJlcGxhY2VtZW50IHZhbHVlIChhIGJvb2xlYW4pIHNjcmlwdDogMGJmYWVlODg4YmM3NDkzYzI5MmViNzVmMjUxMDkzMWM0NTI2YzRlZSwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "b_malformed_pattern",
+    "src": "string.find('x','[a')",
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBtYWxmb3JtZWQgcGF0dGVybiAobWlzc2luZyAnXScpIHNjcmlwdDogZWMyOTRjNWE2M2QxZjUyNzBkNjA5ZDQwNDAzOTFiMzUzMDgyOTk3Miwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "b_acl_check_unknown",
+    "src": "redis.acl_check_cmd('NOPE')",
+    "want": "LUVSUiBJbnZhbGlkIGNvbW1hbmQgcGFzc2VkIHRvIHJlZGlzLmFjbF9jaGVja19jbWQoKSBzY3JpcHQ6IGU3NzEyZDc1Yjk4MTg1YWJhYzczODc5MGMxZjg1NjIyODQwMjhjOTIsIG9uIEB1c2VyX3NjcmlwdDoxLg0K",
+    "trace": [
+      {
+        "argv": [
+          "NOPE"
+        ],
+        "command": {
+          "Name": "",
+          "Arity": 0,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": false
+      }
+    ]
+  },
+  {
+    "name": "b_log_level",
+    "src": "redis.log(99, 'x')",
+    "want": "LUVSUiBJbnZhbGlkIGRlYnVnIGxldmVsLiBzY3JpcHQ6IDU2NWUyMDFhOTZlOGVjNDYzYjU2MDkwY2Y4NDE5ZmNlODZlYTI2Y2YsIG9uIEB1c2VyX3NjcmlwdDoxLg0K"
+  },
+  {
+    "name": "b_no_writes_line2",
+    "src": "#!lua flags=no-writes\nredis.call('SET','k','v')",
+    "want": "LUVSUiBXcml0ZSBjb21tYW5kcyBhcmUgbm90IGFsbG93ZWQgZnJvbSByZWFkLW9ubHkgc2NyaXB0cy4gc2NyaXB0OiBmZjI0OTE2YjFhZmU3MmJmYWNlOGY4MzRmMjIzYTU4Yzc0YmJjODc5LCBvbiBAdXNlcl9zY3JpcHQ6Mi4NCg==",
+    "trace": [
+      {
+        "argv": [
+          "SET",
+          "k",
+          "v"
+        ],
+        "command": {
+          "Name": "set",
+          "Arity": -3,
+          "Write": true,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true
+      }
+    ]
+  },
+  {
+    "name": "b_eval_ro_line1",
+    "src": "redis.call('SET','k','v')",
+    "readonly": true,
+    "want": "LUVSUiBXcml0ZSBjb21tYW5kcyBhcmUgbm90IGFsbG93ZWQgZnJvbSByZWFkLW9ubHkgc2NyaXB0cy4gc2NyaXB0OiBhNWRmOTBiNDg0NjgyYTA4Y2RjNjljMjljMmFhZmY1ODcxNDQ4YTM3LCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg==",
+    "trace": [
+      {
+        "argv": [
+          "SET",
+          "k",
+          "v"
+        ],
+        "command": {
+          "Name": "set",
+          "Arity": -3,
+          "Write": true,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true
+      }
+    ]
+  },
+  {
+    "name": "b_loadstring_syntax",
+    "src": "return {loadstring('return +')}",
+    "want": "KjANCg=="
+  },
+  {
+    "name": "b_pcall_loadstring",
+    "src": "return {pcall(loadstring('error(1)'))}",
+    "want": "KjINCiQtMQ0KJDI0DQpbc3RyaW5nICJlcnJvcigxKSJdOjE6IDENCg=="
+  },
+  {
+    "name": "b_loadstring_dump",
+    "src": "local function f() end return {loadstring(string.dump(f))}",
+    "want": "KjANCg=="
+  },
+  {
+    "name": "c_fraction",
+    "src": "return 3.99",
+    "want": "OjMNCg=="
+  },
+  {
+    "name": "c_negative_fraction",
+    "src": "return -3.99",
+    "want": "Oi0zDQo="
+  },
+  {
+    "name": "c_two_53",
+    "src": "return 2^53",
+    "want": "OjkwMDcxOTkyNTQ3NDA5OTINCg=="
+  },
+  {
+    "name": "c_1e15",
+    "src": "return 1e15",
+    "want": "OjEwMDAwMDAwMDAwMDAwMDANCg=="
+  },
+  {
+    "name": "c_1e100",
+    "src": "return 1e100",
+    "want": "Oi05MjIzMzcyMDM2ODU0Nzc1ODA4DQo="
+  },
+  {
+    "name": "c_inf",
+    "src": "return 1/0",
+    "want": "Oi05MjIzMzcyMDM2ODU0Nzc1ODA4DQo="
+  },
+  {
+    "name": "c_nan",
+    "src": "return 0/0",
+    "want": "Oi05MjIzMzcyMDM2ODU0Nzc1ODA4DQo="
+  },
+  {
+    "name": "c_true",
+    "src": "return true",
+    "want": "OjENCg=="
+  },
+  {
+    "name": "c_false",
+    "src": "return false",
+    "want": "JC0xDQo="
+  },
+  {
+    "name": "c_nil",
+    "src": "return nil",
+    "want": "JC0xDQo="
+  },
+  {
+    "name": "c_hole",
+    "src": "return {1,2,nil,3}",
+    "want": "KjINCjoxDQo6Mg0K"
+  },
+  {
+    "name": "c_ok",
+    "src": "return {ok='FINE'}",
+    "want": "K0ZJTkUNCg=="
+  },
+  {
+    "name": "c_err",
+    "src": "return {err='BAD'}",
+    "want": "LUJBRA0K"
+  },
+  {
+    "name": "c_nested",
+    "src": "return {1,{2,'a',{true,false}},3.5}",
+    "want": "KjMNCjoxDQoqMw0KOjINCiQxDQphDQoqMg0KOjENCiQtMQ0KOjMNCg=="
+  },
+  {
+    "name": "c_empty",
+    "src": "return {}",
+    "want": "KjANCg=="
+  },
+  {
+    "name": "c_hash_only",
+    "src": "return {a=1}",
+    "want": "KjANCg=="
+  },
+  {
+    "name": "c_nul_string",
+    "src": "return 'a\\0b'",
+    "want": "JDMNCmEAYg0K"
+  },
+  {
+    "name": "c_xpcall_first",
+    "src": "return xpcall(function() error('x') end, function(m) return m end)",
+    "want": "JC0xDQo="
+  },
+  {
+    "name": "c_get_missing",
+    "src": "local v = redis.call('GET','missing') return {type(v), tostring(v)}",
+    "want": "KjINCiQ3DQpib29sZWFuDQokNQ0KZmFsc2UNCg==",
+    "trace": [
+      {
+        "argv": [
+          "GET",
+          "missing"
+        ],
+        "call": true,
+        "command": {
+          "Name": "get",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JC0xDQo="
+      }
+    ]
+  },
+  {
+    "name": "c_set_ok",
+    "src": "local v = redis.call('SET','k','v') return {type(v), v.ok}",
+    "want": "KjINCiQ1DQp0YWJsZQ0KJDINCk9LDQo=",
+    "trace": [
+      {
+        "argv": [
+          "SET",
+          "k",
+          "v"
+        ],
+        "call": true,
+        "command": {
+          "Name": "set",
+          "Arity": -3,
+          "Write": true,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "K09LDQo="
+      }
+    ]
+  },
+  {
+    "name": "c_hgetall",
+    "src": "return redis.call('HGETALL','h')",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ]
+    ],
+    "want": "KjINCiQxDQpmDQokMQ0Kdg0K",
+    "trace": [
+      {
+        "argv": [
+          "HGETALL",
+          "h"
+        ],
+        "call": true,
+        "command": {
+          "Name": "hgetall",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "KjINCiQxDQpmDQokMQ0Kdg0K"
+      }
+    ]
+  },
+  {
+    "name": "c_zscore",
+    "src": "local v = redis.call('ZSCORE','z','m') return {type(v), v}",
+    "setup": [
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "want": "KjINCiQ2DQpzdHJpbmcNCiQzDQoxLjUNCg==",
+    "trace": [
+      {
+        "argv": [
+          "ZSCORE",
+          "z",
+          "m"
+        ],
+        "call": true,
+        "command": {
+          "Name": "zscore",
+          "Arity": 3,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JDMNCjEuNQ0K"
+      }
+    ]
+  },
+  {
+    "name": "b_noscript_wrong_arity",
+    "src": "redis.call('MULTI', 'x')",
+    "want": "LUVSUiBXcm9uZyBudW1iZXIgb2YgYXJncyBjYWxsaW5nIFJlZGlzIGNvbW1hbmQgZnJvbSBzY3JpcHQgc2NyaXB0OiAyMWVjOWJmMzYyZjEzOTkxY2ZkODllNWU2ZTNhOGE2ZDNkNzA3YWRkLCBvbiBAdXNlcl9zY3JpcHQ6MS4NCg==",
+    "trace": [
+      {
+        "argv": [
+          "MULTI",
+          "x"
+        ],
+        "command": {
+          "Name": "multi",
+          "Arity": 1,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": true
+        },
+        "found": true
+      }
+    ]
+  }
+]

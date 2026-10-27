@@ -1,18 +1,47 @@
 # Compatibility
 
-## Redis engine implementation status
+## Redis engine
 
-B1 is under development. EVAL-only cache entries use an LRU of 500 by default;
-SCRIPT LOAD entries remain pinned until SCRIPT FLUSH. Redis 7.2 does not evict
-EVAL entries; this bounded cache is the specified intentional difference.
-KillWriters permits hosts with rollback support to interrupt writers, while the
-default retains Redis's refusal. Memory-limited runs use fresh states because
-Budget accounting cannot be reset through the current interpreter API.
-Extension-library names are present but their implementations belong to C.
-The reference-crashing error-table case and direct error-handler frame metadata
-are pending agreement in the journal. Reply conversion follows the reference Lua stack budget, including different
+EVAL runs Redis's `__redis__err__handler` verbatim, compiled as
+`@err_handler_def`, through State.CallWithHandler. Its `dbg.getinfo` reads
+State.Frame. The reply to a raised error is built as in `luaCallFunction`:
+`err`, `source`, and `line` are read like `lua_getfield`, so `__index` applies.
+
+The EVAL globals are built in Redis's registration order. Names refused by the
+Redis allow list leave empty hash nodes, as `luaV_settable` does, so `pairs(_G)`
+visits globals in Redis's order. Library tables follow their `luaL_Reg` order.
+
+Differences from Redis 7.2.16:
+
+- An error table without a string or number `err`, for example `error({})`,
+  crashes Redis 7.2.16. As in Redis 7.4, the reply is `ERR unknown error` with
+  the usual ` script: <sha>, on <source>:<line>.` suffix. The same applies when
+  `__index` raises while `err` is read, and when the handler itself fails on
+  `tostring` of such a table. An `__index` that raises while `source` or `line`
+  is read leaves that field out.
+- EVAL-only cache entries use an LRU of 500 by default; SCRIPT LOAD entries
+  remain pinned until SCRIPT FLUSH. Redis 7.2 does not evict EVAL entries.
+- KillWriters permits hosts with rollback support to interrupt writers; the
+  default retains Redis's refusal. A killed script cannot catch the kill with
+  pcall even once.
+- Memory-limited runs use fresh states because Budget accounting cannot be reset.
+- Redis's `COMMAND INFO` does not report `may_replicate`. Hosts set
+  Command.MayReplicate themselves; read-only scripts reject such commands, as
+  Redis does for PFCOUNT, PUBLISH, and SPUBLISH.
+- Extension-library names are present but their implementations belong to C.
+
+Reply conversion follows the reference Lua stack budget, including different
 stack costs for array, map, and set entries. Captured deep and cyclic replies
 exercise these boundaries.
+
+## Call depth
+
+Lua 5.1 raises `stack overflow` when its CallInfo array grows past 20,000
+entries, and then leaves room for the error handler. A new coroutine overflows
+at 16,381 nested Lua calls under pcall, as in Redis. The main thread behaves
+like Redis's after its first overflow, at 19,997 calls: on a freshly started
+Redis the first overflow happens at 16,381, and Redis's collector later shrinks
+the array again, so the reference depth depends on history.
 
 The target is Redis 7.2.16 and its Lua 5.1 variant. A2 implements the interpreter
 and base, coroutine, string, table, and math libraries. EVAL, FUNCTION, host commands,
@@ -110,5 +139,4 @@ collector.
 
 ## Planned engine differences
 
-Pooled FUNCTION upvalues, bounded EVAL cache eviction, script memory limits,
-and opt-in killing of writers will be documented when implemented.
+Pooled FUNCTION upvalues will be documented with FUNCTION.

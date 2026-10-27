@@ -2,11 +2,9 @@ package redis_test
 
 import (
 	"bytes"
-	"fmt"
 	"math/rand/v2"
 	"os"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/acneism/lua/internal/redistest"
@@ -132,42 +130,6 @@ func TestScriptDifferential(t *testing.T) {
 	}
 }
 
-func scriptCase(random *rand.Rand) redistest.Case {
-	key := fmt.Sprintf("k%d", random.IntN(8))
-	other := fmt.Sprintf("o%d", random.IntN(8))
-	value := fmt.Sprint(random.IntN(10000) - 5000)
-	item := redistest.Case{Keys: []string{key, other}, Args: []string{value}}
-	switch random.IntN(10) {
-	case 0:
-		item.Source = `return {redis.call('SET',KEYS[1],ARGV[1]),redis.call('GET',KEYS[1])}`
-	case 1:
-		item.Setup = [][]string{{"SET", key, value}}
-		item.Source = `return {redis.call('INCR',KEYS[1]),redis.call('GET',KEYS[1])}`
-	case 2:
-		item.Setup = [][]string{{"RPUSH", key, "a", "b"}}
-		item.Source = `return {pcall(redis.call,'GET',KEYS[1]),redis.pcall('INCR',KEYS[1])}`
-	case 3:
-		item.Setup = [][]string{{"HSET", key, "f0", value}}
-		item.Source = `redis.call('HSET',KEYS[1],'f1',ARGV[1]) return redis.call('HGETALL',KEYS[1])`
-	case 4:
-		item.Source = `redis.call('LPUSH',KEYS[1],ARGV[1],'x') return redis.call('LRANGE',KEYS[1],0,-1)`
-	case 5:
-		item.Setup = [][]string{{"SET", key, value}}
-		item.Source = `return {redis.call('EXISTS',KEYS[1]),redis.call('DEL',KEYS[1]),redis.call('GET',KEYS[1])}`
-	case 6:
-		item.Setup = [][]string{{"SET", key, value}}
-		item.Source = "#!lua flags=no-writes\nreturn redis.pcall('SET',KEYS[1],ARGV[1])"
-	case 7:
-		item.Source = `return {redis.pcall('NOPE'),redis.pcall('GET',true)}`
-	case 8:
-		item.Source = fmt.Sprintf("return {redis.call('ECHO',%d),redis.call('ECHO',1/%d)}", random.IntN(1000000)-500000, random.IntN(99)+1)
-	case 9:
-		item.Setup = [][]string{{"SET", key, value}}
-		item.Source = `return redis.call('MGET',KEYS[1],KEYS[2])`
-	}
-	return item
-}
-
 func TestLuaDifferential(t *testing.T) {
 	reference, backend := differentialClients(t)
 	host := &redistest.Host{Client: backend}
@@ -178,37 +140,5 @@ func TestLuaDifferential(t *testing.T) {
 		for step := range steps {
 			compareRun(t, redistest.Case{Source: luaCase(random)}, engine, host, reference, seed, step, false)
 		}
-	}
-}
-
-func luaCase(random *rand.Rand) string {
-	a, b := random.IntN(20001)-10000, random.IntN(20001)-10000
-	switch random.IntN(8) {
-	case 0:
-		return fmt.Sprintf("local a,b=%d,%d return {a+b,a-b,a*b,a/(b+1),a%%(b+1),tostring(a)..b}", a, b)
-	case 1:
-		return fmt.Sprintf("return {string.format('%%.8g',%d/7),string.format('%%08d',%d),tostring(%d/9)}", a, b, a)
-	case 2:
-		return fmt.Sprintf("return {tonumber(' %d '),tonumber('0x%x'),tonumber('bad'),('%d'+1)*2}", a, random.IntN(65536), b)
-	case 3:
-		words := []string{"abc def", "aaaab", "x1z", "zYX 123", "word__next"}
-		word := words[random.IntN(len(words))]
-		patterns := []string{"%a+", "([a-z]+)", "a-", "%d+", "%f[%a]%a+"}
-		pattern := patterns[random.IntN(len(patterns))]
-		return fmt.Sprintf("local s=%q local p=%q local a,n=string.gsub(s,p,'%%0x') local x,y=string.find(s,p) return {a,n,x,y,string.match(s,p)}", word, pattern)
-	case 4:
-		return fmt.Sprintf("local t={%d,%d,4,-7,0,19} table.insert(t,3,7) table.remove(t,2) table.sort(t) return {table.concat(t,','),#t}", a, b)
-	case 5:
-		var source strings.Builder
-		source.WriteString("local t={} ")
-		for range 8 {
-			fmt.Fprintf(&source, "t['k%d']=%d ", random.IntN(16), random.IntN(100))
-		}
-		source.WriteString("local r={} for k,v in pairs(t) do r[#r+1]=k..':'..v end return table.concat(r,',')")
-		return source.String()
-	case 6:
-		return fmt.Sprintf("math.randomseed(%d) return {math.random(),math.random(-7,13),math.random(1000)}", a)
-	default:
-		return fmt.Sprintf("local function f(n,...) if n==0 then return ... end return f(n-1,...) end return {f(%d,%d,%d,'x')}", random.IntN(10), a, b)
 	}
 }

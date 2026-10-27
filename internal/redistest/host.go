@@ -40,7 +40,7 @@ func (h *Host) lookup(name string) metadata {
 	if len(reply.Elements) > 0 && reply.Elements[0].Type == redis.ArrayReply {
 		fields := reply.Elements[0].Elements
 		if len(fields) >= 3 {
-			result.command = redis.Command{Name: fields[0].Str, Arity: int(fields[1].Int)}
+			result.command = redis.Command{Name: fields[0].Str, Arity: int(fields[1].Int), MayReplicate: name == "pfcount" || name == "publish" || name == "spublish"}
 			result.found = true
 			for _, flag := range fields[2].Elements {
 				switch flag.Str {
