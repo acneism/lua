@@ -12,6 +12,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  mutations:
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'stage-b0-error-context'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - run: python3 scripts/mutate-b0.py
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: b0-mutations
+          path: work/b0-mutation-evidence/
+          retention-days: 7
   compare:
     if: github.event_name == 'workflow_dispatch' || github.head_ref == 'stage-b0-error-context'
     runs-on: ubuntu-latest
