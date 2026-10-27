@@ -298,11 +298,10 @@ func (s *State) execute(stop int) (result []Value) {
 							method = s.binaryTableMethod(*right, index)
 						}
 						if method.Type() == TypeFunction && method.object.function.proto != nil {
-							arguments := [2]Value{*left, *right}
 							t.frames[frameIndex].pc = int32(pc)
 							remaining -= vmCallWeight
 							if remaining <= 0 {
-								s.pollBinaryHook(method, arguments[0], arguments[1])
+								s.pollBinaryHook(method, *left, *right)
 								remaining = s.options.HookEvery - s.steps
 							}
 							t.cDepth++
@@ -319,15 +318,16 @@ func (s *State) execute(stop int) (result []Value) {
 								parameters := callee.proto.parameters
 								provided := min(parameters, 2)
 								if provided > 0 {
-									t.stack[start] = arguments[0]
+									t.stack[start] = *left
 								}
 								if provided > 1 {
-									t.stack[start+1] = arguments[1]
+									t.stack[start+1] = *right
 								}
 								clearRegisters(t.stack[start+provided : start+callee.proto.maxRegisters])
 								t.frames = append(t.frames, frame{function: callee, start: int32(start), base: int32(start), returnDest: int32(base + int(register)), want: 1})
 								t.used, t.top = start+callee.proto.maxRegisters, start+parameters
 							} else {
+								arguments := [2]Value{*left, *right}
 								s.push(callee, arguments[:], base+int(register), 1, nil)
 							}
 							t.boundary++
