@@ -184,3 +184,18 @@ func TestNativeReentryAndUserdata(t *testing.T) {
 		t.Fatalf("%v %v", values, err)
 	}
 }
+
+func TestNativeResultsSurviveCleanup(t *testing.T) {
+	s := NewState(Options{})
+	fn := s.Function("echo", func(_ *State, args []Value) ([]Value, error) { return args, nil })
+	values, err := s.Call(fn, String("first"), Number(7))
+	if err != nil || len(values) != 2 || values[0].Text() != "first" || values[1].Float() != 7 {
+		t.Fatal("native results were cleared", values, err)
+	}
+	if _, err := s.Call(fn, String("second")); err != nil {
+		t.Fatal(err)
+	}
+	if values[0].Text() != "first" || values[1].Float() != 7 {
+		t.Fatal("native results changed after state reuse", values)
+	}
+}

@@ -284,7 +284,13 @@ func basePCall(s *State, args []Value) ([]Value, error) {
 	if len(args) == 0 {
 		return []Value{Bool(false), String("attempt to call a boolean value")}, nil
 	}
-	values, err := s.protectedHandler(args[0], args[1:], Nil(), false)
+	var values []Value
+	var err error
+	if s.current.handlerActive {
+		values, err = s.protectedHandler(args[0], args[1:], Nil(), false)
+	} else {
+		values, err = s.protected(args[0], args[1:])
+	}
 	if abortError(err) {
 		return nil, err
 	}

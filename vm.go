@@ -45,18 +45,6 @@ func (s *State) push(fn *function, args []Value, dest, want int, site *instructi
 
 func (s *State) native(fn *function, args []Value, site *instruction) []Value {
 	t := s.current
-	if site != nil {
-		f := &t.frames[len(t.frames)-1]
-		index := int(f.base) + site.a
-		if t.stack[index].Type() == TypeFunction {
-			return s.nativeStack(fn, args, site, index+1)
-		}
-	}
-	return s.nativeHost(fn, args, site)
-}
-
-func (s *State) nativeHost(fn *function, args []Value, site *instruction) []Value {
-	t := s.current
 	used, top := t.used, t.top
 	start := max(used, top)
 	end := start + len(args)
@@ -649,12 +637,19 @@ func (s *State) execute(stop int) (result []Value) {
 				}
 				fn := t.stack[a]
 				args := t.stack[a+1 : a+1+count]
+				argStart := a + 1
 				if fn.Type() != TypeFunction {
 					fn, args = s.callable(fn, args, i.left)
+					argStart = -1
 				}
 				if fn.object.function.native != nil {
 					t.resumeDest, t.resumeWant, t.resumeReturn = base+i.d, i.c, i.op == opTailCall
-					values := s.native(fn.object.function, args, i)
+					var values []Value
+					if argStart >= 0 {
+						values = s.nativeStack(fn.object.function, args, i, argStart)
+					} else {
+						values = s.native(fn.object.function, args, i)
+					}
 					if i.op == opTailCall {
 						done, values := s.finish(values)
 						if done {

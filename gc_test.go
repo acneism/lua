@@ -95,10 +95,11 @@ func TestWeakNativeArgumentsAfterGrowth(t *testing.T) {
 				if route == "callable" {
 					index = 1
 				}
+				stack := &s.current.stack[0]
 				if _, err := s.Call(grow); err != nil {
 					return nil, err
 				}
-				if len(s.current.nativeRoots) == 0 {
+				if &s.current.stack[0] == stack {
 					t.Fatal("native arguments did not cross stack growth")
 				}
 				if !args[index].Equal(original) {
