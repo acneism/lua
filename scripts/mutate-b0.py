@@ -61,7 +61,7 @@ edits = {
     'omit-hook-root-tracing': ('gc.go', 'for _, value := range t.hookRoots {', 'for _, value := range []Value(nil) {'),
     'omit-metamethod-hook-snapshots': ('state.go', 't.hookRoots = append(t.hookRoots, method, left, right)', ''),
     'step-false-without-collection': ('base.go', 'case "step":\n\t\ts.collect()\n\t\treturn []Value{Bool(true)}, nil', 'case "step":\n\t\treturn []Value{Bool(false)}, nil'),
-    'retain-pending-result': ('gc.go', 'if slot >= resultStart && slot < resultEnd && slot < limit-1 {', 'if false && slot >= resultStart && slot < resultEnd && slot < limit-1 {'),
+    'retain-pending-result': ('gc.go', 'if slot < limit-1 && (slot >= resultStart && slot < resultEnd || register >= 0 && pendingUnary[register]) {', 'if false && slot < limit-1 && (slot >= resultStart && slot < resultEnd || register >= 0 && pendingUnary[register]) {'),
     'alias-native-results': ('state.go', 'values = append([]Value(nil), values...)', ''),
 }
 cases = [

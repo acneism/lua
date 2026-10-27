@@ -61,21 +61,22 @@ type upvalueDescriptor struct {
 }
 
 type Proto struct {
-	code         []uint64
-	sites        []uint32
-	metadata     []instruction
-	lines        []int32
-	constants    []Value
-	children     []*Proto
-	upvalues     []upvalueDescriptor
-	chunk        string
-	parameters   int
-	maxRegisters int
-	vararg       bool
-	usesVararg   bool
-	argRegister  int
-	line         int
-	needsArg     bool
+	code                []uint64
+	sites               []uint32
+	metadata            []instruction
+	lines               []int32
+	constants           []Value
+	children            []*Proto
+	upvalues            []upvalueDescriptor
+	chunk               string
+	parameters          int
+	maxRegisters        int
+	vararg              bool
+	usesVararg          bool
+	argRegister         int
+	line                int
+	needsArg            bool
+	separateCallResults bool
 }
 
 type localVariable struct {
@@ -296,6 +297,7 @@ func (c *compiler) operand(e *expression, direct bool) int {
 }
 
 func (c *compiler) compileFunction(f *syntaxFunction) {
+	c.proto.separateCallResults = true
 	if !f.main {
 		c.proto.line = f.line
 	}

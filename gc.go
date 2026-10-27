@@ -81,6 +81,23 @@ func (g *collector) dead(value Value) bool {
 	return false
 }
 
+func (p *Proto) pendingUnaryResults(pc, register int, pending *[256]bool) {
+	if !p.separateCallResults {
+		return
+	}
+	for next := pc + 1; next < len(p.code); next++ {
+		i := p.instruction(next)
+		if i.op == opPoll {
+			continue
+		}
+		if i.op != opUnary || i.b != register {
+			return
+		}
+		pending[i.a] = true
+		register = i.a
+	}
+}
+
 func (g *collector) stack(t *thread) {
 	for index := range t.frames {
 		f := &t.frames[index]
@@ -96,6 +113,7 @@ func (g *collector) stack(t *thread) {
 		p := f.function.proto
 		limit := int(f.base) + p.maxRegisters
 		resultStart, resultEnd := -1, -1
+		var pendingUnary [256]bool
 		pc := int(f.pc) - 1
 		if pc >= 0 && pc < len(p.code) {
 			site := p.instruction(pc)
@@ -106,10 +124,12 @@ func (g *collector) stack(t *thread) {
 				if site.c < 0 {
 					resultEnd = limit - 1
 				}
+				p.pendingUnaryResults(pc, site.d, &pendingUnary)
 			}
 		}
 		for slot := int(f.start); slot < min(limit, len(t.stack)); slot++ {
-			if slot >= resultStart && slot < resultEnd && slot < limit-1 {
+			register := slot - int(f.base)
+			if slot < limit-1 && (slot >= resultStart && slot < resultEnd || register >= 0 && pendingUnary[register]) {
 				continue
 			}
 			g.value(t.stack[slot])

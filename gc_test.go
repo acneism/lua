@@ -32,6 +32,15 @@ func TestStepZeroCollects(t *testing.T) {
 	}
 }
 
+func TestPendingUnaryKeepsLocals(t *testing.T) {
+	s := NewState(Options{})
+	source := "local w=setmetatable({}, {__mode='v'}) local x={} w[1]=x local function check() collectgarbage() return w[1]~=nil end x=not check() return x"
+	values, err := s.Call(s.Load(compileTest(t, source), nil))
+	if err != nil || len(values) != 1 || values[0].Type() != TypeBoolean || values[0].Truth() {
+		t.Fatal("pending unary result hid a live local", values, err)
+	}
+}
+
 func TestWeakHostRoots(t *testing.T) {
 	s := NewState(Options{})
 	w := weakTestTable(t, s, "k")

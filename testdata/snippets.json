@@ -16916,7 +16916,7 @@
     "want": "true,true"
   },
   {
-    "src": "local t = setmetatable({}, {__mode = 'k'}) t[{}] = 1 while not collectgarbage('step') do end return tostring(next(t) == nil)",
+    "src": "local t = setmetatable({}, {__mode = 'k'}) t[{}] = 1 local n = 0 while not collectgarbage('step') do n = n + 1 end return tostring(next(t) == nil)",
     "want": "true"
   }
 ]

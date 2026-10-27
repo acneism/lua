@@ -24,6 +24,15 @@ For a frame suspended at a call, trace its vararg span and registers through
 the function slot. Arguments remain reachable through the callee stack or its
 native argument span. Pending result destinations contain abandoned values and
 are excluded until the call returns. Other execution points retain their full register span.
+
+The AST compiler uses separate call-result registers. It also reserves fresh
+unary-expression destinations before calling their operands. Follow the
+immediately dependent unary instructions when marking this stack shape, so an
+old weak key in a pending not result is not retained. Separate-call-result
+metadata enables this only for that compiler. Canonical Lua lowering must leave
+it disabled: its following unary instruction can write an existing named local,
+which remains a root during the call. TestPendingUnaryKeepsLocals protects that
+case for the future compiler rebase.
 This excludes abandoned temporary registers above the Lua call top. Marking
 the full backing slice would keep the reviewer's temporary weak keys alive.
 Native frames reuse their otherwise unused start/base fields for argument spans
