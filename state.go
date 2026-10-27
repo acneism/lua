@@ -82,6 +82,29 @@ type thread struct {
 	handlerID     uint64
 	handlerActive bool
 	handlerRoots  []Value
+	callLimit     int
+}
+
+const (
+	freshCalls = 16384
+	maxCalls   = 20000
+)
+
+func (s *State) growFrames() {
+	t := s.current
+	if t.callLimit > maxCalls {
+		panic(s.handlerError())
+	}
+	t.callLimit *= 2
+	if t.callLimit > maxCalls {
+		s.runtimeError("stack overflow")
+	}
+}
+
+func (t *thread) restoreCallLimit(depth int) {
+	if t.callLimit > maxCalls && depth+1 < maxCalls {
+		t.callLimit = maxCalls
+	}
 }
 
 type State struct {
@@ -109,7 +132,7 @@ func NewState(options Options) *State {
 		options.MaxString = 512 << 20
 	}
 	s := &State{options: options}
-	s.main = &thread{status: "running"}
+	s.main = &thread{status: "running", callLimit: maxCalls}
 	s.main.object.thread = s.main
 	s.current = s.main
 	s.globals = s.NewTable(0, 32)
@@ -125,6 +148,8 @@ func NewState(options Options) *State {
 }
 
 func (s *State) Globals() *Table { return s.globals }
+
+func (s *State) SetGlobals(globals *Table) { s.globals = globals }
 
 func (s *State) NewTable(arraySize, hashSize int) *Table {
 	s.reserve(192)
@@ -171,6 +196,16 @@ func (s *State) closure(proto *Proto, env *Table, upvalues []*upvalue) Value {
 
 func (s *State) Call(fn Value, args ...Value) (values []Value, err error) {
 	return s.call(fn, args, Nil(), false)
+}
+
+func (s *State) Index(value, key Value) (Value, error) {
+	values, err := s.Call(s.Function("index", func(s *State, args []Value) ([]Value, error) {
+		return []Value{s.get(args[0], args[1], nameInfo{})}, nil
+	}), value, key)
+	if err != nil {
+		return Nil(), err
+	}
+	return values[0], nil
 }
 
 func (s *State) call(fn Value, args []Value, handler Value, active bool) (values []Value, err error) {
@@ -226,6 +261,7 @@ func (s *State) protectedCall(fn Value, args []Value, enter bool) (values []Valu
 			clear(t.stack[used:t.used])
 			t.frames = t.frames[:depth]
 			t.used, t.top, t.nativeDepth, t.boundary = used, top, nativeDepth, boundary
+			t.restoreCallLimit(depth)
 		}
 	}()
 	if enter {

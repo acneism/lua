@@ -143,8 +143,8 @@ func formatNumber(n float64) string {
 }
 
 func parseNumber(text string) (float64, bool) {
-	text = strings.Trim(text, " \t\n\r\v\f")
-	if text == "" || strings.ContainsRune(text, '\x00') {
+	text = strings.Trim(cString(text), " \t\n\r\v\f")
+	if text == "" {
 		return 0, false
 	}
 	lower := strings.ToLower(text)

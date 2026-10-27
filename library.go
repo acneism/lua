@@ -1,9 +1,6 @@
 package lua
 
-import (
-	"math"
-	"sort"
-)
+import "math"
 
 func luaInteger(number float64) int64 {
 	if math.IsNaN(number) || number >= 0x1p63 || number < -0x1p63 {
@@ -12,15 +9,14 @@ func luaInteger(number float64) int64 {
 	return int64(number)
 }
 
-func (s *State) library(name string, functions map[string]GoFunction) *Table {
-	table := s.NewTable(0, len(functions)+2)
-	names := make([]string, 0, len(functions))
-	for key := range functions {
-		names = append(names, key)
-	}
-	sort.Strings(names)
-	for _, key := range names {
-		table.set(String(key), s.Function(key, functions[key]))
+func (s *State) library(name string, order []string, functions map[string]GoFunction) *Table {
+	table := s.NewTable(0, len(order))
+	for _, key := range order {
+		value := Bool(false)
+		if function, ok := functions[key]; ok {
+			value = s.Function(key, function)
+		}
+		table.set(String(key), value)
 	}
 	s.globals.set(String(name), table.Value())
 	return table

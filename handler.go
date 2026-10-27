@@ -28,6 +28,15 @@ func (s *State) protectedHandler(fn Value, args []Value, handler Value, active b
 	return s.protected(fn, args)
 }
 
+func (s *State) handlerError() *Error {
+	t := s.current
+	failure := plainError("error in error handling")
+	failure.Line = s.currentLine()
+	failure.cDepth = t.cDepth
+	failure.handlerOwner, failure.handlerID = s.handlers, t.handlerID
+	return failure
+}
+
 func (s *State) processPanic(raised any) any {
 	failure, ok := raised.(*Error)
 	if !ok || failure.Abort != nil || failure.Internal {
@@ -44,11 +53,7 @@ func (s *State) processPanic(raised any) any {
 		return failure
 	}
 	if t.cDepth >= 225 || t.handler.Type() != TypeFunction {
-		failure = plainError("error in error handling")
-		failure.Line = s.currentLine()
-		failure.cDepth = t.cDepth
-		failure.handlerOwner, failure.handlerID = s.handlers, t.handlerID
-		return failure
+		return s.handlerError()
 	}
 	t.boundary++
 	values, err := s.protected(t.handler, []Value{failure.Value})

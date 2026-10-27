@@ -74,7 +74,7 @@ func (s *State) createThread(args []Value) *thread {
 		s.argError(1, "Lua function expected")
 	}
 	s.nextID++
-	t := &thread{entry: fn, status: "suspended"}
+	t := &thread{entry: fn, status: "suspended", callLimit: freshCalls}
 	t.object = object{kind: TypeThread, id: s.nextID, thread: t}
 	s.threads = append(s.threads, t)
 	return t

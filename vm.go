@@ -11,8 +11,8 @@ func (y *yieldSignal) Error() string { return "coroutine yielded" }
 
 func (s *State) push(fn *function, args []Value, dest, want int, site *instruction) {
 	t := s.current
-	if len(t.frames) >= 20000 {
-		s.runtimeError("stack overflow")
+	if len(t.frames) >= freshCalls-1 && len(t.frames) >= t.callLimit-1 {
+		s.growFrames()
 	}
 	p := fn.proto
 	start := max(t.used, t.top)
@@ -57,6 +57,9 @@ func (s *State) native(fn *function, args []Value, site *instruction) []Value {
 
 func (s *State) nativeStack(fn *function, args []Value, site *instruction, start int) []Value {
 	t := s.current
+	if len(t.frames) >= freshCalls-1 && len(t.frames) >= t.callLimit-1 {
+		s.growFrames()
+	}
 	depth := len(t.frames)
 	t.frames = append(t.frames, frame{function: fn, site: site, start: int32(start), base: int32(start + len(args))})
 	t.nativeDepth++
@@ -288,7 +291,7 @@ func (s *State) execute(stop int) (result []Value) {
 					argument = constants[uint16(word>>24)]
 				}
 				start := max(t.used, t.top)
-				if value.Type() == TypeFunction && value.object.function.proto != nil && !value.object.function.proto.vararg && len(t.frames) < 20000 && start+256 <= len(t.stack) && (argument.Type() != TypeString || len(argument.Text()) <= s.options.MaxString) {
+				if value.Type() == TypeFunction && value.object.function.proto != nil && !value.object.function.proto.vararg && len(t.frames) < freshCalls-1 && start+256 <= len(t.stack) && (argument.Type() != TypeString || len(argument.Text()) <= s.options.MaxString) {
 					pc += 2
 					remaining -= vmCallWeight
 					if remaining <= 0 {
@@ -326,7 +329,7 @@ func (s *State) execute(stop int) (result []Value) {
 
 				count := int(int16(word >> 16))
 				value := registers[register]
-				if count >= 0 && value.Type() == TypeFunction && value.object.function.proto != nil && !value.object.function.proto.vararg && len(t.frames) < 20000 {
+				if count >= 0 && value.Type() == TypeFunction && value.object.function.proto != nil && !value.object.function.proto.vararg && len(t.frames) < freshCalls-1 {
 					callee := value.object.function
 					start := max(t.used, t.top)
 					if start+256 <= len(t.stack) {

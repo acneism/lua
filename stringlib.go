@@ -14,7 +14,7 @@ func relativePosition(position, length int) int {
 }
 
 func (s *State) openString() {
-	table := s.library("string", map[string]GoFunction{
+	table := s.library("string", []string{"byte", "char", "dump", "find", "format", "gfind", "gmatch", "gsub", "len", "lower", "match", "rep", "reverse", "sub", "upper"}, map[string]GoFunction{
 		"len": func(s *State, args []Value) ([]Value, error) {
 			return []Value{Number(float64(len(s.checkText(args, 0))))}, nil
 		},

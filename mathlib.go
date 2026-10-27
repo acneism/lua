@@ -121,10 +121,10 @@ func (s *State) openMath() {
 		}
 		return nil, nil
 	}
-	table := s.library("math", functions)
-	table.set(String("mod"), table.RawGet(String("fmod")))
+	table := s.library("math", []string{"abs", "acos", "asin", "atan2", "atan", "ceil", "cosh", "cos", "deg", "exp", "floor", "fmod", "frexp", "ldexp", "log10", "log", "max", "min", "modf", "pow", "rad", "random", "randomseed", "sinh", "sin", "sqrt", "tanh", "tan"}, functions)
 	table.set(String("pi"), Number(math.Pi))
 	table.set(String("huge"), Number(math.Inf(1)))
+	table.set(String("mod"), table.RawGet(String("fmod")))
 }
 
 func defaultAcos(x float64) float64 {

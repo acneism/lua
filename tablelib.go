@@ -14,7 +14,7 @@ func (s *State) tableWrite(table *Table, index int, value Value) {
 func tableRead(table *Table, index int) Value { return table.RawGet(Number(float64(index))) }
 
 func (s *State) openTable() {
-	s.library("table", map[string]GoFunction{
+	s.library("table", []string{"concat", "foreach", "foreachi", "getn", "maxn", "insert", "remove", "setn", "sort"}, map[string]GoFunction{
 		"getn": func(s *State, args []Value) ([]Value, error) {
 			return []Value{Number(float64(s.checkTable(args, 0).Len()))}, nil
 		},

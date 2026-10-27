@@ -188,7 +188,7 @@ func baseAssert(s *State, args []Value) ([]Value, error) {
 	if !value.Truth() {
 		message := "assertion failed!"
 		if len(args) > 1 && !args[1].IsNil() {
-			message = s.checkText(args, 1)
+			message = cString(s.checkText(args, 1))
 		}
 		s.raise(message, 1)
 	}
@@ -221,7 +221,7 @@ func baseToNumber(s *State, args []Value) ([]Value, error) {
 		}
 		return []Value{Nil()}, nil
 	}
-	text := strings.Trim(s.checkText(args, 0), " \t\n\r\v\f")
+	text := strings.Trim(cString(s.checkText(args, 0)), " \t\n\r\v\f")
 	if base < 2 || base > 36 {
 		s.argError(2, "base out of range")
 	}
@@ -298,10 +298,11 @@ func basePCall(s *State, args []Value) ([]Value, error) {
 		failure := err.(*Error)
 		value := failure.Value
 		if value.Type() == TypeTable {
-			if text := value.Table().RawGet(String("err")); text.Type() == TypeString {
-				return []Value{Bool(false), text}, nil
+			field := s.get(value, String("err"), nameInfo{})
+			if field.Type() == TypeString || field.Type() == TypeNumber {
+				return []Value{Bool(false), field}, nil
 			}
-			return []Value{Bool(false), value, Nil()}, nil
+			return []Value{Bool(false), value, field}, nil
 		}
 		return []Value{Bool(false), value}, nil
 	}
@@ -332,8 +333,7 @@ func baseLoadString(s *State, args []Value) ([]Value, error) {
 	if err != nil {
 		return []Value{Nil(), String(err.Error())}, nil
 	}
-	env := s.current.frames[len(s.current.frames)-1].function.env
-	return []Value{s.Load(proto, env)}, nil
+	return []Value{s.Load(proto, s.globals)}, nil
 }
 
 func baseLoad(s *State, args []Value) ([]Value, error) {
@@ -363,6 +363,7 @@ func (s *State) loadReader(reader Value, chunk string) (values []Value, err erro
 			clear(t.stack[used:t.used])
 			t.frames = t.frames[:depth]
 			t.used, t.top, t.cDepth, t.nativeDepth, t.boundary = used, top, cDepth, nativeDepth, boundary
+			t.restoreCallLimit(depth)
 			if abortError(failure) {
 				values, err = nil, failure
 			} else {
