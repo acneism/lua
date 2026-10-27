@@ -345,7 +345,7 @@ func parseNumeric(text string) (float64, bool) {
 	if strings.HasPrefix(unsigned, "nan(") && strings.HasSuffix(unsigned, ")") {
 		valid := true
 		for _, c := range unsigned[4 : len(unsigned)-1] {
-			if !(c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_') {
+			if (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '_' {
 				valid = false
 				break
 			}
