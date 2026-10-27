@@ -11,7 +11,6 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 - State.CallWithHandler with an error handler before stack unwinding.
 - Explicit Lua weak-table collection and State.Retain for external host roots.
 - Full weak-table collection with a true result for every collectgarbage("step").
-- B0 regression measurements and profiles against main across thirteen workloads.
 - Go module, Apache-2.0 license, upstream notices, and repository scaffold.
 - A standard-library tool to capture and verify Redis 7.2.16 reference answers.
 - An immutable register program, lexer, parser, compiler, and Lua VM.

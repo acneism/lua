@@ -68,6 +68,22 @@ func BenchmarkMetamethod(b *testing.B) {
 	benchmarkScript(b, "local t=setmetatable({}, {__add=function(a,b) return b+1 end}) local n=0 for i=1,1000000 do n=t+n end return n")
 }
 
+func BenchmarkGoCall(b *testing.B) {
+	benchmarkScript(b, "local f, n = type, 0 for i = 1, 100000 do if f(i) == 'number' then n = n + 1 end end return n")
+}
+
+func BenchmarkPCall(b *testing.B) {
+	benchmarkScript(b, "local f = function(x) return x end for i = 1, 100000 do pcall(f, i) end")
+}
+
+func BenchmarkGoIndex(b *testing.B) {
+	benchmarkScript(b, "local t = setmetatable({}, {__index = rawget}) local n = 0 for i = 1, 100000 do if t[i] == nil then n = n + 1 end end return n")
+}
+
+func BenchmarkCoroutine(b *testing.B) {
+	benchmarkScript(b, "local co = coroutine.wrap(function() while true do coroutine.yield(1) end end) for i = 1, 100000 do co() end")
+}
+
 func TestLuaCallsDoNotAllocatePerCall(t *testing.T) {
 	s := NewState(Options{})
 	measure := func(iterations string) float64 {
