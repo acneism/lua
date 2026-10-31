@@ -207,6 +207,7 @@ frames:
 		code, constants := proto.code, proto.constants
 		registers := (*[256]Value)(t.stack[base : base+256])
 		remaining := s.options.HookEvery - s.steps
+		checkConstants := proto.longest > s.options.MaxString
 		for {
 			word := code[pc]
 			pc++
@@ -590,7 +591,7 @@ frames:
 				}
 			case opConstant:
 				value := constants[uint32(word>>16)]
-				if value.Type() == TypeString && len(value.Text()) > s.options.MaxString {
+				if checkConstants && value.text != nil && len(value.text.text) > s.options.MaxString {
 					t.frames[frameIndex].pc = int32(pc)
 					s.runtimeError("string length overflow")
 				}

@@ -73,6 +73,11 @@ func numericOperation(operator string) int {
 
 func (c *compiler) freeze() {
 	p := c.proto
+	for _, constant := range p.constants {
+		if constant.text != nil {
+			p.longest = max(p.longest, len(constant.text.text))
+		}
+	}
 	p.code = make([]uint64, len(c.code))
 	p.sites = make([]uint32, len(c.code))
 	p.lines = make([]int32, len(c.code))
