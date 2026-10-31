@@ -444,7 +444,15 @@ frames:
 						registers[register] = value
 						continue
 					}
-					argument = Number(numericArithmetic(operation.numericOperation(), left.number, right.number))
+					x, y := left.number, right.number
+					switch operation.numericOperation() {
+					case operationAdd:
+						argument = Number(luaNaN(x+y, x, y))
+					case operationSubtract:
+						argument = Number(luaNaN(x-y, x, y))
+					default:
+						argument = Number(numericArithmetic(operation.numericOperation(), x, y))
+					}
 				} else {
 					argument = registers[uint8(word>>24)]
 					if op == opCallDirectConstant || op == opCallDirectUpvalueConstant {
