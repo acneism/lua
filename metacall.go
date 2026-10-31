@@ -93,6 +93,77 @@ func (s *State) enterMethod(method Value, count int, first, second, third Value,
 	t.boundary++
 }
 
+const compareWant = -2
+
+func (s *State) enterCompareMethod(left, right Value, mode int) bool {
+	kind := mode >> 2 & 1
+	var method Value
+	switch mode / 8 {
+	case 0:
+		if left.Type() != right.Type() || left.Type() != TypeTable && left.Type() != TypeUserdata || left.Equal(right) {
+			return false
+		}
+		method = s.metaFor(left, eventEqual)
+		if !method.Equal(s.metaFor(right, eventEqual)) {
+			return false
+		}
+	case 1:
+		if left.Type() == right.Type() && (left.Type() == TypeNumber || left.Type() == TypeString) {
+			return false
+		}
+		method = s.metaFor(left, eventLess)
+		if !method.Equal(s.metaFor(right, eventLess)) {
+			return false
+		}
+	default:
+		if left.Type() == right.Type() && (left.Type() == TypeNumber || left.Type() == TypeString) {
+			return false
+		}
+		method = s.metaFor(left, eventLessEqual)
+		if method.IsNil() || !method.Equal(s.metaFor(right, eventLessEqual)) {
+			method = s.metaFor(left, eventLess)
+			if !method.Equal(s.metaFor(right, eventLess)) {
+				return false
+			}
+			left, right = right, left
+			kind |= 2
+		}
+	}
+	if method.Type() != TypeFunction || method.object.function.proto == nil {
+		return false
+	}
+	s.enterMethod(method, 2, left, right, Nil(), 0, compareWant-kind)
+	return true
+}
+
+func (s *State) returnCompare(value Value) {
+	t := s.current
+	f := &t.frames[len(t.frames)-1]
+	if t.open != nil && t.open.index >= int(f.base) {
+		t.close(int(f.base))
+	}
+	kind := compareWant - int(f.want)
+	t.used, t.top = int(f.start), int(f.metacallTop)-1
+	t.cDepth--
+	t.boundary--
+	t.frames = t.frames[:len(t.frames)-1]
+	caller := &t.frames[len(t.frames)-1]
+	pc := int(caller.pc)
+	if value.Truth() != (kind&2 != 0) != (kind&1 != 0) {
+		caller.pc = int32(pc + 1)
+		return
+	}
+	target := int(uint32(caller.function.proto.code[pc] >> 16))
+	if target < pc {
+		s.steps += vmCallWeight
+		if s.steps >= s.options.HookEvery {
+			s.pollHook()
+			caller = &t.frames[len(t.frames)-1]
+		}
+	}
+	caller.pc = int32(target)
+}
+
 func (s *State) callMethod(method Value, count int, first, second, third Value, site *instruction) []Value {
 	t := s.current
 	s.enterMetaCall()

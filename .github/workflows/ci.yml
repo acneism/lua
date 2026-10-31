@@ -45,6 +45,10 @@ jobs:
         run: |
           test -z "$(gofmt -l .)"
           test "$(go list -m all | wc -l)" -eq 1
+      - name: Keep the dispatch loop under the inliner's big-function limit
+        shell: bash
+        run: |
+          ! go build -gcflags=-m=2 . 2>&1 | grep "considered 'big'"
       - uses: golangci/golangci-lint-action@v9.3.0
         with:
           version: v2.15.0

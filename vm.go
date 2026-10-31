@@ -121,6 +121,10 @@ func (t *thread) writeResults(dest, want int, values []Value) {
 func (s *State) finish(values []Value) (bool, []Value) {
 	t := s.current
 	f := &t.frames[len(t.frames)-1]
+	if f.want < -1 {
+		s.returnCompare(first(values))
+		return false, nil
+	}
 	if t.open != nil && t.open.index >= int(f.base) {
 		t.close(int(f.base))
 	}
@@ -160,6 +164,7 @@ func (s *State) execute(stop int) (result []Value) {
 		s.tick()
 	}
 
+frames:
 	for len(t.frames) > stop {
 		frameIndex := len(t.frames) - 1
 		f := &t.frames[frameIndex]
@@ -195,6 +200,9 @@ func (s *State) execute(stop int) (result []Value) {
 				} else {
 					t.frames[frameIndex].pc = int32(pc)
 					s.steps = s.options.HookEvery - remaining
+					if s.enterCompareMethod(*left, *right, int(mode)) {
+						continue frames
+					}
 					i := f.function.proto.instruction(pc - 1)
 					matched = s.binary(i.text, *left, *right, i.left, i.right).Truth()
 					f = &t.frames[frameIndex]
@@ -227,13 +235,7 @@ func (s *State) execute(stop int) (result []Value) {
 				t.frames[frameIndex].pc = int32(pc)
 				s.steps = s.options.HookEvery - remaining
 				if s.enterArithmeticMethod(*left, *right, 0, base+int(register)) {
-					frameIndex++
-					f = &t.frames[frameIndex]
-					base, pc = int(f.base), 0
-					code, constants = f.function.proto.code, f.function.proto.constants
-					registers = (*[256]Value)(t.stack[base : base+256])
-					remaining = s.options.HookEvery - s.steps
-					continue
+					continue frames
 				}
 			case opSubtract, opSubtract + 1, opSubtract + 2, opSubtract + 3:
 				left, right := numericOperands(op, word, registers, constants)
@@ -244,13 +246,7 @@ func (s *State) execute(stop int) (result []Value) {
 				t.frames[frameIndex].pc = int32(pc)
 				s.steps = s.options.HookEvery - remaining
 				if s.enterArithmeticMethod(*left, *right, 1, base+int(register)) {
-					frameIndex++
-					f = &t.frames[frameIndex]
-					base, pc = int(f.base), 0
-					code, constants = f.function.proto.code, f.function.proto.constants
-					registers = (*[256]Value)(t.stack[base : base+256])
-					remaining = s.options.HookEvery - s.steps
-					continue
+					continue frames
 				}
 			case opMultiply, opMultiply + 1, opMultiply + 2, opMultiply + 3:
 				left, right := numericOperands(op, word, registers, constants)
@@ -261,13 +257,7 @@ func (s *State) execute(stop int) (result []Value) {
 				t.frames[frameIndex].pc = int32(pc)
 				s.steps = s.options.HookEvery - remaining
 				if s.enterArithmeticMethod(*left, *right, 2, base+int(register)) {
-					frameIndex++
-					f = &t.frames[frameIndex]
-					base, pc = int(f.base), 0
-					code, constants = f.function.proto.code, f.function.proto.constants
-					registers = (*[256]Value)(t.stack[base : base+256])
-					remaining = s.options.HookEvery - s.steps
-					continue
+					continue frames
 				}
 			case opDivide, opDivide + 1, opDivide + 2, opDivide + 3:
 				left, right := numericOperands(op, word, registers, constants)
@@ -278,13 +268,7 @@ func (s *State) execute(stop int) (result []Value) {
 				t.frames[frameIndex].pc = int32(pc)
 				s.steps = s.options.HookEvery - remaining
 				if s.enterArithmeticMethod(*left, *right, 3, base+int(register)) {
-					frameIndex++
-					f = &t.frames[frameIndex]
-					base, pc = int(f.base), 0
-					code, constants = f.function.proto.code, f.function.proto.constants
-					registers = (*[256]Value)(t.stack[base : base+256])
-					remaining = s.options.HookEvery - s.steps
-					continue
+					continue frames
 				}
 			case opModulo, opModulo + 1, opModulo + 2, opModulo + 3:
 				left, right := numericOperands(op, word, registers, constants)
@@ -295,13 +279,7 @@ func (s *State) execute(stop int) (result []Value) {
 				t.frames[frameIndex].pc = int32(pc)
 				s.steps = s.options.HookEvery - remaining
 				if s.enterArithmeticMethod(*left, *right, 4, base+int(register)) {
-					frameIndex++
-					f = &t.frames[frameIndex]
-					base, pc = int(f.base), 0
-					code, constants = f.function.proto.code, f.function.proto.constants
-					registers = (*[256]Value)(t.stack[base : base+256])
-					remaining = s.options.HookEvery - s.steps
-					continue
+					continue frames
 				}
 			case opPower, opPower + 1, opPower + 2, opPower + 3:
 				left, right := numericOperands(op, word, registers, constants)
@@ -312,13 +290,7 @@ func (s *State) execute(stop int) (result []Value) {
 				t.frames[frameIndex].pc = int32(pc)
 				s.steps = s.options.HookEvery - remaining
 				if s.enterArithmeticMethod(*left, *right, 5, base+int(register)) {
-					frameIndex++
-					f = &t.frames[frameIndex]
-					base, pc = int(f.base), 0
-					code, constants = f.function.proto.code, f.function.proto.constants
-					registers = (*[256]Value)(t.stack[base : base+256])
-					remaining = s.options.HookEvery - s.steps
-					continue
+					continue frames
 				}
 			case numericBase + 24, numericBase + 25, numericBase + 26, numericBase + 27, numericBase + 28, numericBase + 29, numericBase + 30, numericBase + 31, numericBase + 32, numericBase + 33, numericBase + 34, numericBase + 35, numericBase + 36, numericBase + 37, numericBase + 38, numericBase + 39, numericBase + 40, numericBase + 41, numericBase + 42, numericBase + 43, numericBase + 44, numericBase + 45, numericBase + 46, numericBase + 47, numericJumpBase + 0, numericJumpBase + 1, numericJumpBase + 2, numericJumpBase + 3, numericJumpBase + 4, numericJumpBase + 5, numericJumpBase + 6, numericJumpBase + 7, numericJumpBase + 8, numericJumpBase + 9, numericJumpBase + 10, numericJumpBase + 11, numericJumpBase + 12, numericJumpBase + 13, numericJumpBase + 14, numericJumpBase + 15, numericJumpBase + 16, numericJumpBase + 17, numericJumpBase + 18, numericJumpBase + 19, numericJumpBase + 20, numericJumpBase + 21, numericJumpBase + 22, numericJumpBase + 23:
 				operation := op
@@ -506,13 +478,7 @@ func (s *State) execute(stop int) (result []Value) {
 						callStart := base + int(register)
 						if method.object.function.proto != nil {
 							s.push(method.object.function, t.stack[callStart:callStart+1+count], dest, want, nil)
-							frameIndex = len(t.frames) - 1
-							f = &t.frames[frameIndex]
-							base, pc = int(f.base), 0
-							code, constants = f.function.proto.code, f.function.proto.constants
-							registers = (*[256]Value)(t.stack[base : base+256])
-							remaining = s.options.HookEvery - s.steps
-							continue
+							continue frames
 						}
 						t.resumeDest, t.resumeWant, t.resumeReturn = dest, want, false
 						values := s.nativeStack(method.object.function, t.stack[callStart:callStart+1+count], f.function.proto.instruction(pc-1), callStart)
@@ -565,13 +531,7 @@ func (s *State) execute(stop int) (result []Value) {
 					t.frames[frameIndex].pc = int32(pc)
 					s.steps = s.options.HookEvery - remaining
 					s.push(object.function, t.stack[argStart:argStart+count], base+int(uint8(word>>48)), int(int16(word>>32)), nil)
-					frameIndex = len(t.frames) - 1
-					f = &t.frames[frameIndex]
-					base, pc = int(f.base), 0
-					code, constants = f.function.proto.code, f.function.proto.constants
-					registers = (*[256]Value)(t.stack[base : base+256])
-					remaining = s.options.HookEvery - s.steps
-					continue
+					continue frames
 				}
 			case opReturn:
 				if int16(word>>16) == 1 && f.want == 1 && f.returnDest >= 0 && f.metacallTop == 0 && frameIndex != stop && (t.open == nil || t.open.index < base) {
@@ -596,6 +556,15 @@ func (s *State) execute(stop int) (result []Value) {
 					count := int(int16(word >> 16))
 					if count < 0 {
 						count = t.top - base - int(register)
+					}
+					if f.want < -1 {
+						value := Nil()
+						if count > 0 {
+							value = registers[register]
+						}
+						s.steps = s.options.HookEvery - remaining
+						s.returnCompare(value)
+						continue frames
 					}
 					wanted, dest := int(f.want), int(f.returnDest)
 					if wanted < 0 {
@@ -683,13 +652,7 @@ func (s *State) execute(stop int) (result []Value) {
 						s.steps = s.options.HookEvery - remaining
 						if found.object.function.proto != nil {
 							s.enterMethod(found, 2, receiver, key, Nil(), base+int(register), 1)
-							frameIndex = len(t.frames) - 1
-							f = &t.frames[frameIndex]
-							base, pc = int(f.base), int(f.pc)
-							code, constants = f.function.proto.code, f.function.proto.constants
-							registers = (*[256]Value)(t.stack[base : base+256])
-							remaining = s.options.HookEvery - s.steps
-							continue
+							continue frames
 						}
 						result := first(s.callMethod(found, 2, receiver, key, Nil(), f.function.proto.instruction(pc-1)))
 						f = &t.frames[frameIndex]
@@ -719,13 +682,7 @@ func (s *State) execute(stop int) (result []Value) {
 						s.steps = s.options.HookEvery - remaining
 						if found.object.function.proto != nil {
 							s.enterMethod(found, 2, receiver, key, Nil(), base+i.a, 1)
-							frameIndex = len(t.frames) - 1
-							f = &t.frames[frameIndex]
-							base, pc = int(f.base), int(f.pc)
-							code, constants = f.function.proto.code, f.function.proto.constants
-							registers = (*[256]Value)(t.stack[base : base+256])
-							remaining = s.options.HookEvery - s.steps
-							continue
+							continue frames
 						}
 						result := first(s.callMethod(found, 2, receiver, key, Nil(), i))
 						f = &t.frames[frameIndex]
@@ -761,13 +718,7 @@ func (s *State) execute(stop int) (result []Value) {
 						s.steps = s.options.HookEvery - remaining
 						if method.object.function.proto != nil {
 							s.enterMethod(method, 3, value, key, assigned, base, 0)
-							frameIndex = len(t.frames) - 1
-							f = &t.frames[frameIndex]
-							base, pc = int(f.base), int(f.pc)
-							code, constants = f.function.proto.code, f.function.proto.constants
-							registers = (*[256]Value)(t.stack[base : base+256])
-							remaining = s.options.HookEvery - s.steps
-							continue
+							continue frames
 						}
 						s.callMethod(method, 3, value, key, assigned, f.function.proto.instruction(pc-1))
 						f = &t.frames[frameIndex]

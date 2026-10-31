@@ -17130,5 +17130,93 @@
   {
     "src": "local ok,a,b=xpcall(function() return loadstring(string.rep(\"do local x end \",32768),\"@local-limit\") end,1) return ok,type(a),b",
     "want": "true,nil,error in error handling"
+  },
+  {
+    "src": "local mt={__lt=function(a,b) return a.v<b.v end} local a,b=setmetatable({v=0},mt),setmetatable({v=5},mt) local n=0 repeat a.v=a.v+1 n=n+1 until not (a<b) return n,a.v",
+    "want": "5,5"
+  },
+  {
+    "src": "local mt={__le=function(a,b) return a.v<=b.v end} local a,b=setmetatable({v=0},mt),setmetatable({v=5},mt) local n=0 repeat a.v=a.v+1 n=n+1 until b<=a return n",
+    "want": "5"
+  },
+  {
+    "src": "local mt={__lt=function(a,b) return a.v<b.v end} local a,b=setmetatable({v=0},mt),setmetatable({v=5},mt) local n=0 while a<b do a.v=a.v+1 n=n+1 end return n",
+    "want": "5"
+  },
+  {
+    "src": "local mt={__lt=function(a,b) return a.v<b.v end} local a,b=setmetatable({v=3},mt),setmetatable({v=3},mt) return a<=b, b<=a, a>=b, a>b",
+    "want": "true,true,true,false"
+  },
+  {
+    "src": "local mt={__eq=function(a,b) return a.v==b.v end} local a,b,c=setmetatable({v=1},mt),setmetatable({v=1},mt),setmetatable({v=2},mt) return a==b, a~=b, a==c, a~=c, a==a",
+    "want": "true,false,false,true,true"
+  },
+  {
+    "src": "local mt={__eq=function(a,b) return a.v==b.v end} local a,b=setmetatable({v=1},mt),setmetatable({v=1},{__eq=mt.__eq}) local x=0 if a==b then x=1 end return x",
+    "want": "1"
+  },
+  {
+    "src": "local mt={__eq=function(a,b) return 1 end} local a,b=setmetatable({},mt),setmetatable({},{__eq=function() return true end}) return a==b",
+    "want": "false"
+  },
+  {
+    "src": "local mt={__lt=function(a,b) return rawequal(a,b) end} local a,b=setmetatable({},mt),setmetatable({},mt) return a<b, a<a, a<=b",
+    "want": "false,true,true"
+  },
+  {
+    "src": "local mt={__lt=function(a,b) return end} local a,b=setmetatable({},mt),setmetatable({},mt) return a<b, a>b, a<=b",
+    "want": "false,false,true"
+  },
+  {
+    "src": "local mt={__lt=function(a,b) return nil, true end, __le=function() return false, true end} local a,b=setmetatable({},mt),setmetatable({},mt) return a<b, a<=b",
+    "want": "false,false"
+  },
+  {
+    "src": "local mt={__lt=function(a,b) error('cmp') end} local a,b=setmetatable({},mt),setmetatable({},mt) return pcall(function() return a<b end)",
+    "want": "false,user_script:1: cmp"
+  },
+  {
+    "src": "local mt={__le=function(a,b) error({}) end} local a,b=setmetatable({},mt),setmetatable({},mt) local ok,e=pcall(function() return a<=b end) return ok, type(e)",
+    "want": "false,table"
+  },
+  {
+    "src": "local mt={__lt=function(a,b) local x=nil return x.y end} local a,b=setmetatable({},mt),setmetatable({},mt) return pcall(function() if a<b then return 1 end return 2 end)",
+    "want": "false,user_script:1: attempt to index local 'x' (a nil value)"
+  },
+  {
+    "src": "local mt={__lt=function(a,b) return coroutine.yield(1) end} local a,b=setmetatable({},mt),setmetatable({},mt) local co=coroutine.create(function() return a<b end) return coroutine.resume(co)",
+    "want": "false,attempt to yield across metamethod/C-call boundary"
+  },
+  {
+    "src": "local mt={__lt=print} local a,b=setmetatable({},mt),setmetatable({},mt) return a<b",
+    "want": "user_script:1: Script attempted to access nonexistent global variable 'print'"
+  },
+  {
+    "src": "local mt={__lt=function(a,b) return a.v<b.v end} local t={} for i=1,50 do t[i]=setmetatable({v=(i*37)%50},mt) end local c=0 for i=1,49 do if t[i]<t[i+1] then c=c+1 end if t[i]<=t[i+1] then c=c+100 end end return c",
+    "want": "1212"
+  },
+  {
+    "src": "local mt={} mt.__lt=function(a,b) return a.v<b.v end local a,b=setmetatable({v=1},mt),setmetatable({v=2},mt) local function f(x,y) return x<y end local r={} for i=1,3 do r[i]=tostring(f(a,b))..tostring(f(b,a)) end return table.concat(r,',')",
+    "want": "truefalse,truefalse,truefalse"
+  },
+  {
+    "src": "local mt={__lt=function(a,b) return a.v<b.v end} local a,b=setmetatable({v=1},mt),setmetatable({v=2},mt) local up=0 local mt2={__lt=function(x,y) local function g() up=up+1 return up end g() return x.v<y.v end} local c,d=setmetatable({v=1},mt2),setmetatable({v=2},mt2) return c<d, d<c, up",
+    "want": "true,false,2"
+  },
+  {
+    "src": "local mt={__lt=function(a,b) return a.v<b.v end} local a=setmetatable({v=1},mt) return pcall(function() return a<{v=2} end)",
+    "want": "false,user_script:1: attempt to compare two table values"
+  },
+  {
+    "src": "local mt={__lt=function(a,b) return true end} local a=setmetatable({},mt) return pcall(function() return a<'x' end)",
+    "want": "false,user_script:1: attempt to compare table with string"
+  },
+  {
+    "src": "local mt={__lt=function(...) return select('#',...) end} local a,b=setmetatable({},mt),setmetatable({},mt) return a<b",
+    "want": "true"
+  },
+  {
+    "src": "local mt={__lt=function(a,b) return a.v<b.v end} local a,b=setmetatable({v=1},mt),setmetatable({v=2},mt) local x = a<b and 'y' or 'n' local y = not (a<b) return x, y",
+    "want": "y,false"
   }
 ]
