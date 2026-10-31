@@ -280,6 +280,13 @@ func (s *State) protected(fn Value, args []Value) (values []Value, err error) {
 	return s.protectedCall(fn, args, true)
 }
 
+func (t *thread) argumentsEnd() int {
+	if len(t.frames) == 0 {
+		return -1
+	}
+	return int(t.frames[len(t.frames)-1].base)
+}
+
 func (s *State) protectedCall(fn Value, args []Value, enter bool) (values []Value, err error) {
 	t := s.current
 	cDepth := t.cDepth
@@ -322,6 +329,9 @@ func (s *State) protectedCall(fn Value, args []Value, enter bool) (values []Valu
 		fn, args = s.callable(fn, args, nameInfo{})
 	}
 	if fn.object.function.native != nil {
+		if count, end := len(args), t.argumentsEnd(); count > 0 && end >= count && end <= len(t.stack) && max(t.used, t.top) >= end && &args[0] == &t.stack[end-count] {
+			return s.nativeStack(fn.object.function, args, nil, end-count), nil
+		}
 		return s.native(fn.object.function, args, nil), nil
 	}
 	s.push(fn.object.function, args, -1, -1, nil)
