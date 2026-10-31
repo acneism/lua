@@ -166,6 +166,20 @@ func (t *Table) arrayOrRawGet(index int) Value {
 	return t.RawGet(Number(float64(index)))
 }
 
+func (t *Table) rawMissing(key Value) bool {
+	if key.text != nil {
+		return t.getString(key.text).IsNil()
+	}
+	if key.object != &numberMarker || key.number != key.number {
+		return false
+	}
+	index := int(key.number)
+	if uint(index-1) < uint(t.arraySize()) && float64(index) == key.number {
+		return t.arrayAt(index - 1).IsNil()
+	}
+	return len(t.nodes) == 0
+}
+
 func (t *Table) RawGet(key Value) Value {
 	if index := arrayIndex(key); index > 0 && index <= t.arraySize() {
 		return t.arrayAt(index - 1)

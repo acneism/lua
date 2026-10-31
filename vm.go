@@ -744,15 +744,11 @@ frames:
 					key, assigned = rkOperand(int(int32(word>>16)), registers, constants), rkOperand(int(int16(word>>48)), registers, constants)
 				}
 				table := value.object.table
-				if method, ok := s.cached(eventNewIndex, table.metatable); ok && key.object == &numberMarker && key.number == key.number && method.luaFunction() {
-					index := int(key.number)
-					inArray := uint(index-1) < uint(table.arraySize()) && float64(index) == key.number
-					if inArray && table.arrayAt(index-1).IsNil() || !inArray && len(table.nodes) == 0 {
-						t.frames[frameIndex].pc = int32(pc)
-						s.steps = s.options.HookEvery - remaining
-						s.enterMethod(method, 3, value, key, assigned, base, 0)
-						continue frames
-					}
+				if method, ok := s.cached(eventNewIndex, table.metatable); ok && method.luaFunction() && table.rawMissing(key) {
+					t.frames[frameIndex].pc = int32(pc)
+					s.steps = s.options.HookEvery - remaining
+					s.enterMethod(method, 3, value, key, assigned, base, 0)
+					continue frames
 				}
 				if table.metatable != nil && table.RawGet(key).IsNil() {
 					if key.IsNil() || key.object == &numberMarker && key.number != key.number {
