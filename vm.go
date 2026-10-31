@@ -32,16 +32,28 @@ func (s *State) push(fn *function, args []Value, dest, want int, site *instructi
 	base := start + extra
 	limit := base + p.maxRegisters
 	t.ensure(max(limit, base+256))
-	count := copy(t.stack[base:base+p.parameters], args)
+	count := min(p.parameters, len(args))
+	for index := range count {
+		t.stack[base+index] = args[index]
+	}
 	clearRegisters(t.stack[base+count : limit])
 	if p.argRegister >= 0 {
 		t.stack[base+p.argRegister] = Nil()
 	}
-	if extra > 0 {
-		copy(t.stack[start:base], args[p.parameters:])
+	for index := range extra {
+		t.stack[start+index] = args[p.parameters+index]
 	}
-	f := frame{function: fn, start: int32(start), base: int32(base), returnDest: int32(dest), want: int32(want), site: site}
-	t.frames = append(t.frames, f)
+	depth := len(t.frames)
+	if depth == cap(t.frames) {
+		t.frames = append(t.frames, frame{})
+	} else {
+		t.frames = t.frames[:depth+1]
+	}
+	entered := &t.frames[depth]
+	entered.function, entered.site = fn, site
+	entered.start, entered.base, entered.pc = int32(start), int32(base), 0
+	entered.returnDest, entered.want = int32(dest), int32(want)
+	entered.metacallTop, entered.tailcalls = 0, 0
 	t.used, t.top = limit, base+p.parameters
 	if p.argRegister >= 0 && p.needsArg && !p.usesVararg {
 		arg := s.NewTable(extra, 1)
