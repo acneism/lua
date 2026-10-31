@@ -121,6 +121,21 @@ func (s *State) nativeStack(fn *function, args []Value, site *instruction, start
 
 func (p *Proto) needsArgTable() bool { return p.argRegister >= 0 && p.needsArg && !p.usesVararg }
 
+func (t *thread) pushLua(callee *function, start, base, dest, want int) {
+	depth := len(t.frames)
+	t.frames = t.frames[:depth+1]
+	entered := &t.frames[depth]
+	entered.function, entered.proto, entered.site = callee, callee.proto, nil
+	entered.start, entered.base, entered.pc = int32(start), int32(base), 0
+	entered.returnDest, entered.want = int32(dest), int32(want)
+	entered.metacallTop, entered.tailcalls = 0, 0
+	t.used, t.top = base+callee.proto.maxRegisters, base+callee.proto.parameters
+}
+
+func (t *thread) growFrameCapacity() {
+	t.frames = append(t.frames, frame{})[:len(t.frames)]
+}
+
 func (s *State) newClosure(f *frame, child *Proto, base int) Value {
 	t := s.current
 	closure, upvalues := s.closure(child, f.function.env, len(child.upvalues))
@@ -478,18 +493,10 @@ frames:
 						t.stack[start] = argument
 					}
 					clearRegisters(t.stack[start+min(parameters, 1) : start+size])
-					depth := len(t.frames)
-					if depth == cap(t.frames) {
-						t.frames = append(t.frames, frame{})
-					} else {
-						t.frames = t.frames[:depth+1]
+					if len(t.frames) == cap(t.frames) {
+						t.growFrameCapacity()
 					}
-					entered := &t.frames[depth]
-					entered.function, entered.proto, entered.site = callee, callee.proto, nil
-					entered.start, entered.base, entered.pc = int32(start), int32(start), 0
-					entered.returnDest, entered.want = int32(base+int(uint8(word>>40))), int32(int16(word>>48))
-					entered.metacallTop, entered.tailcalls = 0, 0
-					t.used, t.top = start+size, start+parameters
+					t.pushLua(callee, start, start, base+int(uint8(word>>40)), int(int16(word>>48)))
 					s.steps = s.options.HookEvery - remaining
 					continue frames
 				}
@@ -531,18 +538,10 @@ frames:
 				call := code[pc+count]
 				remaining -= vmCallWeight
 				t.frames[frameIndex].pc = int32(pc + count + 1)
-				depth := len(t.frames)
-				if depth == cap(t.frames) {
-					t.frames = append(t.frames, frame{})
-				} else {
-					t.frames = t.frames[:depth+1]
+				if len(t.frames) == cap(t.frames) {
+					t.growFrameCapacity()
 				}
-				entered := &t.frames[depth]
-				entered.function, entered.proto, entered.site = callee, callee.proto, nil
-				entered.start, entered.base, entered.pc = int32(start), int32(frameBase), 0
-				entered.returnDest, entered.want = int32(base+int(uint8(call>>48))), int32(int16(call>>32))
-				entered.metacallTop, entered.tailcalls = 0, 0
-				t.used, t.top = frameBase+size, frameBase+parameters
+				t.pushLua(callee, start, frameBase, base+int(uint8(call>>48)), int(int16(call>>32)))
 				s.steps = s.options.HookEvery - remaining
 				continue frames
 			case opCall:
@@ -603,18 +602,10 @@ frames:
 						for argument := 0; argument < extra; argument++ {
 							t.stack[start+argument] = t.stack[argStart+parameters+argument]
 						}
-						depth := len(t.frames)
-						if depth == cap(t.frames) {
-							t.frames = append(t.frames, frame{})
-						} else {
-							t.frames = t.frames[:depth+1]
+						if len(t.frames) == cap(t.frames) {
+							t.growFrameCapacity()
 						}
-						entered := &t.frames[depth]
-						entered.function, entered.proto, entered.site = callee, callee.proto, nil
-						entered.start, entered.base, entered.pc = int32(start), int32(frameBase), 0
-						entered.returnDest, entered.want = int32(base+int(uint8(word>>48))), int32(int16(word>>32))
-						entered.metacallTop, entered.tailcalls = 0, 0
-						t.used, t.top = frameBase+callProto.maxRegisters, frameBase+parameters
+						t.pushLua(callee, start, frameBase, base+int(uint8(word>>48)), int(int16(word>>32)))
 						s.steps = s.options.HookEvery - remaining
 						continue frames
 					}
