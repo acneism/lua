@@ -144,6 +144,24 @@ func (t *Table) getString(key *stringValue) Value {
 	return Nil()
 }
 
+func (t *Table) replaceLive(key *stringValue, value Value) bool {
+	if len(t.nodes) == 0 {
+		return false
+	}
+	for i := int(key.hash & uint32(len(t.nodes)-1)); i >= 0; i = t.nodes[i].next {
+		node := &t.nodes[i]
+		if text := node.key.text; text == key || text != nil && text.hash == key.hash && text.text == key.text {
+			if node.value.IsNil() {
+				return false
+			}
+			t.version++
+			node.value = value
+			return true
+		}
+	}
+	return false
+}
+
 func (t *Table) replaceString(key *stringValue, value Value) bool {
 	if len(t.nodes) == 0 {
 		return false

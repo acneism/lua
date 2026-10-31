@@ -788,6 +788,9 @@ frames:
 					key, assigned = rkOperand(int(int32(word>>16)), registers, constants), rkOperand(int(int16(word>>48)), registers, constants)
 				}
 				table := value.object.table
+				if key.text != nil && table.metatable != nil && table.replaceLive(key.text, assigned) {
+					continue
+				}
 				if method, ok := s.cached(eventNewIndex, table.metatable); ok && method.luaFunction() && table.rawMissing(key) {
 					t.frames[frameIndex].pc = int32(pc)
 					s.steps = s.options.HookEvery - remaining
