@@ -572,6 +572,7 @@ frames:
 					s.steps = s.options.HookEvery - remaining
 					dest, want := base+int(uint8(word>>48)), int(int16(word>>32))
 					t.resumeDest, t.resumeWant, t.resumeReturn = dest, want, false
+					stack, frames := &t.stack[0], &t.frames[0]
 					values := s.nativeStack(object.function, t.stack[argStart:argStart+count], f.proto.instruction(pc-1), argStart)
 					if t.yielded {
 						t.yielded = false
@@ -579,7 +580,11 @@ frames:
 						return values
 					}
 					t.writeResults(dest, want, values)
-					continue frames
+					if stack != &t.stack[0] || frames != &t.frames[0] {
+						continue frames
+					}
+					remaining = s.options.HookEvery - s.steps
+					continue
 				}
 				if value.Type() == TypeFunction && value.object.function.proto != nil && !value.object.function.proto.needsArgTable() && len(t.frames) < freshCalls-1 {
 					callee := value.object.function
