@@ -486,6 +486,37 @@ func (s *State) execute(stop int) (result []Value) {
 					remaining = s.options.HookEvery - s.steps
 					continue
 				}
+				if object := value.object; count >= 0 && object != nil && object.kind == TypeTable {
+					method := s.metaFor(value, eventCall)
+					if method.Type() == TypeFunction {
+						t.frames[frameIndex].pc = int32(pc)
+						s.steps = s.options.HookEvery - remaining
+						dest, want := base+int(uint8(word>>48)), int(int16(word>>32))
+						callStart := base + int(register)
+						if method.object.function.proto != nil {
+							s.push(method.object.function, t.stack[callStart:callStart+1+count], dest, want, nil)
+							frameIndex = len(t.frames) - 1
+							f = &t.frames[frameIndex]
+							base, pc = int(f.base), 0
+							code, constants = f.function.proto.code, f.function.proto.constants
+							registers = (*[256]Value)(t.stack[base : base+256])
+							remaining = s.options.HookEvery - s.steps
+							continue
+						}
+						t.resumeDest, t.resumeWant, t.resumeReturn = dest, want, false
+						values := s.nativeStack(method.object.function, t.stack[callStart:callStart+1+count], f.function.proto.instruction(pc-1), callStart)
+						if t.yielded {
+							t.yielded = false
+							t.status = "suspended"
+							return values
+						}
+						t.writeResults(dest, want, values)
+						f = &t.frames[frameIndex]
+						registers = (*[256]Value)(t.stack[base : base+256])
+						remaining = s.options.HookEvery - s.steps
+						continue
+					}
+				}
 				if count >= 0 && value.Type() == TypeFunction && value.object.function.proto != nil && !value.object.function.proto.vararg && len(t.frames) < freshCalls-1 {
 					callee := value.object.function
 					start := max(t.used, t.top)
@@ -618,30 +649,124 @@ func (s *State) execute(stop int) (result []Value) {
 					if op == opGetTableK {
 						key = constants[uint16(word>>48)]
 					}
-					found := value.object.table.RawGet(key)
-					if !found.IsNil() {
+					found, receiver, status := s.indexChain(value, key)
+					if status == indexFound {
 						registers[register] = found
 						continue
 					}
-				}
-			case opSetTable:
-				value := registers[register]
-				if value.Type() == TypeTable && !value.object.table.readonly && value.object.table.metatable == nil {
-					table := value.object.table
-					key := registers[uint8(word>>16)]
-					if key.object == &numberMarker {
-						index := int(key.number)
-						if index > 0 && index <= len(table.array) && float64(index) == key.number {
-							table.setArray(index-1, registers[uint8(word>>48)])
+					if status == indexMethod {
+						t.frames[frameIndex].pc = int32(pc)
+						s.steps = s.options.HookEvery - remaining
+						if found.object.function.proto != nil {
+							s.enterMethod(found, 2, receiver, key, Nil(), base+int(register), 1)
+							frameIndex = len(t.frames) - 1
+							f = &t.frames[frameIndex]
+							base, pc = int(f.base), int(f.pc)
+							code, constants = f.function.proto.code, f.function.proto.constants
+							registers = (*[256]Value)(t.stack[base : base+256])
+							remaining = s.options.HookEvery - s.steps
 							continue
 						}
+						result := first(s.callMethod(found, 2, receiver, key, Nil(), f.function.proto.instruction(pc-1)))
+						f = &t.frames[frameIndex]
+						registers = (*[256]Value)(t.stack[base : base+256])
+						registers[register] = result
+						remaining = s.options.HookEvery - s.steps
+						continue
 					}
-					t.frames[frameIndex].pc = int32(pc)
-					if err := table.RawSet(key, registers[uint8(word>>48)]); err != nil {
-						s.runtimeError(err.Error())
-					}
-					continue
 				}
+			case opSelf:
+				i := f.function.proto.instruction(pc - 1)
+				value := registers[i.b]
+				if value.Type() == TypeTable {
+					key := registers[uint8(i.c)]
+					if i.c < 0 {
+						key = constants[-1-i.c]
+					}
+					found, receiver, status := s.indexChain(value, key)
+					if status == indexFound {
+						registers[i.a+1] = value
+						registers[i.a] = found
+						continue
+					}
+					if status == indexMethod {
+						registers[i.a+1] = value
+						t.frames[frameIndex].pc = int32(pc)
+						s.steps = s.options.HookEvery - remaining
+						if found.object.function.proto != nil {
+							s.enterMethod(found, 2, receiver, key, Nil(), base+i.a, 1)
+							frameIndex = len(t.frames) - 1
+							f = &t.frames[frameIndex]
+							base, pc = int(f.base), int(f.pc)
+							code, constants = f.function.proto.code, f.function.proto.constants
+							registers = (*[256]Value)(t.stack[base : base+256])
+							remaining = s.options.HookEvery - s.steps
+							continue
+						}
+						result := first(s.callMethod(found, 2, receiver, key, Nil(), i))
+						f = &t.frames[frameIndex]
+						registers = (*[256]Value)(t.stack[base : base+256])
+						registers[i.a] = result
+						remaining = s.options.HookEvery - s.steps
+						continue
+					}
+				}
+			case opSetTable, opSetTableRK:
+				value := registers[register]
+				if value.Type() != TypeTable || value.object.table.readonly {
+					break
+				}
+				var key, assigned Value
+				if op == opSetTable {
+					key, assigned = registers[uint8(word>>16)], registers[uint8(word>>48)]
+				} else {
+					i := f.function.proto.instruction(pc - 1)
+					key, assigned = registers[uint8(i.b)], registers[uint8(i.c)]
+					if i.b < 0 {
+						key = constants[-1-i.b]
+					}
+					if i.c < 0 {
+						assigned = constants[-1-i.c]
+					}
+				}
+				table := value.object.table
+				if table.metatable != nil && table.RawGet(key).IsNil() {
+					method := s.eventMethod(table.metatable, eventNewIndex)
+					if method.Type() == TypeFunction {
+						t.frames[frameIndex].pc = int32(pc)
+						s.steps = s.options.HookEvery - remaining
+						if method.object.function.proto != nil {
+							s.enterMethod(method, 3, value, key, assigned, base, 0)
+							frameIndex = len(t.frames) - 1
+							f = &t.frames[frameIndex]
+							base, pc = int(f.base), int(f.pc)
+							code, constants = f.function.proto.code, f.function.proto.constants
+							registers = (*[256]Value)(t.stack[base : base+256])
+							remaining = s.options.HookEvery - s.steps
+							continue
+						}
+						s.callMethod(method, 3, value, key, assigned, f.function.proto.instruction(pc-1))
+						f = &t.frames[frameIndex]
+						registers = (*[256]Value)(t.stack[base : base+256])
+						remaining = s.options.HookEvery - s.steps
+						continue
+					}
+					if !method.IsNil() {
+						break
+					}
+				}
+				if key.object == &numberMarker {
+					index := int(key.number)
+					if index > 0 && index <= len(table.array) && float64(index) == key.number {
+						table.setArray(index-1, assigned)
+						continue
+					}
+				}
+				t.frames[frameIndex].pc = int32(pc)
+				if err := table.RawSet(key, assigned); err != nil {
+					s.runtimeError(err.Error())
+				}
+				continue
 			case opNegate:
 				value := registers[uint8(word>>16)]
 				if value.object == &numberMarker {
@@ -791,65 +916,19 @@ func (s *State) enterArithmeticMethod(left, right Value, index, dest int) bool {
 	if method.Type() != TypeFunction || method.object.function.proto == nil {
 		return false
 	}
-	t := s.current
-	s.steps += vmCallWeight
-	if s.steps >= s.options.HookEvery {
-		s.pollBinaryHook(method, left, right)
-	}
-	t.cDepth++
-	if t.cDepth == 200 {
-		s.runtimeError("C stack overflow")
-	}
-	if t.cDepth >= 225 {
-		panic(plainError("error in error handling"))
-	}
-	previousTop := t.top
-	callee := method.object.function
-	proto := callee.proto
-	start := max(t.used, t.top)
-	if !proto.vararg && len(t.frames) < freshCalls-1 && start+256 <= len(t.stack) {
-		parameters := proto.parameters
-		provided := min(parameters, 2)
-		if provided > 0 {
-			t.stack[start] = left
-		}
-		if provided > 1 {
-			t.stack[start+1] = right
-		}
-		clearRegisters(t.stack[start+provided : start+proto.maxRegisters])
-		depth := len(t.frames)
-		if depth == cap(t.frames) {
-			t.frames = append(t.frames, frame{})
-		} else {
-			t.frames = t.frames[:depth+1]
-		}
-		entered := &t.frames[depth]
-		entered.function, entered.site = callee, nil
-		entered.start, entered.base, entered.pc = int32(start), int32(start), 0
-		entered.returnDest, entered.want = int32(dest), 1
-		entered.metacallTop, entered.tailcalls = int32(previousTop+1), 0
-		t.used, t.top = start+proto.maxRegisters, start+parameters
-	} else {
-		arguments := [2]Value{left, right}
-		s.push(callee, arguments[:], dest, 1, nil)
-		t.frames[len(t.frames)-1].metacallTop = int32(previousTop + 1)
-	}
-	t.boundary++
+	s.enterMethod(method, 2, left, right, Nil(), dest, 1)
 	return true
 }
 
 func (s *State) meta(value Value, name string) Value {
-	var table *Table
-	if value.Type() == TypeTable {
-		table = value.Table().metatable
+	if event, ok := eventFor(name); ok {
+		return s.metaFor(value, event)
 	}
-	if value.Type() == TypeString {
-		table = s.stringMeta
+	table := s.metatableOf(value)
+	if table == nil {
+		return Nil()
 	}
-	if table != nil {
-		return table.RawGet(String(name))
-	}
-	return Nil()
+	return table.RawGet(String(name))
 }
 
 func (s *State) get(value, key Value, info nameInfo) Value {
@@ -860,7 +939,7 @@ func (s *State) get(value, key Value, info nameInfo) Value {
 				return result
 			}
 		}
-		meta := s.meta(value, "__index")
+		meta := s.metaFor(value, eventIndex)
 		if meta.IsNil() {
 			if value.Type() == TypeTable {
 				return Nil()
@@ -883,14 +962,14 @@ func (s *State) set(value, key, assigned Value, info nameInfo) {
 			if table.readonly {
 				s.runtimeError("Attempt to modify a readonly table")
 			}
-			if !table.RawGet(key).IsNil() || s.meta(value, "__newindex").IsNil() {
+			if !table.RawGet(key).IsNil() || s.metaFor(value, eventNewIndex).IsNil() {
 				if err := table.RawSet(key, assigned); err != nil {
 					s.runtimeError(err.Error())
 				}
 				return
 			}
 		}
-		meta := s.meta(value, "__newindex")
+		meta := s.metaFor(value, eventNewIndex)
 		if meta.IsNil() {
 			s.typeError("index", value, info)
 		}
@@ -904,7 +983,7 @@ func (s *State) set(value, key, assigned Value, info nameInfo) {
 }
 
 func (s *State) callable(value Value, args []Value, info nameInfo) (Value, []Value) {
-	meta := s.meta(value, "__call")
+	meta := s.metaFor(value, eventCall)
 	if meta.Type() != TypeFunction {
 		s.typeError("call", value, info)
 	}
@@ -930,7 +1009,7 @@ func (s *State) unary(operator string, value Value, info nameInfo) Value {
 		if number, ok := value.toNumber(); ok {
 			return Number(-number)
 		}
-		if method := s.meta(value, "__unm"); !method.IsNil() {
+		if method := s.metaFor(value, eventNegate); !method.IsNil() {
 			return s.invokeOne(method, []Value{value, value})
 		}
 		s.typeError("perform arithmetic on", value, info)
@@ -950,8 +1029,8 @@ func (s *State) binary(operator string, left, right Value, leftName, rightName n
 	case "==", "~=":
 		equal := left.Equal(right)
 		if !equal && left.Type() == right.Type() && (left.Type() == TypeTable || left.Type() == TypeUserdata) {
-			method := s.meta(left, "__eq")
-			if !method.IsNil() && method.Equal(s.meta(right, "__eq")) {
+			method := s.metaFor(left, eventEqual)
+			if !method.IsNil() && method.Equal(s.metaFor(right, eventEqual)) {
 				equal = s.invokeOne(method, []Value{left, right}).Truth()
 			}
 		}
@@ -974,9 +1053,9 @@ func (s *State) binary(operator string, left, right Value, leftName, rightName n
 			s.checkString(len(a) + len(b))
 			return String(a + b)
 		}
-		method := s.meta(left, "__concat")
+		method := s.metaFor(left, eventConcat)
 		if method.IsNil() {
-			method = s.meta(right, "__concat")
+			method = s.metaFor(right, eventConcat)
 		}
 		if !method.IsNil() {
 			return s.invokeOne(method, []Value{left, right})
@@ -1133,8 +1212,8 @@ func (s *State) less(left, right Value, equal bool) bool {
 		return s.invokeOne(method, []Value{left, right}).Truth()
 	}
 	if equal {
-		method = s.meta(left, "__lt")
-		if !method.IsNil() && method.Equal(s.meta(right, "__lt")) {
+		method = s.metaFor(left, eventLess)
+		if !method.IsNil() && method.Equal(s.metaFor(right, eventLess)) {
 			return !s.invokeOne(method, []Value{right, left}).Truth()
 		}
 	}

@@ -109,7 +109,7 @@ func (t *thread) restoreCallLimit(depth int) {
 }
 
 type State struct {
-	binaryCache [6]binaryCache
+	methodCache [eventCount]methodCache
 	options     Options
 	globals     *Table
 	stringMeta  *Table
@@ -350,7 +350,7 @@ func (s *State) invokeOne(fn Value, args []Value) Value {
 }
 
 func (s *State) cleanup() {
-	clear(s.binaryCache[:])
+	clear(s.methodCache[:])
 	for _, t := range s.threads {
 		t.close(0)
 		clear(t.stack)

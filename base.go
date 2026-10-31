@@ -209,7 +209,7 @@ func baseError(s *State, args []Value) ([]Value, error) {
 
 func baseToString(s *State, args []Value) ([]Value, error) {
 	value := s.checkAny(args, 0)
-	if method := s.meta(value, "__tostring"); !method.IsNil() {
+	if method := s.metaFor(value, eventToString); !method.IsNil() {
 		return s.values1(first(s.invoke(method, []Value{value}))), nil
 	}
 	return s.values1(String(value.String())), nil
