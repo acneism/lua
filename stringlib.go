@@ -14,14 +14,14 @@ func relativePosition(position, length int) int {
 func (s *State) openString() {
 	table := s.library("string", []string{"byte", "char", "dump", "find", "format", "gfind", "gmatch", "gsub", "len", "lower", "match", "rep", "reverse", "sub", "upper"}, map[string]GoFunction{
 		"len": func(s *State, args []Value) ([]Value, error) {
-			return []Value{Number(float64(len(s.checkText(args, 0))))}, nil
+			return s.values1(Number(float64(len(s.checkText(args, 0))))), nil
 		},
 		"sub": func(s *State, args []Value) ([]Value, error) {
 			text := s.checkText(args, 0)
 			start := max(1, relativePosition(int(luaInteger(s.checkNumber(args, 1))), len(text)))
 			end := min(len(text), relativePosition(s.optionalInt(args, 2, -1), len(text)))
 			if start > end {
-				return []Value{String("")}, nil
+				return s.values1(String("")), nil
 			}
 			return s.stringResult(text[start-1 : end])
 		},
@@ -36,7 +36,11 @@ func (s *State) openString() {
 			if end-start+1+len(args) > 8000 {
 				s.raise("stack overflow (string slice too long)", 1)
 			}
-			values := make([]Value, end-start+1)
+			values := s.results[:0]
+			if end-start+1 > len(s.results) {
+				values = make([]Value, 0, end-start+1)
+			}
+			values = values[:end-start+1]
 			for index := range values {
 				s.tick()
 				values[index] = Number(float64(text[start+index-1]))
@@ -53,12 +57,12 @@ func (s *State) openString() {
 				}
 				text[index] = byte(value)
 			}
-			return []Value{String(string(text))}, nil
+			return s.values1(String(string(text))), nil
 		},
 		"rep": func(s *State, args []Value) ([]Value, error) {
 			text, count := s.checkText(args, 0), s.checkInt(args, 1)
 			if count <= 0 || text == "" {
-				return []Value{String("")}, nil
+				return s.values1(String("")), nil
 			}
 			if count > s.options.MaxString/len(text) {
 				s.raise("string length overflow", 1)
@@ -77,7 +81,7 @@ func (s *State) openString() {
 				out.WriteString(block[offset : offset+size])
 				remaining -= size
 			}
-			return []Value{String(out.String())}, nil
+			return s.values1(String(out.String())), nil
 		},
 		"reverse": func(s *State, args []Value) ([]Value, error) {
 			text := []byte(s.checkText(args, 0))
@@ -86,7 +90,7 @@ func (s *State) openString() {
 				s.tick()
 				text[left], text[right] = text[right], text[left]
 			}
-			return []Value{String(string(text))}, nil
+			return s.values1(String(string(text))), nil
 		},
 		"lower":  func(s *State, args []Value) ([]Value, error) { return stringCase(s, args, false) },
 		"upper":  func(s *State, args []Value) ([]Value, error) { return stringCase(s, args, true) },

@@ -1,0 +1,89 @@
+name: Performance
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: performance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ratios:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      redis:
+        image: redis:7.2.16
+        ports: [6379:6379]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - run: mkdir -p work && lscpu | grep 'Model name'
+      - name: Measure every scenario against Redis
+        run: go run ./internal/cmd/bench -addr 127.0.0.1:6379 -output work/bench.json -rounds 5 | grep median
+      - name: Summarize
+        run: |
+          python3 - <<'PY'
+          import json
+          rows = json.load(open('work/bench.json'))['Results']
+          for r in sorted(rows, key=lambda r: -r['Ratio']):
+              print(f"{r['Name']:<20} {r['Ratio']:.3f}")
+          print('over 1.5:', [r['Name'] for r in rows if r['Ratio'] > 1.5])
+          PY
+      - uses: actions/upload-artifact@v7
+        with:
+          name: performance
+          path: work/bench.json
+          retention-days: 7
+
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          path: cand
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: main
+          path: base
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: cand/go.mod
+          cache: false
+      - name: Build both versions
+        run: |
+          lscpu | grep 'Model name'
+          mkdir -p base/internal/scenario
+          cp cand/internal/scenario/scenario.go base/internal/scenario/
+          cp cand/scenario_benchmark_test.go base/
+          for v in base cand; do (cd $v && go test -c -o ../$v.test .); done
+      - name: Alternate
+        run: |
+          for r in 1 2 3 4; do
+            for v in base cand; do
+              ./$v.test -test.run '^$' -test.bench 'BenchmarkScenario/' -test.benchtime 3x | grep ns/op | sed "s/^/$v /"
+            done
+          done > results.txt
+          python3 - <<'PY'
+          import collections, statistics
+          d = collections.defaultdict(list)
+          for line in open('results.txt'):
+              p = line.split()
+              d[(p[1].split('-')[0].split('/')[1], p[0])].append(float(p[3]))
+          for name in sorted({k[0] for k in d}, key=lambda n: statistics.median(d[(n, 'cand')]) / statistics.median(d[(n, 'base')])):
+              base, cand = statistics.median(d[(name, 'base')]), statistics.median(d[(name, 'cand')])
+              print(f"{name:<20} {cand / base:.3f}")
+          PY

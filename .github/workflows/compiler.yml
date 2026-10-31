@@ -106,7 +106,8 @@ jobs:
         run: |
           python3 - <<'PY'
           import json
-          results = json.load(open('work/p2a-bench.json'))['Results']
+          core = {'Loop', 'Fib27', 'LuaCalls', 'TableInsert', 'TableHash', 'Sort', 'GSub', 'StringConcat', 'Metamethod'}
+          results = [r for r in json.load(open('work/p2a-bench.json'))['Results'] if r['Name'] in core]
           failures = [r['Name'] for r in results if r['Ratio'] > 1.5]
           assert len(results) == 9, 'expected nine core scenarios'
           assert not failures, 'core scenarios exceed 1.5x: ' + ', '.join(failures)

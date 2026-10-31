@@ -3,9 +3,16 @@ package lua
 import (
 	"math"
 	"math/bits"
+	"reflect"
 )
 
 const maxTableBits = 26
+
+var (
+	numberBytes = int64(reflect.TypeFor[float64]().Size())
+	valueBytes  = int64(reflect.TypeFor[Value]().Size())
+	nodeBytes   = int64(reflect.TypeFor[tableNode]().Size())
+)
 
 type tableNode struct {
 	key   Value
@@ -17,7 +24,9 @@ type Table struct {
 	object    object
 	version   uint64
 	sequence  int
+	numbers   []float64
 	array     []Value
+	generic   bool
 	nodes     []tableNode
 	lastFree  int
 	metatable *Table
@@ -45,6 +54,34 @@ func (t *Table) SetMetatable(meta *Table) error {
 	return nil
 }
 
+const holeBits = 0x7ff4dead0000beef
+
+func (t *Table) arraySize() int {
+	if t.generic {
+		return len(t.array)
+	}
+	return len(t.numbers)
+}
+
+func (t *Table) arrayAt(index int) Value {
+	if t.generic {
+		return t.array[index]
+	}
+	if number := t.numbers[index]; math.Float64bits(number) != holeBits {
+		return Number(number)
+	}
+	return Nil()
+}
+
+func (t *Table) makeGeneric() {
+	t.memory.reserve(int64(len(t.numbers)) * valueBytes)
+	t.array = make([]Value, len(t.numbers))
+	for index := range t.numbers {
+		t.array[index] = t.arrayAt(index)
+	}
+	t.numbers, t.generic = nil, true
+}
+
 func arrayIndex(key Value) int {
 	if key.Type() == TypeNumber && key.number >= 1 && key.number <= 1<<maxTableBits && key.number == math.Trunc(key.number) {
 		return int(key.number)
@@ -67,7 +104,7 @@ func (t *Table) mainPosition(key Value) int {
 	}
 	switch key.Type() {
 	case TypeString:
-		return int(stringHash(key.Text()) & uint32(len(t.nodes)-1))
+		return int(key.text.hash & uint32(len(t.nodes)-1))
 	case TypeBoolean:
 		return int(key.number) & (len(t.nodes) - 1)
 	case TypeNumber:
@@ -94,9 +131,37 @@ func (t *Table) find(key Value) int {
 	return -1
 }
 
+func (t *Table) getString(key *stringValue) Value {
+	if len(t.nodes) == 0 {
+		return Nil()
+	}
+	for i := int(key.hash & uint32(len(t.nodes)-1)); i >= 0; i = t.nodes[i].next {
+		node := &t.nodes[i]
+		if text := node.key.text; text == key || text != nil && text.hash == key.hash && text.text == key.text {
+			return node.value
+		}
+	}
+	return Nil()
+}
+
+func (t *Table) replaceString(key *stringValue, value Value) bool {
+	if len(t.nodes) == 0 {
+		return false
+	}
+	for i := int(key.hash & uint32(len(t.nodes)-1)); i >= 0; i = t.nodes[i].next {
+		node := &t.nodes[i]
+		if text := node.key.text; text == key || text != nil && text.hash == key.hash && text.text == key.text {
+			t.version++
+			node.value = value
+			return true
+		}
+	}
+	return false
+}
+
 func (t *Table) RawGet(key Value) Value {
-	if index := arrayIndex(key); index > 0 && index <= len(t.array) {
-		return t.array[index-1]
+	if index := arrayIndex(key); index > 0 && index <= t.arraySize() {
+		return t.arrayAt(index - 1)
 	}
 	if key.IsNil() {
 		return Nil()
@@ -122,7 +187,7 @@ func (t *Table) RawSet(key, value Value) error {
 }
 
 func (t *Table) set(key, value Value) {
-	if index := arrayIndex(key); index > 0 && index <= len(t.array) {
+	if index := arrayIndex(key); index > 0 && index <= t.arraySize() {
 		t.setArray(index-1, value)
 		return
 	}
@@ -182,6 +247,17 @@ func (t *Table) setArray(index int, value Value) {
 			t.sequence = -1
 		}
 	}
+	if !t.generic {
+		switch {
+		case value.object == &numberMarker && math.Float64bits(value.number) != holeBits:
+			t.numbers[index] = value.number
+			return
+		case value.IsNil():
+			t.numbers[index] = math.Float64frombits(holeBits)
+			return
+		}
+		t.makeGeneric()
+	}
 	t.array[index] = value
 }
 
@@ -202,8 +278,8 @@ func countArrayKey(key Value, counts *[maxTableBits + 1]int) int {
 func (t *Table) rehash(extra Value) {
 	var counts [maxTableBits + 1]int
 	arrayUse, totalUse := 0, 0
-	for i, value := range t.array {
-		if !value.IsNil() {
+	for i := range t.arraySize() {
+		if !t.arrayAt(i).IsNil() {
 			counts[bits.Len(uint(i))]++
 			arrayUse++
 			totalUse++
@@ -237,29 +313,40 @@ func (t *Table) resize(arraySize, hashSize int) {
 	if arraySize < 0 || arraySize > 1<<maxTableBits || hashSize < 0 || hashSize > 1<<maxTableBits {
 		panic(plainError("table overflow"))
 	}
-	oldArray, oldNodes := t.array, t.nodes
+	old := *t
+	oldSize, oldNodes := t.arraySize(), t.nodes
 	if arraySize < t.sequence {
 		t.sequence = -1
 	}
-	if arraySize > len(oldArray) {
-		t.memory.reserve(int64(arraySize-len(oldArray)) * 40)
+	switch {
+	case arraySize > oldSize && t.generic:
+		t.memory.reserve(int64(arraySize-oldSize) * valueBytes)
 		t.array = make([]Value, arraySize)
-		copy(t.array, oldArray)
-	} else {
+		copy(t.array, old.array)
+	case arraySize > oldSize:
+		t.memory.reserve(int64(arraySize-oldSize) * numberBytes)
+		t.numbers = make([]float64, arraySize)
+		copy(t.numbers, old.numbers)
+		for index := oldSize; index < arraySize; index++ {
+			t.numbers[index] = math.Float64frombits(holeBits)
+		}
+	case t.generic:
 		t.array = t.array[:arraySize]
+	default:
+		t.numbers = t.numbers[:arraySize]
 	}
 	if hashSize > 0 {
 		hashSize = 1 << bits.Len(uint(hashSize-1))
 	}
-	t.memory.reserve(int64(hashSize) * 88)
+	t.memory.reserve(int64(hashSize) * nodeBytes)
 	t.nodes = make([]tableNode, hashSize)
 	for i := range t.nodes {
 		t.nodes[i].next = -1
 	}
 	t.lastFree = hashSize
-	for i := arraySize; i < len(oldArray); i++ {
-		if !oldArray[i].IsNil() {
-			t.set(Number(float64(i+1)), oldArray[i])
+	for i := arraySize; i < oldSize; i++ {
+		if value := old.arrayAt(i); !value.IsNil() {
+			t.set(Number(float64(i+1)), value)
 		}
 	}
 	for i := len(oldNodes) - 1; i >= 0; i-- {
@@ -272,23 +359,23 @@ func (t *Table) resize(arraySize, hashSize int) {
 func (t *Table) Next(key Value) (Value, Value, error) {
 	index := -1
 	if !key.IsNil() {
-		if array := arrayIndex(key); array > 0 && array <= len(t.array) {
+		if array := arrayIndex(key); array > 0 && array <= t.arraySize() {
 			index = array - 1
 		} else {
 			hash := t.find(key)
 			if hash < 0 {
 				return Nil(), Nil(), plainError("invalid key to 'next'")
 			}
-			index = len(t.array) + hash
+			index = t.arraySize() + hash
 		}
 	}
 	index++
-	for ; index < len(t.array); index++ {
-		if !t.array[index].IsNil() {
-			return Number(float64(index + 1)), t.array[index], nil
+	for ; index < t.arraySize(); index++ {
+		if value := t.arrayAt(index); !value.IsNil() {
+			return Number(float64(index + 1)), value, nil
 		}
 	}
-	for index -= len(t.array); index < len(t.nodes); index++ {
+	for index -= t.arraySize(); index < len(t.nodes); index++ {
 		if !t.nodes[index].value.IsNil() {
 			return t.nodes[index].key, t.nodes[index].value, nil
 		}
@@ -300,12 +387,12 @@ func (t *Table) Len() int {
 	if t.sequence >= 0 {
 		return t.sequence
 	}
-	upper := len(t.array)
-	if upper > 0 && t.array[upper-1].IsNil() {
+	upper := t.arraySize()
+	if upper > 0 && t.arrayAt(upper-1).IsNil() {
 		lower := 0
 		for upper-lower > 1 {
 			middle := (lower + upper) / 2
-			if t.array[middle-1].IsNil() {
+			if t.arrayAt(middle - 1).IsNil() {
 				upper = middle
 			} else {
 				lower = middle

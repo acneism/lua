@@ -83,6 +83,7 @@ type thread struct {
 	handlerActive bool
 	handlerRoots  []Value
 	callLimit     int
+	yielded       bool
 }
 
 const (
@@ -108,10 +109,11 @@ func (t *thread) restoreCallLimit(depth int) {
 }
 
 type State struct {
-	binaryCache [6]binaryCache
+	methodCache [eventCount]methodCache
 	options     Options
 	globals     *Table
 	stringMeta  *Table
+	ipairsStep  *function
 	main        *thread
 	current     *thread
 	threads     []*thread
@@ -122,6 +124,7 @@ type State struct {
 	handlers    *handlerOwner
 	hostRoots   map[uint64]Value
 	rootID      uint64
+	results     [8]Value
 }
 
 func NewState(options Options) *State {
@@ -148,6 +151,32 @@ func NewState(options Options) *State {
 }
 
 func (s *State) Globals() *Table { return s.globals }
+
+var typeNames = [...]Value{String("nil"), String("boolean"), String("number"), String("string"), String("table"), String("function"), String("thread"), String("userdata")}
+
+func (s *State) prepend(first Value, values []Value) []Value {
+	if len(values) >= len(s.results) {
+		return append([]Value{first}, values...)
+	}
+	copy(s.results[1:], values)
+	s.results[0] = first
+	return s.results[:len(values)+1]
+}
+
+func (s *State) values1(a Value) []Value {
+	s.results[0] = a
+	return s.results[:1]
+}
+
+func (s *State) values2(a, b Value) []Value {
+	s.results[0], s.results[1] = a, b
+	return s.results[:2]
+}
+
+func (s *State) values3(a, b, c Value) []Value {
+	s.results[0], s.results[1], s.results[2] = a, b, c
+	return s.results[:3]
+}
 
 func (s *State) SetGlobals(globals *Table) { s.globals = globals }
 
@@ -185,13 +214,29 @@ func (s *State) Load(proto *Proto, env *Table) Value {
 	if env == nil {
 		env = s.globals
 	}
-	return s.closure(proto, env, nil)
+	value, _ := s.closure(proto, env, 0)
+	return value
 }
 
-func (s *State) closure(proto *Proto, env *Table, upvalues []*upvalue) Value {
+type closureBlock struct {
+	object   object
+	function function
+	inline   [2]*upvalue
+}
+
+func (s *State) closure(proto *Proto, env *Table, count int) (Value, []*upvalue) {
 	s.nextID++
-	s.reserve(128 + int64(len(upvalues))*8)
-	return Value{object: &object{kind: TypeFunction, id: s.nextID, function: &function{proto: proto, env: env, upvalues: upvalues}}}
+	s.reserve(128 + int64(count)*8)
+	block := &closureBlock{}
+	var upvalues []*upvalue
+	if count > len(block.inline) {
+		upvalues = make([]*upvalue, count)
+	} else {
+		upvalues = block.inline[:count:count]
+	}
+	block.function = function{proto: proto, env: env, upvalues: upvalues}
+	block.object = object{kind: TypeFunction, id: s.nextID, function: &block.function}
+	return Value{object: &block.object}, upvalues
 }
 
 func (s *State) Call(fn Value, args ...Value) (values []Value, err error) {
@@ -322,7 +367,7 @@ func (s *State) invokeOne(fn Value, args []Value) Value {
 }
 
 func (s *State) cleanup() {
-	clear(s.binaryCache[:])
+	clear(s.methodCache[:])
 	for _, t := range s.threads {
 		t.close(0)
 		clear(t.stack)
@@ -437,6 +482,21 @@ func (s *State) pollHook() {
 	s.pollHookRoots(nil)
 }
 
+func (s *State) pollRetry(frameIndex, pc int) {
+	t := s.current
+	t.frames[frameIndex].pc = int32(pc)
+	s.pollHook()
+	t.frames[frameIndex].pc = int32(pc - 1)
+	s.steps = -vmCallWeight
+}
+
+func (s *State) pollJump(frameIndex, pc, target int) {
+	t := s.current
+	t.frames[frameIndex].pc = int32(pc)
+	s.pollHook()
+	t.frames[frameIndex].pc = int32(target)
+}
+
 func (s *State) pollBinaryHook(method, left, right Value) {
 	t := s.current
 	base := len(t.hookRoots)
@@ -446,15 +506,6 @@ func (s *State) pollBinaryHook(method, left, right Value) {
 		t.hookRoots = t.hookRoots[:base]
 	}()
 	s.pollHook()
-}
-
-func (s *State) pollPreparedHook(frameIndex, pc, register int, fn, arg Value) {
-	t := s.current
-	f := &t.frames[frameIndex]
-	base := int(f.base) + register
-	t.stack[base], t.stack[base+1] = fn, arg
-	f.pc = int32(pc)
-	s.pollHookRoots(nil)
 }
 
 func (s *State) pollHookRoots(roots []Value) {
@@ -488,6 +539,9 @@ func (s *State) checkString(size int) {
 }
 
 func abortError(err error) bool {
+	if err == nil {
+		return false
+	}
 	var failure *Error
 	return errors.As(err, &failure) && (failure.Abort != nil || failure.Internal)
 }

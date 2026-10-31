@@ -50,5 +50,5 @@ func (s *State) checkFunction(args []Value, index int) Value {
 
 func (s *State) stringResult(text string) ([]Value, error) {
 	s.checkString(len(text))
-	return []Value{String(text)}, nil
+	return s.values1(String(text)), nil
 }

@@ -220,5 +220,5 @@ func stringFormat(s *State, args []Value) ([]Value, error) {
 			s.raise("invalid option '%"+cString(string([]byte{option}))+"' to 'format'", 1)
 		}
 	}
-	return []Value{String(out.String())}, nil
+	return s.values1(String(out.String())), nil
 }

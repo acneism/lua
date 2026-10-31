@@ -52,6 +52,9 @@ func (s *State) expected(args []Value, index int, expected string) {
 }
 
 func (s *State) checkNumber(args []Value, index int) float64 {
+	if index < len(args) && args[index].object == &numberMarker {
+		return args[index].number
+	}
 	value, ok := argument(args, index).toNumber()
 	if index >= len(args) || !ok {
 		s.expected(args, index, "number")
@@ -60,6 +63,9 @@ func (s *State) checkNumber(args []Value, index int) float64 {
 }
 
 func (s *State) checkText(args []Value, index int) string {
+	if index < len(args) && args[index].object == nil && args[index].text != nil {
+		return args[index].text.text
+	}
 	value, ok := argument(args, index).toString()
 	if index >= len(args) || !ok {
 		s.expected(args, index, "string")
@@ -89,19 +95,20 @@ func (s *State) openBase() {
 			return nil, err
 		}
 		if key.IsNil() {
-			return []Value{Nil()}, nil
+			return s.values1(Nil()), nil
 		}
-		return []Value{key, value}, nil
+		return s.values2(key, value), nil
 	})
 	ipairs := s.Function("ipairs", func(s *State, args []Value) ([]Value, error) {
-		table := s.checkTable(args, 0)
 		index := int(s.checkNumber(args, 1)) + 1
+		table := s.checkTable(args, 0)
 		value := table.RawGet(Number(float64(index)))
 		if value.IsNil() {
 			return nil, nil
 		}
-		return []Value{Number(float64(index)), value}, nil
+		return s.values2(Number(float64(index)), value), nil
 	})
+	s.ipairsStep = ipairs.object.function
 	s.globals.set(String("next"), next)
 	functions := map[string]GoFunction{
 		"assert": baseAssert, "error": baseError, "tonumber": baseToNumber,
@@ -109,13 +116,13 @@ func (s *State) openBase() {
 		"pcall": basePCall, "xpcall": baseXPCall, "loadstring": baseLoadString,
 		"load": baseLoad, "collectgarbage": baseCollectGarbage,
 		"type": func(s *State, args []Value) ([]Value, error) {
-			return []Value{String(s.checkAny(args, 0).Type().String())}, nil
+			return s.values1(typeNames[s.checkAny(args, 0).Type()]), nil
 		},
 		"rawequal": func(s *State, args []Value) ([]Value, error) {
-			return []Value{Bool(s.checkAny(args, 0).Equal(s.checkAny(args, 1)))}, nil
+			return s.values1(Bool(s.checkAny(args, 0).Equal(s.checkAny(args, 1)))), nil
 		},
 		"rawget": func(s *State, args []Value) ([]Value, error) {
-			return []Value{s.checkTable(args, 0).RawGet(s.checkAny(args, 1))}, nil
+			return s.values1(s.checkTable(args, 0).RawGet(s.checkAny(args, 1))), nil
 		},
 		"rawset": func(s *State, args []Value) ([]Value, error) {
 			table := s.checkTable(args, 0)
@@ -124,7 +131,7 @@ func (s *State) openBase() {
 			if err := table.RawSet(key, value); err != nil {
 				return nil, err
 			}
-			return []Value{table.Value()}, nil
+			return s.values1(table.Value()), nil
 		},
 		"getmetatable": func(s *State, args []Value) ([]Value, error) {
 			value := s.checkAny(args, 0)
@@ -136,12 +143,12 @@ func (s *State) openBase() {
 				table = value.Table().metatable
 			}
 			if table == nil {
-				return []Value{Nil()}, nil
+				return s.values1(Nil()), nil
 			}
 			if protected := table.RawGet(String("__metatable")); !protected.IsNil() {
-				return []Value{protected}, nil
+				return s.values1(protected), nil
 			}
-			return []Value{table.Value()}, nil
+			return s.values1(table.Value()), nil
 		},
 		"setmetatable": func(s *State, args []Value) ([]Value, error) {
 			table := s.checkTable(args, 0)
@@ -156,15 +163,15 @@ func (s *State) openBase() {
 				s.raise("cannot change a protected metatable", 1)
 			}
 			table.metatable = meta.Table()
-			return []Value{table.Value()}, nil
+			return s.values1(table.Value()), nil
 		},
 		"pairs": func(s *State, args []Value) ([]Value, error) {
 			table := s.checkTable(args, 0)
-			return []Value{next, table.Value(), Nil()}, nil
+			return s.values3(next, table.Value(), Nil()), nil
 		},
 		"ipairs": func(s *State, args []Value) ([]Value, error) {
 			table := s.checkTable(args, 0)
-			return []Value{ipairs, table.Value(), Number(0)}, nil
+			return s.values3(ipairs, table.Value(), Number(0)), nil
 		},
 		"gcinfo": func(_ *State, _ []Value) ([]Value, error) {
 			var stats runtime.MemStats
@@ -209,10 +216,10 @@ func baseError(s *State, args []Value) ([]Value, error) {
 
 func baseToString(s *State, args []Value) ([]Value, error) {
 	value := s.checkAny(args, 0)
-	if method := s.meta(value, "__tostring"); !method.IsNil() {
-		return []Value{first(s.invoke(method, []Value{value}))}, nil
+	if method := s.metaFor(value, eventToString); !method.IsNil() {
+		return s.values1(first(s.invoke(method, []Value{value}))), nil
 	}
-	return []Value{String(value.String())}, nil
+	return s.values1(String(value.String())), nil
 }
 
 func baseToNumber(s *State, args []Value) ([]Value, error) {
@@ -220,9 +227,9 @@ func baseToNumber(s *State, args []Value) ([]Value, error) {
 	if base == 10 {
 		value := s.checkAny(args, 0)
 		if n, ok := value.toNumber(); ok {
-			return []Value{Number(n)}, nil
+			return s.values1(Number(n)), nil
 		}
-		return []Value{Nil()}, nil
+		return s.values1(Nil()), nil
 	}
 	text := strings.Trim(cString(s.checkText(args, 0)), " \t\n\r\v\f")
 	if base < 2 || base > 36 {
@@ -236,22 +243,22 @@ func baseToNumber(s *State, args []Value) ([]Value, error) {
 		text = text[2:]
 	}
 	if text == "" || strings.ContainsAny(text, "_+-") {
-		return []Value{Nil()}, nil
+		return s.values1(Nil()), nil
 	}
 	n, err := strconv.ParseUint(text, base, 64)
 	if err != nil {
 		if parsed, ok := err.(*strconv.NumError); !ok || parsed.Err != strconv.ErrRange {
-			return []Value{Nil()}, nil
+			return s.values1(Nil()), nil
 		}
 	} else if negative {
 		n = -n
 	}
-	return []Value{Number(float64(n))}, nil
+	return s.values1(Number(float64(n))), nil
 }
 
 func baseSelect(s *State, args []Value) ([]Value, error) {
 	if len(args) > 0 && args[0].Type() == TypeString && strings.HasPrefix(args[0].Text(), "#") {
-		return []Value{Number(float64(len(args) - 1))}, nil
+		return s.values1(Number(float64(len(args) - 1))), nil
 	}
 	index := int(s.checkNumber(args, 0))
 	if index < 0 {
@@ -285,7 +292,7 @@ func baseUnpack(s *State, args []Value) ([]Value, error) {
 
 func basePCall(s *State, args []Value) ([]Value, error) {
 	if len(args) == 0 {
-		return []Value{Bool(false), String("attempt to call a boolean value")}, nil
+		return s.values2(Bool(false), String("attempt to call a boolean value")), nil
 	}
 	var values []Value
 	var err error
@@ -303,13 +310,13 @@ func basePCall(s *State, args []Value) ([]Value, error) {
 		if value.Type() == TypeTable {
 			field := s.get(value, String("err"), nameInfo{})
 			if field.Type() == TypeString || field.Type() == TypeNumber {
-				return []Value{Bool(false), field}, nil
+				return s.values2(Bool(false), field), nil
 			}
-			return []Value{Bool(false), value, field}, nil
+			return s.values3(Bool(false), value, field), nil
 		}
-		return []Value{Bool(false), value}, nil
+		return s.values2(Bool(false), value), nil
 	}
-	return append([]Value{Bool(true)}, values...), nil
+	return s.prepend(Bool(true), values), nil
 }
 
 func baseXPCall(s *State, args []Value) ([]Value, error) {
@@ -320,9 +327,9 @@ func baseXPCall(s *State, args []Value) ([]Value, error) {
 		return nil, err
 	}
 	if err == nil {
-		return append([]Value{Bool(true)}, values...), nil
+		return s.prepend(Bool(true), values), nil
 	}
-	return []Value{Bool(false), err.(*Error).Value}, nil
+	return s.values2(Bool(false), err.(*Error).Value), nil
 }
 
 func baseLoadString(s *State, args []Value) ([]Value, error) {
@@ -336,12 +343,12 @@ func baseLoadString(s *State, args []Value) ([]Value, error) {
 	if err != nil {
 		if failure, ok := err.(*Error); ok && failure.memory {
 			if raised, ok := s.processPanic(failure).(*Error); ok {
-				return []Value{Nil(), raised.Value}, nil
+				return s.values2(Nil(), raised.Value), nil
 			}
 		}
-		return []Value{Nil(), String(err.Error())}, nil
+		return s.values2(Nil(), String(err.Error())), nil
 	}
-	return []Value{s.Load(proto, s.globals)}, nil
+	return s.values1(s.Load(proto, s.globals)), nil
 }
 
 func baseLoad(s *State, args []Value) ([]Value, error) {
@@ -407,17 +414,17 @@ func baseCollectGarbage(s *State, args []Value) ([]Value, error) {
 	case "count":
 		var stats runtime.MemStats
 		runtime.ReadMemStats(&stats)
-		return []Value{Number(float64(stats.Alloc) / 1024)}, nil
+		return s.values1(Number(float64(stats.Alloc) / 1024)), nil
 	case "step":
 		s.collect()
-		return []Value{Bool(true)}, nil
+		return s.values1(Bool(true)), nil
 	case "setpause", "setstepmul":
-		return []Value{Number(200)}, nil
+		return s.values1(Number(200)), nil
 	case "collect":
 		s.collect()
-		return []Value{Number(0)}, nil
+		return s.values1(Number(0)), nil
 	case "stop", "restart":
-		return []Value{Number(0)}, nil
+		return s.values1(Number(0)), nil
 	default:
 		s.argError(1, "invalid option '"+option+"'")
 	}

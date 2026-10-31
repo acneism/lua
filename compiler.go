@@ -48,6 +48,9 @@ const (
 	opCompare
 	opCallArithmetic
 	opCallArithmeticUpvalue
+	opNegate
+	opNot
+	opLength
 )
 
 type nameInfo struct {
@@ -79,6 +82,7 @@ type Proto struct {
 	metadata     []instruction
 	lines        []int32
 	constants    []Value
+	longest      int
 	children     []*Proto
 	upvalues     []upvalueDescriptor
 	chunk        string

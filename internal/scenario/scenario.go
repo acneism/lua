@@ -1,0 +1,45 @@
+package scenario
+
+type Scenario struct{ Name, Source string }
+
+func All() []Scenario {
+	return []Scenario{
+		{"Loop", "local s=0 for i=1,10000000 do s=s+i end return s"},
+		{"Fib27", "local function fib(n) if n<2 then return n end return fib(n-1)+fib(n-2) end return fib(27)"},
+		{"LuaCalls", "local function f(x) return x+1 end local n=0 for i=1,1000000 do n=f(n) end return n"},
+		{"TableInsert", "local t={} for i=1,1000000 do t[#t+1]=i end return #t"},
+		{"TableHash", "local t={} for i=1,100000 do t['k'..i]=i end local n=0 for k,v in pairs(t) do n=n+v end return n"},
+		{"Sort", "local t={} for i=1,100000 do t[i]=100001-i end table.sort(t) return t[1]+t[100000]"},
+		{"GSub", "return #string.gsub(string.rep('abc ',262144),'%a+','x')"},
+		{"StringConcat", "local t={} for i=1,100000 do t[i]=tostring(i) end return #table.concat(t)"},
+		{"Metamethod", "local t=setmetatable({}, {__add=function(a,b) return b+1 end}) local n=0 for i=1,1000000 do n=t+n end return n"},
+		{"ArithConst", "local s=0 for i=1,10000000 do s=s+i*2 end return s"},
+		{"TwoAccumulators", "local s,t=0,0 for i=1,10000000 do s=s+i t=t+1 end return s+t"},
+		{"WhileLoop", "local s,i=0,0 while i<10000000 do i=i+1 s=s+i end return s"},
+		{"Branches", "local n=0 for i=1,2000000 do if i%3==0 then n=n+1 elseif i%5==0 then n=n+2 else n=n-1 end end return n"},
+		{"CallTwoArgs", "local function f(a,b) return a+b end local n=0 for i=1,1000000 do n=f(n,i) end return n"},
+		{"Upvalues", "local a,b=0,0 local function step(i) a=a+1 b=b+i end for i=1,1000000 do step(i) end return a+b"},
+		{"MethodCall", "local o={n=0} function o:add(x) self.n=self.n+x end for i=1,1000000 do o:add(i) end return o.n"},
+		{"MultiReturn", "local function f(i) return i,i+1 end local s=0 for i=1,1000000 do local a,b=f(i) s=s+a+b end return s"},
+		{"Varargs", "local function sum(...) local a,b,c=... return a+b+c end local s=0 for i=1,1000000 do s=s+sum(i,1,2) end return s"},
+		{"NativeCalls", "local n=0 for i=1,1000000 do if type(i)=='number' then n=n+math.max(i%7,3) end end return n"},
+		{"ClosureCreate", "local s=0 for i=1,1000000 do local f=function() return i end s=s+f() end return s"},
+		{"ArrayReadWrite", "local t={} for i=1,1000000 do t[i]=i*2 end local s=0 for i=1,#t do s=s+t[i] end return s"},
+		{"FieldAccess", "local p={x=1,y=2} local s=0 for i=1,1000000 do s=s+p.x*p.y end return s"},
+		{"TableLibInsert", "local t={} for i=1,1000000 do table.insert(t,i) end return #t"},
+		{"Ipairs", "local t={} for i=1,100000 do t[i]=i end local s=0 for r=1,20 do for _,v in ipairs(t) do s=s+v end end return s"},
+		{"SmallTables", "local s=0 for i=1,300000 do local p={x=i,y=i+1} s=s+p.y-p.x end return s"},
+		{"StringKeys", "local keys={} for i=1,1000 do keys[i]='k'..i end local t={} for i=1,1000 do t[keys[i]]=i end local s=0 for r=1,2000 do for i=1,1000 do s=s+t[keys[i]] end end return s"},
+		{"KeyBuild", "local n=0 for i=1,200000 do local k='user:'..i..':name' n=n+#k end return n"},
+		{"StringMethods", "local s='The quick brown fox' local n=0 for i=1,1000000 do n=n+#s:sub(5,9)+s:byte(1) end return n"},
+		{"StringFormat", "local n=0 for i=1,100000 do n=n+#string.format('%d:%s:%.2f',i,'key',i/3) end return n"},
+		{"Match", "local s='user:12345:profile' local n=0 for i=1,200000 do local a,b=s:match('^(%a+):(%d+)') n=n+#a+tonumber(b) end return n"},
+		{"IndexInheritance", "local Base={} Base.__index=Base function Base:get() return self.v end local o=setmetatable({v=1},Base) local s=0 for i=1,1000000 do s=s+o:get() end return s"},
+		{"IndexFunction", "local t=setmetatable({},{__index=function(t,k) return k*2 end}) local s=0 for i=1,1000000 do s=s+t[i] end return s"},
+		{"NewIndexFunction", "local n=0 local t=setmetatable({},{__newindex=function(t,k,v) n=n+v end}) for i=1,1000000 do t[i]=i end return n"},
+		{"CompareMetamethod", "local mt={__lt=function(a,b) return a.v<b.v end} local x=setmetatable({v=1},mt) local y=setmetatable({v=2},mt) local n=0 for i=1,1000000 do if x<y then n=n+1 end end return n"},
+		{"CallMetamethod", "local c=setmetatable({},{__call=function(self,x) return x+1 end}) local n=0 for i=1,2000000 do n=c(n) end return n"},
+		{"PCall", "local n=0 for i=1,1000000 do local ok,v=pcall(tonumber,i) if ok then n=n+v end end return n"},
+		{"Coroutine", "local co=coroutine.wrap(function() local i=0 while true do i=i+1 coroutine.yield(i) end end) local s=0 for i=1,1000000 do s=s+co() end return s"},
+	}
+}

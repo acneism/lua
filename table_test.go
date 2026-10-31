@@ -4,6 +4,7 @@ import (
 	"math"
 	"math/rand/v2"
 	"os"
+	"runtime"
 	"strconv"
 	"testing"
 )
@@ -93,5 +94,65 @@ func TestTableReadOnlyAndInvalidKeys(t *testing.T) {
 	key, value, err := table.Next(Nil())
 	if err != nil || !math.Signbit(key.Float()) || value.Float() != 2 {
 		t.Fatalf("lost the original zero key: %v %v %v", key, value, err)
+	}
+}
+
+func TestTableNumericArray(t *testing.T) {
+	s := NewState(Options{})
+	table := s.NewTable(4, 0)
+	nan := math.Float64frombits(0x7ff8000000000123)
+	for key, value := range map[float64]Value{1: Number(1), 3: Number(nan), 4: Number(4)} {
+		if err := table.RawSet(Number(key), value); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if table.generic || table.Len() != 4 || !table.RawGet(Number(2)).IsNil() || math.Float64bits(table.RawGet(Number(3)).number) != 0x7ff8000000000123 {
+		t.Fatalf("numeric array: generic=%v len=%d", table.generic, table.Len())
+	}
+	var keys []float64
+	for key, _, err := table.Next(Nil()); !key.IsNil(); key, _, err = table.Next(key) {
+		if err != nil {
+			t.Fatal(err)
+		}
+		keys = append(keys, key.number)
+	}
+	if len(keys) != 3 || keys[0] != 1 || keys[1] != 3 || keys[2] != 4 {
+		t.Fatalf("numeric array keys: %v", keys)
+	}
+	if err := table.RawSet(Number(2), Number(math.Float64frombits(holeBits))); err != nil {
+		t.Fatal(err)
+	}
+	if !table.generic || math.Float64bits(table.RawGet(Number(2)).number) != holeBits || table.RawGet(Number(1)).number != 1 || math.Float64bits(table.RawGet(Number(3)).number) != 0x7ff8000000000123 {
+		t.Fatalf("hole bits did not switch the array to values")
+	}
+	mixed := s.NewTable(3, 0)
+	for key := 1; key <= 3; key++ {
+		if err := mixed.RawSet(Number(float64(key)), Number(float64(key*10))); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := mixed.RawSet(Number(2), String("x")); err != nil {
+		t.Fatal(err)
+	}
+	if !mixed.generic || mixed.RawGet(Number(1)).number != 10 || mixed.RawGet(Number(2)).Text() != "x" || mixed.RawGet(Number(3)).number != 30 || mixed.Len() != 3 {
+		t.Fatalf("string value did not switch the array to values")
+	}
+}
+
+func TestTableReserveMatchesAllocation(t *testing.T) {
+	for _, item := range []struct {
+		array, hash int
+		generic     bool
+	}{{1024, 0, false}, {2048, 0, true}, {0, 1024, false}} {
+		budget := NewBudget(0)
+		table := &Table{memory: budget, generic: item.generic}
+		var before, after runtime.MemStats
+		runtime.GC()
+		runtime.ReadMemStats(&before)
+		table.resize(item.array, item.hash)
+		runtime.ReadMemStats(&after)
+		if allocated := int64(after.TotalAlloc - before.TotalAlloc); allocated < budget.Used() || allocated > budget.Used()+budget.Used()/8+64 {
+			t.Fatalf("array %d hash %d generic %v: reserved %d, allocated %d", item.array, item.hash, item.generic, budget.Used(), allocated)
+		}
 	}
 }

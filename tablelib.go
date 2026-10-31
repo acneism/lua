@@ -16,7 +16,7 @@ func tableRead(table *Table, index int) Value { return table.RawGet(Number(float
 func (s *State) openTable() {
 	s.library("table", []string{"concat", "foreach", "foreachi", "getn", "maxn", "insert", "remove", "setn", "sort"}, map[string]GoFunction{
 		"getn": func(s *State, args []Value) ([]Value, error) {
-			return []Value{Number(float64(s.checkTable(args, 0).Len()))}, nil
+			return s.values1(Number(float64(s.checkTable(args, 0).Len()))), nil
 		},
 		"setn": func(s *State, args []Value) ([]Value, error) {
 			s.checkTable(args, 0)
@@ -35,7 +35,7 @@ func (s *State) openTable() {
 					result = key.number
 				}
 			}
-			return []Value{Number(result)}, nil
+			return s.values1(Number(result)), nil
 		},
 		"insert": tableInsert,
 		"remove": tableRemove,
@@ -49,7 +49,7 @@ func (s *State) openTable() {
 				}
 				result := s.invokeOne(fn, []Value{key, value})
 				if !result.IsNil() {
-					return []Value{result}, nil
+					return s.values1(result), nil
 				}
 			}
 			return nil, nil
@@ -60,7 +60,7 @@ func (s *State) openTable() {
 			for index := 1; index <= length; index++ {
 				result := s.invokeOne(fn, []Value{Number(float64(index)), tableRead(table, index)})
 				if !result.IsNil() {
-					return []Value{result}, nil
+					return s.values1(result), nil
 				}
 			}
 			return nil, nil
@@ -101,7 +101,7 @@ func tableRemove(s *State, args []Value) ([]Value, error) {
 		s.tableWrite(table, position, tableRead(table, position+1))
 	}
 	s.tableWrite(table, end, Nil())
-	return []Value{result}, nil
+	return s.values1(result), nil
 }
 
 func tableConcat(s *State, args []Value) ([]Value, error) {
@@ -123,7 +123,7 @@ func tableConcat(s *State, args []Value) ([]Value, error) {
 		s.checkString(out.Len() + len(text))
 		out.WriteString(text)
 	}
-	return []Value{String(out.String())}, nil
+	return s.values1(String(out.String())), nil
 }
 
 func tableSort(s *State, args []Value) ([]Value, error) {
