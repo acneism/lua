@@ -523,6 +523,9 @@ func (s *State) checkString(size int) {
 }
 
 func abortError(err error) bool {
+	if err == nil {
+		return false
+	}
 	var failure *Error
 	return errors.As(err, &failure) && (failure.Abort != nil || failure.Internal)
 }
