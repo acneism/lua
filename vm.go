@@ -733,6 +733,8 @@ frames:
 						table.setArray(index-1, assigned)
 						continue
 					}
+				} else if key.text != nil && table.replaceString(key.text, assigned) {
+					continue
 				}
 				t.frames[frameIndex].pc = int32(pc)
 				if err := table.RawSet(key, assigned); err != nil {
