@@ -77,3 +77,24 @@ func (s *State) metaFor(value Value, event metaEvent) Value {
 	}
 	return s.eventMethod(table, event)
 }
+
+func (s *State) cached(event metaEvent, table *Table) (Value, bool) {
+	cache := &s.methodCache[event]
+	return cache.method, table != nil && cache.table == table && cache.version == table.version
+}
+
+func (v Value) luaFunction() bool {
+	return v.object != nil && v.object.kind == TypeFunction && v.object.function.proto != nil
+}
+
+func (s *State) lessMethod(left, right *Value) (Value, bool) {
+	if left.object == nil || right.object == nil || left.object.kind != TypeTable || right.object.kind != TypeTable {
+		return Nil(), false
+	}
+	meta := left.object.table.metatable
+	if meta == nil || meta != right.object.table.metatable {
+		return Nil(), false
+	}
+	method, ok := s.cached(eventLess, meta)
+	return method, ok && method.luaFunction()
+}

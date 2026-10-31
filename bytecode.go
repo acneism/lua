@@ -66,6 +66,38 @@ func comparisonOpcode(comparison, mode int) opcode {
 
 func comparisonKind(mode opcode) int { return int(mode) / compareModes }
 
+func numericCompare(operation int, x, y float64) bool {
+	switch operation {
+	case operationLess:
+		return x < y
+	case operationLessEqual:
+		return x <= y
+	case operationGreater:
+		return x > y
+	case operationGreaterEqual:
+		return x >= y
+	case operationEqual:
+		return x == y
+	}
+	return x != y
+}
+
+func numericArithmetic(operation int, x, y float64) float64 {
+	switch operation {
+	case operationAdd:
+		return luaNaN(x+y, x, y)
+	case operationSubtract:
+		return luaNaN(x-y, x, y)
+	case operationMultiply:
+		return luaNaN(x*y, x, y)
+	case operationDivide:
+		return luaDivide(x, y)
+	case operationModulo:
+		return luaModulo(x, y)
+	}
+	return luaPower(x, y)
+}
+
 func numericOperands(op opcode, word uint64, registers *[256]Value, constants []Value) (*Value, *Value) {
 	left, right := &registers[uint8(word>>16)], &registers[uint8(word>>32)]
 	if op&leftConstant != 0 {
