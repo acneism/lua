@@ -36,7 +36,11 @@ func (s *State) openString() {
 			if end-start+1+len(args) > 8000 {
 				s.raise("stack overflow (string slice too long)", 1)
 			}
-			values := make([]Value, end-start+1)
+			values := s.results[:0]
+			if end-start+1 > len(s.results) {
+				values = make([]Value, 0, end-start+1)
+			}
+			values = values[:end-start+1]
 			for index := range values {
 				s.tick()
 				values[index] = Number(float64(text[start+index-1]))
