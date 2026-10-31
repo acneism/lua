@@ -3,14 +3,46 @@ package lua
 const vmPollStride = 32
 const vmCallWeight = 4
 
-const numericBase opcode = (opLength + 4) &^ 3
-const numericEnd opcode = numericBase + 12*4
-const numericJumpBase opcode = numericEnd
-const numericJumpEnd opcode = numericJumpBase + 6*4
-const comparisonBase opcode = numericJumpEnd
+const (
+	operationAdd = iota
+	operationSubtract
+	operationMultiply
+	operationDivide
+	operationModulo
+	operationPower
+	operationLess
+	operationLessEqual
+	operationGreater
+	operationGreaterEqual
+	operationEqual
+	operationNotEqual
+	operationCount
+)
 
 const (
-	opAdd opcode = numericBase + 4*iota
+	compareEqual = iota
+	compareLess
+	compareLessEqual
+	compareCount
+)
+
+const (
+	leftConstant  = 1
+	rightConstant = 2
+	expectTrue    = 4
+	operandModes  = 4
+	compareModes  = 8
+)
+
+const numericBase opcode = (opLength + operandModes) &^ (operandModes - 1)
+const numericCompareBase = numericBase + operationLess*operandModes
+const numericEnd = numericBase + operationCount*operandModes
+const numericJumpBase = numericEnd
+const numericJumpEnd = numericJumpBase + (operationCount-operationLess)*operandModes
+const comparisonBase = numericJumpEnd
+
+const (
+	opAdd opcode = numericBase + operandModes*iota
 	opSubtract
 	opMultiply
 	opDivide
@@ -18,10 +50,21 @@ const (
 	opPower
 )
 
-const (
-	leftConstant  = 1
-	rightConstant = 2
-)
+func numericOpcode(operation, mode int) opcode {
+	return numericBase + opcode(operation*operandModes+mode)
+}
+
+func (op opcode) numericOperation() int { return int(op-numericBase) / operandModes }
+func (op opcode) arithmetic() bool      { return op >= numericBase && op < numericCompareBase }
+func (op opcode) numericCompare() bool  { return op >= numericCompareBase && op < numericEnd }
+func (op opcode) withJump() opcode      { return op - numericCompareBase + numericJumpBase }
+func (op opcode) withoutJump() opcode   { return op - numericJumpBase + numericCompareBase }
+
+func comparisonOpcode(comparison, mode int) opcode {
+	return comparisonBase + opcode(comparison*compareModes+mode)
+}
+
+func comparisonKind(mode opcode) int { return int(mode) / compareModes }
 
 func numericOperands(op opcode, word uint64, registers *[256]Value, constants []Value) (*Value, *Value) {
 	left, right := &registers[uint8(word>>16)], &registers[uint8(word>>32)]
@@ -44,29 +87,29 @@ func rkOperand(index int, registers *[256]Value, constants []Value) Value {
 func numericOperation(operator string) int {
 	switch operator {
 	case "+":
-		return 0
+		return operationAdd
 	case "-":
-		return 1
+		return operationSubtract
 	case "*":
-		return 2
+		return operationMultiply
 	case "/":
-		return 3
+		return operationDivide
 	case "%":
-		return 4
+		return operationModulo
 	case "^":
-		return 5
+		return operationPower
 	case "<":
-		return 6
+		return operationLess
 	case "<=":
-		return 7
+		return operationLessEqual
 	case ">":
-		return 8
+		return operationGreater
 	case ">=":
-		return 9
+		return operationGreaterEqual
 	case "==":
-		return 10
+		return operationEqual
 	case "~=":
-		return 11
+		return operationNotEqual
 	}
 	return -1
 }
@@ -103,36 +146,36 @@ func (c *compiler) freeze() {
 		}
 		switch op {
 		case opCompare:
-			operation := 0
+			operation := compareEqual
 			switch source.text {
 			case "<":
-				operation = 1
+				operation = compareLess
 			case "<=":
-				operation = 2
+				operation = compareLessEqual
 			}
-			left, right, mode := source.b, source.c, source.a*4
+			left, right, mode := source.b, source.c, source.a*expectTrue
 			if left < 0 {
 				left = -1 - left
-				mode |= 1
+				mode |= leftConstant
 			}
 			if right < 0 {
 				right = -1 - right
-				mode |= 2
+				mode |= rightConstant
 			}
-			word = uint64(comparisonBase+opcode(operation*8+mode)) | uint64(uint8(left))<<8 | uint64(uint8(right))<<16
+			word = uint64(comparisonOpcode(operation, mode)) | uint64(uint8(left))<<8 | uint64(uint8(right))<<16
 		case opBinary:
 			operation := numericOperation(source.text)
 			left, right, mode := source.b, source.c, 0
 			if left < 0 {
 				left = -1 - left
-				mode |= 1
+				mode |= leftConstant
 			}
 			if right < 0 {
 				right = -1 - right
-				mode |= 2
+				mode |= rightConstant
 			}
 			if operation >= 0 && left <= 65535 && right <= 65535 {
-				op = numericBase + opcode(operation*4+mode)
+				op = numericOpcode(operation, mode)
 				word = uint64(op) | uint64(uint8(source.a))<<8 | uint64(uint16(left))<<16 | uint64(uint16(right))<<32
 			}
 		case opUnary:
@@ -151,21 +194,21 @@ func (c *compiler) freeze() {
 	for pc := 0; pc+1 < len(p.code); pc++ {
 		word, next := p.code[pc], p.code[pc+1]
 		op, nextOp := opcode(word), opcode(next)
-		if op >= numericBase+6*4 && op < numericEnd && (nextOp == opJumpFalse || nextOp == opJumpTrue) && uint8(word>>8) == uint8(next>>8) {
-			p.code[pc] = word&^255 | uint64(op+numericJumpBase-(numericBase+6*4))
+		if op.numericCompare() && (nextOp == opJumpFalse || nextOp == opJumpTrue) && uint8(word>>8) == uint8(next>>8) {
+			p.code[pc] = word&^255 | uint64(op.withJump())
 		}
 	}
 	for pc := 1; pc < len(p.code); pc++ {
 		loop, add := p.code[pc], p.code[pc-1]
 		index, sum := int(uint8(loop>>8)), int(uint8(add>>8))
-		if opcode(loop) == opForLoop && int(uint32(loop>>16)) == pc-1 && opcode(add) == numericBase && uint8(add>>16) == uint8(sum) && int(uint8(add>>32)) == index+3 && (sum < index || sum > index+3) {
+		if opcode(loop) == opForLoop && int(uint32(loop>>16)) == pc-1 && opcode(add) == opAdd && uint8(add>>16) == uint8(sum) && int(uint8(add>>32)) == index+3 && (sum < index || sum > index+3) {
 			p.code[pc] = loop&^255 | uint64(opForAccumulate) | uint64(uint8(sum))<<48
 		}
 	}
 	for pc := 0; pc+2 < len(p.code); pc++ {
 		load, argument, call := p.code[pc], p.code[pc+1], p.code[pc+2]
 		loadOp, argumentOp := opcode(load), opcode(argument)
-		arithmetic := argumentOp >= numericBase && argumentOp < numericBase+6*4
+		arithmetic := argumentOp.arithmetic()
 		if (loadOp != opMove && loadOp != opGetUpvalue) || (argumentOp != opMove && argumentOp != opConstant && !arithmetic) || opcode(call) != opCall || uint8(load>>8) != uint8(call>>8) || uint8(argument>>8) != uint8(call>>8)+1 || int16(call>>16) != 1 {
 			continue
 		}
@@ -177,11 +220,13 @@ func (c *compiler) freeze() {
 			continue
 		}
 		op := opCallDirect
-		if loadOp == opGetUpvalue {
-			op++
-		}
-		if argumentOp == opConstant {
-			op += 2
+		switch {
+		case loadOp == opGetUpvalue && argumentOp == opConstant:
+			op = opCallDirectUpvalueConstant
+		case loadOp == opGetUpvalue:
+			op = opCallDirectUpvalue
+		case argumentOp == opConstant:
+			op = opCallDirectConstant
 		}
 		if arithmetic {
 			op = opCallArithmetic

@@ -103,10 +103,10 @@ func (s *State) enterMethod(method Value, count int, first, second, third Value,
 const compareWant = -2
 
 func (s *State) enterCompareMethod(left, right Value, mode int) bool {
-	kind := mode >> 2 & 1
+	kind := mode & expectTrue / expectTrue
 	var method Value
-	switch mode / 8 {
-	case 0:
+	switch comparisonKind(opcode(mode)) {
+	case compareEqual:
 		if left.Type() != right.Type() || left.Type() != TypeTable && left.Type() != TypeUserdata || left.Equal(right) {
 			return false
 		}
@@ -114,7 +114,7 @@ func (s *State) enterCompareMethod(left, right Value, mode int) bool {
 		if !method.Equal(s.metaFor(right, eventEqual)) {
 			return false
 		}
-	case 1:
+	case compareLess:
 		if left.Type() == right.Type() && (left.Type() == TypeNumber || left.Type() == TypeString) {
 			return false
 		}
@@ -161,7 +161,7 @@ func (s *State) compareSlow(left, right Value, mode opcode) {
 	t := s.current
 	f := &t.frames[len(t.frames)-1]
 	i := f.function.proto.instruction(int(f.pc) - 1)
-	s.jumpOn(s.binary(i.text, left, right, i.left, i.right).Truth() == (mode&4 != 0))
+	s.jumpOn(s.binary(i.text, left, right, i.left, i.right).Truth() == (mode&expectTrue != 0))
 }
 
 func (s *State) jumpOn(jump bool) {

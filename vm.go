@@ -216,23 +216,23 @@ frames:
 			case comparisonBase + 0, comparisonBase + 1, comparisonBase + 2, comparisonBase + 3, comparisonBase + 4, comparisonBase + 5, comparisonBase + 6, comparisonBase + 7, comparisonBase + 8, comparisonBase + 9, comparisonBase + 10, comparisonBase + 11, comparisonBase + 12, comparisonBase + 13, comparisonBase + 14, comparisonBase + 15, comparisonBase + 16, comparisonBase + 17, comparisonBase + 18, comparisonBase + 19, comparisonBase + 20, comparisonBase + 21, comparisonBase + 22, comparisonBase + 23:
 				mode := op - comparisonBase
 				left, right := &registers[uint8(word>>8)], &registers[uint8(word>>16)]
-				if mode&1 != 0 {
+				if mode&leftConstant != 0 {
 					left = &constants[uint8(word>>8)]
 				}
-				if mode&2 != 0 {
+				if mode&rightConstant != 0 {
 					right = &constants[uint8(word>>16)]
 				}
 				var matched bool
 				if left.object == &numberMarker && right.object == &numberMarker {
-					switch mode / 8 {
-					case 0:
+					switch comparisonKind(mode) {
+					case compareEqual:
 						matched = left.number == right.number
-					case 1:
+					case compareLess:
 						matched = left.number < right.number
-					case 2:
+					case compareLessEqual:
 						matched = left.number <= right.number
 					}
-				} else if mode < 8 && (left.object == nil || left.object.kind != TypeTable && left.object.kind != TypeUserdata) {
+				} else if comparisonKind(mode) == compareEqual && (left.object == nil || left.object.kind != TypeTable && left.object.kind != TypeUserdata) {
 					matched = left.Equal(*right)
 				} else {
 					t.frames[frameIndex].pc = int32(pc)
@@ -242,7 +242,7 @@ frames:
 					}
 					continue frames
 				}
-				if matched == (mode&4 != 0) {
+				if matched == (mode&expectTrue != 0) {
 					target := int(uint32(code[pc] >> 16))
 					if target < pc {
 						remaining -= vmCallWeight
@@ -322,28 +322,28 @@ frames:
 				if s.enterArithmeticMethod(left, right, 5, base+int(register)) {
 					continue frames
 				}
-			case numericBase + 24, numericBase + 25, numericBase + 26, numericBase + 27, numericBase + 28, numericBase + 29, numericBase + 30, numericBase + 31, numericBase + 32, numericBase + 33, numericBase + 34, numericBase + 35, numericBase + 36, numericBase + 37, numericBase + 38, numericBase + 39, numericBase + 40, numericBase + 41, numericBase + 42, numericBase + 43, numericBase + 44, numericBase + 45, numericBase + 46, numericBase + 47, numericJumpBase + 0, numericJumpBase + 1, numericJumpBase + 2, numericJumpBase + 3, numericJumpBase + 4, numericJumpBase + 5, numericJumpBase + 6, numericJumpBase + 7, numericJumpBase + 8, numericJumpBase + 9, numericJumpBase + 10, numericJumpBase + 11, numericJumpBase + 12, numericJumpBase + 13, numericJumpBase + 14, numericJumpBase + 15, numericJumpBase + 16, numericJumpBase + 17, numericJumpBase + 18, numericJumpBase + 19, numericJumpBase + 20, numericJumpBase + 21, numericJumpBase + 22, numericJumpBase + 23:
+			case numericCompareBase + 0, numericCompareBase + 1, numericCompareBase + 2, numericCompareBase + 3, numericCompareBase + 4, numericCompareBase + 5, numericCompareBase + 6, numericCompareBase + 7, numericCompareBase + 8, numericCompareBase + 9, numericCompareBase + 10, numericCompareBase + 11, numericCompareBase + 12, numericCompareBase + 13, numericCompareBase + 14, numericCompareBase + 15, numericCompareBase + 16, numericCompareBase + 17, numericCompareBase + 18, numericCompareBase + 19, numericCompareBase + 20, numericCompareBase + 21, numericCompareBase + 22, numericCompareBase + 23, numericJumpBase + 0, numericJumpBase + 1, numericJumpBase + 2, numericJumpBase + 3, numericJumpBase + 4, numericJumpBase + 5, numericJumpBase + 6, numericJumpBase + 7, numericJumpBase + 8, numericJumpBase + 9, numericJumpBase + 10, numericJumpBase + 11, numericJumpBase + 12, numericJumpBase + 13, numericJumpBase + 14, numericJumpBase + 15, numericJumpBase + 16, numericJumpBase + 17, numericJumpBase + 18, numericJumpBase + 19, numericJumpBase + 20, numericJumpBase + 21, numericJumpBase + 22, numericJumpBase + 23:
 				operation := op
 				fused := op >= numericJumpBase
 				if fused {
-					operation -= numericJumpBase - (numericBase + 6*4)
+					operation = op.withoutJump()
 				}
 				left, right := numericOperands(operation, word, registers, constants)
 				if left.object == &numberMarker && right.object == &numberMarker {
 					x, y := left.number, right.number
 					var value Value
-					switch (operation - numericBase) / 4 {
-					case 6:
+					switch operation.numericOperation() {
+					case operationLess:
 						value = Bool(x < y)
-					case 7:
+					case operationLessEqual:
 						value = Bool(x <= y)
-					case 8:
+					case operationGreater:
 						value = Bool(x > y)
-					case 9:
+					case operationGreaterEqual:
 						value = Bool(x >= y)
-					case 10:
+					case operationEqual:
 						value = Bool(x == y)
-					case 11:
+					case operationNotEqual:
 						value = Bool(x != y)
 					}
 					registers[register] = value
@@ -374,9 +374,8 @@ frames:
 				continue
 
 			case opCallDirect, opCallDirectUpvalue, opCallDirectConstant, opCallDirectUpvalueConstant, opCallArithmetic, opCallArithmeticUpvalue:
-				mode := op - opCallDirect
 				value := registers[uint8(word>>16)]
-				if mode&1 != 0 {
+				if op == opCallDirectUpvalue || op == opCallDirectUpvalueConstant || op == opCallArithmeticUpvalue {
 					value = f.function.upvalues[uint8(word>>16)].get()
 				}
 				var argument Value
@@ -386,12 +385,12 @@ frames:
 						continue
 					}
 					packed := code[pc]
-					operation := opcode(packed) - numericBase
+					operation := opcode(packed)
 					left, right := &registers[uint8(packed>>16)], &registers[uint8(packed>>32)]
-					if operation&1 != 0 {
+					if operation&leftConstant != 0 {
 						left = &constants[uint16(packed>>16)]
 					}
-					if operation&2 != 0 {
+					if operation&rightConstant != 0 {
 						right = &constants[uint16(packed>>32)]
 					}
 					if left.object != &numberMarker || right.object != &numberMarker {
@@ -399,23 +398,23 @@ frames:
 						continue
 					}
 					x, y := left.number, right.number
-					switch operation / 4 {
-					case 0:
+					switch operation.numericOperation() {
+					case operationAdd:
 						argument = Number(luaNaN(x+y, x, y))
-					case 1:
+					case operationSubtract:
 						argument = Number(luaNaN(x-y, x, y))
-					case 2:
+					case operationMultiply:
 						argument = Number(luaNaN(x*y, x, y))
-					case 3:
+					case operationDivide:
 						argument = Number(luaDivide(x, y))
-					case 4:
+					case operationModulo:
 						argument = Number(luaModulo(x, y))
-					case 5:
+					case operationPower:
 						argument = Number(luaPower(x, y))
 					}
 				} else {
 					argument = registers[uint8(word>>24)]
-					if mode&2 != 0 {
+					if op == opCallDirectConstant || op == opCallDirectUpvalueConstant {
 						argument = constants[uint16(word>>24)]
 					}
 				}
