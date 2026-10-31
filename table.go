@@ -3,9 +3,16 @@ package lua
 import (
 	"math"
 	"math/bits"
+	"reflect"
 )
 
 const maxTableBits = 26
+
+var (
+	numberBytes = int64(reflect.TypeFor[float64]().Size())
+	valueBytes  = int64(reflect.TypeFor[Value]().Size())
+	nodeBytes   = int64(reflect.TypeFor[tableNode]().Size())
+)
 
 type tableNode struct {
 	key   Value
@@ -67,6 +74,7 @@ func (t *Table) arrayAt(index int) Value {
 }
 
 func (t *Table) makeGeneric() {
+	t.memory.reserve(int64(len(t.numbers)) * valueBytes)
 	t.array = make([]Value, len(t.numbers))
 	for index := range t.numbers {
 		t.array[index] = t.arrayAt(index)
@@ -312,11 +320,11 @@ func (t *Table) resize(arraySize, hashSize int) {
 	}
 	switch {
 	case arraySize > oldSize && t.generic:
-		t.memory.reserve(int64(arraySize-oldSize) * 40)
+		t.memory.reserve(int64(arraySize-oldSize) * valueBytes)
 		t.array = make([]Value, arraySize)
 		copy(t.array, old.array)
 	case arraySize > oldSize:
-		t.memory.reserve(int64(arraySize-oldSize) * 40)
+		t.memory.reserve(int64(arraySize-oldSize) * numberBytes)
 		t.numbers = make([]float64, arraySize)
 		copy(t.numbers, old.numbers)
 		for index := oldSize; index < arraySize; index++ {
@@ -330,7 +338,7 @@ func (t *Table) resize(arraySize, hashSize int) {
 	if hashSize > 0 {
 		hashSize = 1 << bits.Len(uint(hashSize-1))
 	}
-	t.memory.reserve(int64(hashSize) * 88)
+	t.memory.reserve(int64(hashSize) * nodeBytes)
 	t.nodes = make([]tableNode, hashSize)
 	for i := range t.nodes {
 		t.nodes[i].next = -1

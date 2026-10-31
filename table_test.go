@@ -4,6 +4,7 @@ import (
 	"math"
 	"math/rand/v2"
 	"os"
+	"runtime"
 	"strconv"
 	"testing"
 )
@@ -135,5 +136,23 @@ func TestTableNumericArray(t *testing.T) {
 	}
 	if !mixed.generic || mixed.RawGet(Number(1)).number != 10 || mixed.RawGet(Number(2)).Text() != "x" || mixed.RawGet(Number(3)).number != 30 || mixed.Len() != 3 {
 		t.Fatalf("string value did not switch the array to values")
+	}
+}
+
+func TestTableReserveMatchesAllocation(t *testing.T) {
+	for _, item := range []struct {
+		array, hash int
+		generic     bool
+	}{{1024, 0, false}, {2048, 0, true}, {0, 1024, false}} {
+		budget := NewBudget(0)
+		table := &Table{memory: budget, generic: item.generic}
+		var before, after runtime.MemStats
+		runtime.GC()
+		runtime.ReadMemStats(&before)
+		table.resize(item.array, item.hash)
+		runtime.ReadMemStats(&after)
+		if allocated := int64(after.TotalAlloc - before.TotalAlloc); allocated < budget.Used() || allocated > budget.Used()+budget.Used()/8+64 {
+			t.Fatalf("array %d hash %d generic %v: reserved %d, allocated %d", item.array, item.hash, item.generic, budget.Used(), allocated)
+		}
 	}
 }
