@@ -57,7 +57,7 @@ Conditional operations preserve Lua's companion-JMP behavior. The existing
 call/return paths retain their ABI and protected-call semantics.
 
 Comparisons encode three operations, two RK flags and the accepted boolean in
-opcodes 192 through 215. Operands occupy bytes one and two of the packed word.
+the opCompare family described in ADR 12. Operands occupy bytes one and two of the packed word.
 The following mapped JMP supplies the accepted target; rejection skips that
 word. This keeps the original JMP entry available to other branches. Poll
 insertion counts emitted work and defers a checkpoint across a companion

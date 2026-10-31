@@ -39,6 +39,8 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 
 ### Changed
 
+- Speed up the interpreter for the 37 benchmark scenarios: dense opcodes with a jump-table dispatch, frame state kept fixed inside the dispatch loop, and metamethod continuations for __index, __newindex, __call, __eq, __lt and __le.
+- Keep array parts of numbers as plain floats, return Go function results without allocation, and reserve table memory by the actual element sizes.
 - Port the Redis Lua 5.1 compiler and exact binary dumps with debug information.
 - Compare complete corpus prototypes against captured Redis dumps in hex.
 
