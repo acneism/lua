@@ -307,12 +307,16 @@ func (m *patternMatcher) capture(index, start, end int) Value {
 	return String(m.source[capture.start : capture.start+capture.length])
 }
 
-func (m *patternMatcher) values(start, end int, whole bool) []Value {
+func (m *patternMatcher) values(start, end int, whole bool, buffer []Value) []Value {
 	count := m.level
 	if count == 0 && whole {
 		count = 1
 	}
-	values := make([]Value, count)
+	values := buffer[:0]
+	if count > len(buffer) {
+		values = make([]Value, 0, count)
+	}
+	values = values[:count]
 	for index := range values {
 		values[index] = m.capture(index, start, end)
 	}
@@ -339,9 +343,9 @@ func stringFind(s *State, args []Value, find bool) ([]Value, error) {
 		m.level = 0
 		if end := m.match(start, position); end >= 0 {
 			if find {
-				return append([]Value{Number(float64(start + 1)), Number(float64(end))}, m.values(start, end, false)...), nil
+				return append([]Value{Number(float64(start + 1)), Number(float64(end))}, m.values(start, end, false, nil)...), nil
 			}
-			return m.values(start, end, true), nil
+			return m.values(start, end, true, s.results[:]), nil
 		}
 		if anchored {
 			break
@@ -362,7 +366,7 @@ func stringGMatch(s *State, args []Value) ([]Value, error) {
 				if end == start {
 					next++
 				}
-				return m.values(start, end, true), nil
+				return m.values(start, end, true, s.results[:]), nil
 			}
 		}
 		next = len(source) + 1
@@ -417,7 +421,7 @@ func stringGSub(s *State, args []Value) ([]Value, error) {
 			default:
 				var value Value
 				if replacement.Type() == TypeFunction {
-					value = s.invokeOne(replacement, m.values(start, end, true))
+					value = s.invokeOne(replacement, m.values(start, end, true, nil))
 				} else {
 					value = s.get(replacement, m.capture(0, start, end), nameInfo{})
 				}

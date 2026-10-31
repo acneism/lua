@@ -148,6 +148,16 @@ func formatNumber(n float64) string {
 }
 
 func parseNumber(text string) (float64, bool) {
+	if len(text) > 0 && len(text) <= 15 {
+		var whole int64
+		index := 0
+		for ; index < len(text) && text[index] >= '0' && text[index] <= '9'; index++ {
+			whole = whole*10 + int64(text[index]-'0')
+		}
+		if index == len(text) {
+			return float64(whole), true
+		}
+	}
 	text = strings.Trim(cString(text), " \t\n\r\v\f")
 	if text == "" {
 		return 0, false
