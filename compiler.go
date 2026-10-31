@@ -48,6 +48,8 @@ const (
 	opCompare
 	opCallArithmetic
 	opCallArithmeticUpvalue
+	opCallFused
+	opCallFusedUpvalue
 	opNegate
 	opNot
 	opLength

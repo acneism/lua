@@ -495,6 +495,56 @@ frames:
 				}
 				registers[register] = value
 				continue
+			case opCallFused, opCallFusedUpvalue:
+				value := registers[uint8(word>>16)]
+				if op == opCallFusedUpvalue {
+					value = f.function.upvalues[uint8(word>>16)].get()
+				}
+				start := max(t.used, t.top)
+				count := int(uint8(word >> 24))
+				if !value.luaFunction() || value.object.function.proto.needsArgTable() || checkConstants || remaining <= vmCallWeight || len(t.frames) >= freshCalls-1 || start+count+256 > len(t.stack) {
+					registers[register] = value
+					continue
+				}
+				callee := value.object.function
+				parameters, size, frameBase := callee.proto.parameters, callee.proto.maxRegisters, start
+				if callee.proto.vararg {
+					frameBase += max(0, count-parameters)
+				}
+				for argument := range count {
+					slot := start + argument - parameters
+					if argument < parameters {
+						slot = frameBase + argument
+					} else if frameBase == start {
+						break
+					}
+					if load := code[pc+argument]; opcode(load) == opMove {
+						t.stack[slot] = registers[uint8(load>>16)]
+					} else {
+						t.stack[slot] = constants[uint32(load>>16)]
+					}
+				}
+				clearRegisters(t.stack[frameBase+min(parameters, count) : frameBase+size])
+				if callee.proto.argRegister >= 0 {
+					t.stack[frameBase+callee.proto.argRegister] = Nil()
+				}
+				call := code[pc+count]
+				remaining -= vmCallWeight
+				t.frames[frameIndex].pc = int32(pc + count + 1)
+				depth := len(t.frames)
+				if depth == cap(t.frames) {
+					t.frames = append(t.frames, frame{})
+				} else {
+					t.frames = t.frames[:depth+1]
+				}
+				entered := &t.frames[depth]
+				entered.function, entered.proto, entered.site = callee, callee.proto, nil
+				entered.start, entered.base, entered.pc = int32(start), int32(frameBase), 0
+				entered.returnDest, entered.want = int32(base+int(uint8(call>>48))), int32(int16(call>>32))
+				entered.metacallTop, entered.tailcalls = 0, 0
+				t.used, t.top = frameBase+size, frameBase+parameters
+				s.steps = s.options.HookEvery - remaining
+				continue frames
 			case opCall:
 				remaining -= vmCallWeight
 				if remaining <= 0 {

@@ -17410,5 +17410,37 @@
   {
     "src": "local t=setmetatable({1,2,3},{__newindex=function() end}) for i=4,20 do t[i]=i end setmetatable(t,nil) for i=4,6 do t[i]=i end local r={} for k in pairs(t) do r[#r+1]=k end return #t, table.concat(r,',')",
     "want": "6,1,2,3,4,5,6"
+  },
+  {
+    "src": "local function f(a, ...) return a, select('#', ...), ... end local x, y, z = 1, 2, 3 local r = {f(x, y, z)} return table.concat(r, ',')",
+    "want": "1,2,2,3"
+  },
+  {
+    "src": "local function f(a, b, c, d) return tostring(a)..tostring(b)..tostring(c)..tostring(d) end local x, y = 1, 2 return f(x, y)",
+    "want": "12nilnil"
+  },
+  {
+    "src": "local function f(a, b) return a, b end local x, y, z, w = 1, 2, 3, 4 return f(x, y, z, w)",
+    "want": "1,2"
+  },
+  {
+    "src": "local function f(...) return select('#', ...) end local x = 7 local n = 0 for i = 1, 3 do n = n + f(x, 'k', 2.5, x) end return n",
+    "want": "12"
+  },
+  {
+    "src": "local function f(a, b, ...) local t = {...} return a + b + #t end local x = 1 return f(x, 2, 'p', 'q')",
+    "want": "5"
+  },
+  {
+    "src": "local g = function(a, b, c) return a * b - c end local function h() local x, y = 3, 4 return g(x, y, 5) end return h()",
+    "want": "7"
+  },
+  {
+    "src": "local function f(a, b) return a + b end local s = 0 for i = 1, 5 do local q = i s = s + f(q, i) end return s",
+    "want": "30"
+  },
+  {
+    "src": "local function f(a, b, c) error(a .. b .. c) end local x = 'x' return pcall(function() local y = 'y' return f(x, y, 'z') end)",
+    "want": "false,user_script:1: xyz"
   }
 ]

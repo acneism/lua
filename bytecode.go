@@ -237,6 +237,15 @@ func (c *compiler) freeze() {
 			p.code[pc] = loop&^255 | uint64(opForAccumulate) | uint64(uint8(sum))<<48
 		}
 	}
+	for pc := range p.code {
+		if count := fusedArguments(p.code, pc); count > 0 {
+			op := opCallFused
+			if opcode(p.code[pc]) == opGetUpvalue {
+				op = opCallFusedUpvalue
+			}
+			p.code[pc] = p.code[pc]&^255&^(255<<24) | uint64(op) | uint64(count)<<24
+		}
+	}
 	for pc := 0; pc+2 < len(p.code); pc++ {
 		load, argument, call := p.code[pc], p.code[pc+1], p.code[pc+2]
 		loadOp, argumentOp := opcode(load), opcode(argument)
@@ -269,6 +278,30 @@ func (c *compiler) freeze() {
 		p.code[pc] = uint64(op) | uint64(uint8(load>>8))<<8 | uint64(uint8(load>>16))<<16 | uint64(uint16(arg))<<24 | uint64(uint8(call>>48))<<40 | uint64(uint16(call>>32))<<48
 	}
 	c.code = nil
+}
+
+func fusedArguments(code []uint64, pc int) int {
+	load := code[pc]
+	if opcode(load) != opMove && opcode(load) != opGetUpvalue {
+		return 0
+	}
+	function := uint8(load >> 8)
+	if opcode(load) == opMove && uint8(load>>16) >= function {
+		return 0
+	}
+	for count := 1; count <= 5 && pc+count < len(code); count++ {
+		word := code[pc+count]
+		if op := opcode(word); op == opCall {
+			if count < 3 || uint8(word>>8) != function || int16(word>>16) != int16(count-1) {
+				return 0
+			}
+			return count - 1
+		}
+		if uint8(word>>8) != function+uint8(count) || opcode(word) == opMove && uint8(word>>16) >= function || opcode(word) != opMove && opcode(word) != opConstant {
+			return 0
+		}
+	}
+	return 0
 }
 
 func (p *Proto) instruction(pc int) *instruction { return &p.metadata[p.sites[pc]] }
