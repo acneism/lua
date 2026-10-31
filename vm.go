@@ -106,6 +106,15 @@ func (s *State) nativeStack(fn *function, args []Value, site *instruction, start
 }
 
 func (t *thread) writeResults(dest, want int, values []Value) {
+	if want == 1 && dest < len(t.stack) {
+		if len(values) > 0 {
+			t.stack[dest] = values[0]
+		} else {
+			t.stack[dest] = Nil()
+		}
+		t.top = dest + 1
+		return
+	}
 	count := want
 	if count < 0 {
 		count = len(values)
@@ -197,6 +206,8 @@ frames:
 					case 2:
 						matched = left.number <= right.number
 					}
+				} else if mode < 8 && (left.object == nil || left.object.kind != TypeTable && left.object.kind != TypeUserdata) {
+					matched = left.Equal(*right)
 				} else {
 					t.frames[frameIndex].pc = int32(pc)
 					s.steps = s.options.HookEvery - remaining

@@ -82,11 +82,12 @@ func (s *State) openMath() {
 		return s.values1(Number(math.Ldexp(s.checkNumber(args, 0), exponent))), nil
 	}
 	for _, name := range []string{"min", "max"} {
+		minimum := name == "min"
 		functions[name] = func(s *State, args []Value) ([]Value, error) {
 			result := s.checkNumber(args, 0)
 			for index := 1; index < len(args); index++ {
 				value := s.checkNumber(args, index)
-				if name == "min" && value < result || name == "max" && value > result {
+				if minimum && value < result || !minimum && value > result {
 					result = value
 				}
 			}

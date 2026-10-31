@@ -52,6 +52,9 @@ func (s *State) expected(args []Value, index int, expected string) {
 }
 
 func (s *State) checkNumber(args []Value, index int) float64 {
+	if index < len(args) && args[index].object == &numberMarker {
+		return args[index].number
+	}
 	value, ok := argument(args, index).toNumber()
 	if index >= len(args) || !ok {
 		s.expected(args, index, "number")
@@ -60,6 +63,9 @@ func (s *State) checkNumber(args []Value, index int) float64 {
 }
 
 func (s *State) checkText(args []Value, index int) string {
+	if index < len(args) && args[index].object == nil && args[index].text != nil {
+		return args[index].text.text
+	}
 	value, ok := argument(args, index).toString()
 	if index >= len(args) || !ok {
 		s.expected(args, index, "string")
