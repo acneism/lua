@@ -52,6 +52,7 @@ func (u *upvalue) set(value Value) {
 
 type frame struct {
 	function                          *function
+	proto                             *Proto
 	site                              *instruction
 	start, base, pc, returnDest, want int32
 	metacallTop                       int32

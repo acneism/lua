@@ -50,7 +50,7 @@ func (s *State) push(fn *function, args []Value, dest, want int, site *instructi
 		t.frames = t.frames[:depth+1]
 	}
 	entered := &t.frames[depth]
-	entered.function, entered.site = fn, site
+	entered.function, entered.proto, entered.site = fn, fn.proto, site
 	entered.start, entered.base, entered.pc = int32(start), int32(base), 0
 	entered.returnDest, entered.want = int32(dest), int32(want)
 	entered.metacallTop, entered.tailcalls = 0, 0
@@ -90,7 +90,7 @@ func (s *State) nativeStack(fn *function, args []Value, site *instruction, start
 		t.frames = t.frames[:depth+1]
 	}
 	entered := &t.frames[depth]
-	entered.function, entered.site = fn, site
+	entered.function, entered.proto, entered.site = fn, fn.proto, site
 	entered.start, entered.base, entered.pc = int32(start), int32(start+len(args)), 0
 	entered.returnDest, entered.want, entered.metacallTop, entered.tailcalls = 0, 0, 0, 0
 	t.nativeDepth++
@@ -259,7 +259,7 @@ frames:
 	for len(t.frames) > stop {
 		frameIndex := len(t.frames) - 1
 		f := &t.frames[frameIndex]
-		proto := f.function.proto
+		proto := f.proto
 		base, pc := int(f.base), int(f.pc)
 		code, constants := proto.code, proto.constants
 		registers := (*[256]Value)(t.stack[base : base+256])
@@ -485,7 +485,7 @@ frames:
 						t.frames = t.frames[:depth+1]
 					}
 					entered := &t.frames[depth]
-					entered.function, entered.site = callee, nil
+					entered.function, entered.proto, entered.site = callee, callee.proto, nil
 					entered.start, entered.base, entered.pc = int32(start), int32(start), 0
 					entered.returnDest, entered.want = int32(base+int(uint8(word>>40))), int32(int16(word>>48))
 					entered.metacallTop, entered.tailcalls = 0, 0
@@ -523,7 +523,7 @@ frames:
 					s.steps = s.options.HookEvery - remaining
 					dest, want := base+int(uint8(word>>48)), int(int16(word>>32))
 					t.resumeDest, t.resumeWant, t.resumeReturn = dest, want, false
-					values := s.nativeStack(object.function, t.stack[argStart:argStart+count], f.function.proto.instruction(pc-1), argStart)
+					values := s.nativeStack(object.function, t.stack[argStart:argStart+count], f.proto.instruction(pc-1), argStart)
 					if t.yielded {
 						t.yielded = false
 						t.status = "suspended"
@@ -560,7 +560,7 @@ frames:
 							t.frames = t.frames[:depth+1]
 						}
 						entered := &t.frames[depth]
-						entered.function, entered.site = callee, nil
+						entered.function, entered.proto, entered.site = callee, callee.proto, nil
 						entered.start, entered.base, entered.pc = int32(start), int32(frameBase), 0
 						entered.returnDest, entered.want = int32(base+int(uint8(word>>48))), int32(int16(word>>32))
 						entered.metacallTop, entered.tailcalls = 0, 0
@@ -682,7 +682,7 @@ frames:
 							continue frames
 						}
 						dest := base + int(register)
-						result := first(s.callMethod(found, 2, receiver, key, Nil(), f.function.proto.instruction(pc-1)))
+						result := first(s.callMethod(found, 2, receiver, key, Nil(), f.proto.instruction(pc-1)))
 						t.stack[dest] = result
 						continue frames
 					}
@@ -727,7 +727,7 @@ frames:
 							continue frames
 						}
 						dest := base + int(register)
-						result := first(s.callMethod(found, 2, receiver, key, Nil(), f.function.proto.instruction(pc-1)))
+						result := first(s.callMethod(found, 2, receiver, key, Nil(), f.proto.instruction(pc-1)))
 						t.stack[dest] = result
 						continue frames
 					}
@@ -762,7 +762,7 @@ frames:
 							s.enterMethod(method, 3, value, key, assigned, base, 0)
 							continue frames
 						}
-						s.callMethod(method, 3, value, key, assigned, f.function.proto.instruction(pc-1))
+						s.callMethod(method, 3, value, key, assigned, f.proto.instruction(pc-1))
 						continue frames
 					}
 					if !method.IsNil() {
@@ -843,7 +843,7 @@ frames:
 				}
 				continue
 			case opForIterator:
-				i := f.function.proto.instruction(pc - 1)
+				i := f.proto.instruction(pc - 1)
 				a := base + i.a
 				object := t.stack[a].object
 				if object == nil || object.kind != TypeFunction || object.function.native == nil {
@@ -867,14 +867,14 @@ frames:
 				s.nativeIterator(frameIndex, object.function, i, a)
 				continue frames
 			case opNewTable:
-				i := f.function.proto.instruction(pc - 1)
+				i := f.proto.instruction(pc - 1)
 				t.frames[frameIndex].pc = int32(pc)
 				registers[i.a] = s.NewTable(i.b, i.c).Value()
 				continue
 			case opClosure:
-				i := f.function.proto.instruction(pc - 1)
+				i := f.proto.instruction(pc - 1)
 				t.frames[frameIndex].pc = int32(pc)
-				registers[i.a] = s.newClosure(f, f.function.proto.children[i.b], base)
+				registers[i.a] = s.newClosure(f, f.proto.children[i.b], base)
 				continue
 			case opVararg:
 				varargs := t.stack[int(f.start):int(f.base)]
@@ -971,7 +971,7 @@ func (s *State) enterPair(method, left, right Value, dest, want int) {
 	clearRegisters(t.stack[start+provided : start+proto.maxRegisters])
 	t.frames = t.frames[:depth+1]
 	entered := &t.frames[depth]
-	entered.function, entered.site = callee, nil
+	entered.function, entered.proto, entered.site = callee, callee.proto, nil
 	entered.start, entered.base, entered.pc = int32(start), int32(start), 0
 	entered.returnDest, entered.want = int32(dest), int32(want)
 	entered.metacallTop, entered.tailcalls = int32(t.top+1), 0
@@ -1293,8 +1293,8 @@ func (s *State) executeSlow(frameIndex, pc, remaining int) ([]Value, bool) {
 	t := s.current
 	f := &t.frames[frameIndex]
 	base := int(f.base)
-	constants := f.function.proto.constants
-	i := f.function.proto.instruction(pc - 1)
+	constants := f.proto.constants
+	i := f.proto.instruction(pc - 1)
 	if i.op == opTailCall || i.op == opForCall {
 		remaining -= vmCallWeight
 		if remaining <= 0 {
@@ -1372,7 +1372,7 @@ func (s *State) executeSlow(frameIndex, pc, remaining int) ([]Value, bool) {
 			table.sequence = -1
 		}
 	case opClosure:
-		child := f.function.proto.children[i.b]
+		child := f.proto.children[i.b]
 		closure, upvalues := s.closure(child, f.function.env, len(child.upvalues))
 		for index, descriptor := range child.upvalues {
 			if descriptor.local {

@@ -87,7 +87,7 @@ func (s *State) enterMethod(method Value, count int, first, second, third Value,
 			t.frames = t.frames[:depth+1]
 		}
 		entered := &t.frames[depth]
-		entered.function, entered.site = callee, nil
+		entered.function, entered.proto, entered.site = callee, callee.proto, nil
 		entered.start, entered.base, entered.pc = int32(start), int32(start), 0
 		entered.returnDest, entered.want = int32(dest), int32(want)
 		entered.metacallTop, entered.tailcalls = int32(previousTop+1), 0
@@ -160,7 +160,7 @@ func (s *State) returnCompare(value Value) {
 func (s *State) compareSlow(left, right Value, mode opcode) {
 	t := s.current
 	f := &t.frames[len(t.frames)-1]
-	i := f.function.proto.instruction(int(f.pc) - 1)
+	i := f.proto.instruction(int(f.pc) - 1)
 	s.jumpOn(s.binary(i.text, left, right, i.left, i.right).Truth() == (mode&expectTrue != 0))
 }
 
