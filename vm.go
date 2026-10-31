@@ -701,6 +701,12 @@ frames:
 							registers[register] = found
 							continue
 						}
+						if method, ok := s.cached(eventIndex, table.metatable); ok && method.luaFunction() {
+							t.frames[frameIndex].pc = int32(pc)
+							s.steps = s.options.HookEvery - remaining
+							s.enterPair(method, value, key, base+int(register), 1)
+							continue frames
+						}
 					}
 					if key.object == &numberMarker && value.object.kind == TypeTable {
 						table := value.object.table
@@ -1274,7 +1280,7 @@ func (s *State) binaryMethod(operator string, left, right Value) Value {
 }
 
 func luaModulo(left, right float64) float64 {
-	product := float64(math.Floor(left/right) * right)
+	product := float64(luaFloor(left/right) * right)
 	return luaNaN(left-product, left, right)
 }
 
