@@ -40,12 +40,12 @@ func (s *State) openMath() {
 				}
 				value = math.Copysign(value, sign)
 			}
-			return []Value{Number(value)}, nil
+			return s.values1(Number(value)), nil
 		}
 	}
 	functions["atan2"] = func(s *State, args []Value) ([]Value, error) {
 		right := s.checkNumber(args, 1)
-		return []Value{Number(trig.Atan2(s.checkNumber(args, 0), right))}, nil
+		return s.values1(Number(trig.Atan2(s.checkNumber(args, 0), right))), nil
 	}
 	functions["fmod"] = func(s *State, args []Value) ([]Value, error) {
 		b := s.checkNumber(args, 1)
@@ -59,11 +59,11 @@ func (s *State) openMath() {
 		if math.IsNaN(value) && !math.IsNaN(a) && !math.IsNaN(b) {
 			value = math.Copysign(value, -1)
 		}
-		return []Value{Number(value)}, nil
+		return s.values1(Number(value)), nil
 	}
 	functions["pow"] = func(s *State, args []Value) ([]Value, error) {
 		right := s.checkNumber(args, 1)
-		return []Value{Number(luaPower(s.checkNumber(args, 0), right))}, nil
+		return s.values1(Number(luaPower(s.checkNumber(args, 0), right))), nil
 	}
 	functions["modf"] = func(s *State, args []Value) ([]Value, error) {
 		input := s.checkNumber(args, 0)
@@ -71,15 +71,15 @@ func (s *State) openMath() {
 		if math.IsInf(input, 0) {
 			fraction = math.Copysign(0, input)
 		}
-		return []Value{Number(whole), Number(fraction)}, nil
+		return s.values2(Number(whole), Number(fraction)), nil
 	}
 	functions["frexp"] = func(s *State, args []Value) ([]Value, error) {
 		fraction, exponent := math.Frexp(s.checkNumber(args, 0))
-		return []Value{Number(fraction), Number(float64(exponent))}, nil
+		return s.values2(Number(fraction), Number(float64(exponent))), nil
 	}
 	functions["ldexp"] = func(s *State, args []Value) ([]Value, error) {
 		exponent := s.checkInt(args, 1)
-		return []Value{Number(math.Ldexp(s.checkNumber(args, 0), exponent))}, nil
+		return s.values1(Number(math.Ldexp(s.checkNumber(args, 0), exponent))), nil
 	}
 	for _, name := range []string{"min", "max"} {
 		functions[name] = func(s *State, args []Value) ([]Value, error) {
@@ -90,7 +90,7 @@ func (s *State) openMath() {
 					result = value
 				}
 			}
-			return []Value{Number(result)}, nil
+			return s.values1(Number(result)), nil
 		}
 	}
 	functions["randomseed"] = func(s *State, args []Value) ([]Value, error) {
@@ -102,20 +102,20 @@ func (s *State) openMath() {
 		r := float64((s.randomState>>17)%2147483647) / 2147483647.0
 		switch len(args) {
 		case 0:
-			return []Value{Number(r)}, nil
+			return s.values1(Number(r)), nil
 		case 1:
 			upper := s.checkInt(args, 0)
 			if upper < 1 {
 				s.argError(1, "interval is empty")
 			}
-			return []Value{Number(math.Floor(r*float64(upper)) + 1)}, nil
+			return s.values1(Number(math.Floor(r*float64(upper)) + 1)), nil
 		case 2:
 			lower, upper := s.checkInt(args, 0), s.checkInt(args, 1)
 			if lower > upper {
 				s.argError(2, "interval is empty")
 			}
 			width := int32(upper) - int32(lower) + 1
-			return []Value{Number(math.Floor(r*float64(width)) + float64(lower))}, nil
+			return s.values1(Number(math.Floor(r*float64(width)) + float64(lower))), nil
 		default:
 			s.raise("wrong number of arguments", 1)
 		}

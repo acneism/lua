@@ -468,6 +468,24 @@ func (s *State) execute(stop int) (result []Value) {
 
 				count := int(int16(word >> 16))
 				value := registers[register]
+				if object := value.object; count >= 0 && object != nil && object.kind == TypeFunction && object.function.native != nil {
+					t.frames[frameIndex].pc = int32(pc)
+					s.steps = s.options.HookEvery - remaining
+					dest, want := base+int(uint8(word>>48)), int(int16(word>>32))
+					t.resumeDest, t.resumeWant, t.resumeReturn = dest, want, false
+					argStart := base + int(register) + 1
+					values := s.nativeStack(object.function, t.stack[argStart:argStart+count], f.function.proto.instruction(pc-1), argStart)
+					if t.yielded {
+						t.yielded = false
+						t.status = "suspended"
+						return values
+					}
+					t.writeResults(dest, want, values)
+					f = &t.frames[frameIndex]
+					registers = (*[256]Value)(t.stack[base : base+256])
+					remaining = s.options.HookEvery - s.steps
+					continue
+				}
 				if count >= 0 && value.Type() == TypeFunction && value.object.function.proto != nil && !value.object.function.proto.vararg && len(t.frames) < freshCalls-1 {
 					callee := value.object.function
 					start := max(t.used, t.top)
@@ -690,6 +708,37 @@ func (s *State) execute(stop int) (result []Value) {
 						}
 					}
 					pc = target
+				}
+				continue
+			case opForIterator:
+				i := f.function.proto.instruction(pc - 1)
+				a := base + i.a
+				object := t.stack[a].object
+				if object == nil || object.kind != TypeFunction || object.function.native == nil {
+					break
+				}
+				t.frames[frameIndex].pc = int32(pc)
+				s.steps = s.options.HookEvery - remaining
+				t.cDepth++
+				if t.cDepth == 200 {
+					s.runtimeError("C stack overflow")
+				}
+				if t.cDepth >= 225 {
+					panic(plainError("error in error handling"))
+				}
+				t.boundary++
+				t.stack[a+4], t.stack[a+5] = t.stack[a+1], t.stack[a+2]
+				values := s.nativeStack(object.function, t.stack[a+4:a+6], i, a+4)
+				t.cDepth--
+				t.boundary--
+				t.writeResults(a+3, i.c, values)
+				registers = (*[256]Value)(t.stack[base : base+256])
+				f = &t.frames[frameIndex]
+				remaining = s.options.HookEvery - s.steps
+				if t.stack[a+3].IsNil() {
+					pc = i.d
+				} else {
+					t.stack[a+2] = t.stack[a+3]
 				}
 				continue
 			case opClose:

@@ -6,7 +6,7 @@ func (s *State) openCoroutine() {
 	table := s.NewTable(0, 8)
 	functions := map[string]GoFunction{
 		"create": func(s *State, args []Value) ([]Value, error) {
-			return []Value{s.createThread(args).object.threadValue()}, nil
+			return s.values1(s.createThread(args).object.threadValue()), nil
 		},
 		"wrap": func(s *State, args []Value) ([]Value, error) {
 			t := s.createThread(args)
@@ -25,7 +25,7 @@ func (s *State) openCoroutine() {
 				return values, nil
 			})
 			wrapped.object.function.upvalues = []*upvalue{{value: t.object.threadValue()}}
-			return []Value{wrapped}, nil
+			return s.values1(wrapped), nil
 		},
 		"resume": func(s *State, args []Value) ([]Value, error) {
 			t := s.checkThread(args, 0)
@@ -34,7 +34,7 @@ func (s *State) openCoroutine() {
 				return nil, err
 			}
 			if err != nil {
-				return []Value{Bool(false), err.(*Error).Value}, nil
+				return s.values2(Bool(false), err.(*Error).Value), nil
 			}
 			return append([]Value{Bool(true)}, values...), nil
 		},
@@ -47,13 +47,13 @@ func (s *State) openCoroutine() {
 			return args, nil
 		},
 		"status": func(s *State, args []Value) ([]Value, error) {
-			return []Value{String(s.checkThread(args, 0).status)}, nil
+			return s.values1(String(s.checkThread(args, 0).status)), nil
 		},
 		"running": func(s *State, _ []Value) ([]Value, error) {
 			if s.current == s.main {
-				return []Value{Nil()}, nil
+				return s.values1(Nil()), nil
 			}
-			return []Value{s.current.object.threadValue()}, nil
+			return s.values1(s.current.object.threadValue()), nil
 		},
 	}
 	names := make([]string, 0, len(functions))

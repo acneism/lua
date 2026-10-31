@@ -123,6 +123,7 @@ type State struct {
 	handlers    *handlerOwner
 	hostRoots   map[uint64]Value
 	rootID      uint64
+	results     [8]Value
 }
 
 func NewState(options Options) *State {
@@ -149,6 +150,32 @@ func NewState(options Options) *State {
 }
 
 func (s *State) Globals() *Table { return s.globals }
+
+var typeNames = [...]Value{String("nil"), String("boolean"), String("number"), String("string"), String("table"), String("function"), String("thread"), String("userdata")}
+
+func (s *State) prepend(first Value, values []Value) []Value {
+	if len(values) >= len(s.results) {
+		return append([]Value{first}, values...)
+	}
+	copy(s.results[1:], values)
+	s.results[0] = first
+	return s.results[:len(values)+1]
+}
+
+func (s *State) values1(a Value) []Value {
+	s.results[0] = a
+	return s.results[:1]
+}
+
+func (s *State) values2(a, b Value) []Value {
+	s.results[0], s.results[1] = a, b
+	return s.results[:2]
+}
+
+func (s *State) values3(a, b, c Value) []Value {
+	s.results[0], s.results[1], s.results[2] = a, b, c
+	return s.results[:3]
+}
 
 func (s *State) SetGlobals(globals *Table) { s.globals = globals }
 

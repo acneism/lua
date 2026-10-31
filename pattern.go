@@ -368,7 +368,7 @@ func stringGMatch(s *State, args []Value) ([]Value, error) {
 		next = len(source) + 1
 		return nil, nil
 	})
-	return []Value{fn}, nil
+	return s.values1(fn), nil
 }
 
 func stringGSub(s *State, args []Value) ([]Value, error) {
@@ -443,5 +443,5 @@ func stringGSub(s *State, args []Value) ([]Value, error) {
 		}
 	}
 	add(source[start:])
-	return []Value{String(out.String()), Number(float64(count))}, nil
+	return s.values2(String(out.String()), Number(float64(count))), nil
 }
