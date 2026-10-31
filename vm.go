@@ -234,7 +234,7 @@ frames:
 				}
 				t.frames[frameIndex].pc = int32(pc)
 				s.steps = s.options.HookEvery - remaining
-				if s.enterArithmeticMethod(*left, *right, 0, base+int(register)) {
+				if s.enterArithmeticMethod(left, right, 0, base+int(register)) {
 					continue frames
 				}
 			case opSubtract, opSubtract + 1, opSubtract + 2, opSubtract + 3:
@@ -245,7 +245,7 @@ frames:
 				}
 				t.frames[frameIndex].pc = int32(pc)
 				s.steps = s.options.HookEvery - remaining
-				if s.enterArithmeticMethod(*left, *right, 1, base+int(register)) {
+				if s.enterArithmeticMethod(left, right, 1, base+int(register)) {
 					continue frames
 				}
 			case opMultiply, opMultiply + 1, opMultiply + 2, opMultiply + 3:
@@ -256,7 +256,7 @@ frames:
 				}
 				t.frames[frameIndex].pc = int32(pc)
 				s.steps = s.options.HookEvery - remaining
-				if s.enterArithmeticMethod(*left, *right, 2, base+int(register)) {
+				if s.enterArithmeticMethod(left, right, 2, base+int(register)) {
 					continue frames
 				}
 			case opDivide, opDivide + 1, opDivide + 2, opDivide + 3:
@@ -267,7 +267,7 @@ frames:
 				}
 				t.frames[frameIndex].pc = int32(pc)
 				s.steps = s.options.HookEvery - remaining
-				if s.enterArithmeticMethod(*left, *right, 3, base+int(register)) {
+				if s.enterArithmeticMethod(left, right, 3, base+int(register)) {
 					continue frames
 				}
 			case opModulo, opModulo + 1, opModulo + 2, opModulo + 3:
@@ -278,7 +278,7 @@ frames:
 				}
 				t.frames[frameIndex].pc = int32(pc)
 				s.steps = s.options.HookEvery - remaining
-				if s.enterArithmeticMethod(*left, *right, 4, base+int(register)) {
+				if s.enterArithmeticMethod(left, right, 4, base+int(register)) {
 					continue frames
 				}
 			case opPower, opPower + 1, opPower + 2, opPower + 3:
@@ -289,7 +289,7 @@ frames:
 				}
 				t.frames[frameIndex].pc = int32(pc)
 				s.steps = s.options.HookEvery - remaining
-				if s.enterArithmeticMethod(*left, *right, 5, base+int(register)) {
+				if s.enterArithmeticMethod(left, right, 5, base+int(register)) {
 					continue frames
 				}
 			case numericBase + 24, numericBase + 25, numericBase + 26, numericBase + 27, numericBase + 28, numericBase + 29, numericBase + 30, numericBase + 31, numericBase + 32, numericBase + 33, numericBase + 34, numericBase + 35, numericBase + 36, numericBase + 37, numericBase + 38, numericBase + 39, numericBase + 40, numericBase + 41, numericBase + 42, numericBase + 43, numericBase + 44, numericBase + 45, numericBase + 46, numericBase + 47, numericJumpBase + 0, numericJumpBase + 1, numericJumpBase + 2, numericJumpBase + 3, numericJumpBase + 4, numericJumpBase + 5, numericJumpBase + 6, numericJumpBase + 7, numericJumpBase + 8, numericJumpBase + 9, numericJumpBase + 10, numericJumpBase + 11, numericJumpBase + 12, numericJumpBase + 13, numericJumpBase + 14, numericJumpBase + 15, numericJumpBase + 16, numericJumpBase + 17, numericJumpBase + 18, numericJumpBase + 19, numericJumpBase + 20, numericJumpBase + 21, numericJumpBase + 22, numericJumpBase + 23:
@@ -907,57 +907,41 @@ frames:
 	return nil
 }
 
-func (s *State) enterArithmeticMethod(left, right Value, index, dest int) bool {
-	method := s.binaryTableMethod(left, index)
+func (s *State) enterArithmeticMethod(left, right *Value, index, dest int) bool {
+	method := s.binaryTableMethod(*left, index)
 	if method.IsNil() {
-		method = s.binaryTableMethod(right, index)
+		method = s.binaryTableMethod(*right, index)
 	}
 	if method.Type() != TypeFunction || method.object.function.proto == nil {
 		return false
 	}
 	t := s.current
-	s.steps += vmCallWeight
-	if s.steps >= s.options.HookEvery {
-		s.pollBinaryHook(method, left, right)
-	}
-	t.cDepth++
-	if t.cDepth == 200 {
-		s.runtimeError("C stack overflow")
-	}
-	if t.cDepth >= 225 {
-		panic(plainError("error in error handling"))
-	}
-	previousTop := t.top
 	callee := method.object.function
 	proto := callee.proto
 	start := max(t.used, t.top)
-	if !proto.vararg && len(t.frames) < freshCalls-1 && start+256 <= len(t.stack) {
-		parameters := proto.parameters
-		provided := min(parameters, 2)
-		if provided > 0 {
-			t.stack[start] = left
-		}
-		if provided > 1 {
-			t.stack[start+1] = right
-		}
-		clearRegisters(t.stack[start+provided : start+proto.maxRegisters])
-		depth := len(t.frames)
-		if depth == cap(t.frames) {
-			t.frames = append(t.frames, frame{})
-		} else {
-			t.frames = t.frames[:depth+1]
-		}
-		entered := &t.frames[depth]
-		entered.function, entered.site = callee, nil
-		entered.start, entered.base, entered.pc = int32(start), int32(start), 0
-		entered.returnDest, entered.want = int32(dest), 1
-		entered.metacallTop, entered.tailcalls = int32(previousTop+1), 0
-		t.used, t.top = start+proto.maxRegisters, start+parameters
-	} else {
-		arguments := [2]Value{left, right}
-		s.push(callee, arguments[:], dest, 1, nil)
-		t.frames[len(t.frames)-1].metacallTop = int32(previousTop + 1)
+	depth := len(t.frames)
+	if s.steps+vmCallWeight >= s.options.HookEvery || t.cDepth >= 199 || proto.vararg || depth >= freshCalls-1 || depth == cap(t.frames) || start+256 > len(t.stack) {
+		s.enterMethod(method, 2, *left, *right, Nil(), dest, 1)
+		return true
 	}
+	s.steps += vmCallWeight
+	t.cDepth++
+	parameters := proto.parameters
+	provided := min(parameters, 2)
+	if provided > 0 {
+		t.stack[start] = *left
+	}
+	if provided > 1 {
+		t.stack[start+1] = *right
+	}
+	clearRegisters(t.stack[start+provided : start+proto.maxRegisters])
+	t.frames = t.frames[:depth+1]
+	entered := &t.frames[depth]
+	entered.function, entered.site = callee, nil
+	entered.start, entered.base, entered.pc = int32(start), int32(start), 0
+	entered.returnDest, entered.want = int32(dest), 1
+	entered.metacallTop, entered.tailcalls = int32(t.top+1), 0
+	t.used, t.top = start+proto.maxRegisters, start+parameters
 	t.boundary++
 	return true
 }
