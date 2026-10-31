@@ -238,6 +238,9 @@ func (c *compiler) freeze() {
 		}
 	}
 	for pc := range p.code {
+		if count := selfArguments(p.code, pc); count > 0 {
+			p.code[pc] |= uint64(count) << 24
+		}
 		if count := fusedArguments(p.code, pc); count > 0 {
 			op := opCallFused
 			if opcode(p.code[pc]) == opGetUpvalue {
@@ -278,6 +281,27 @@ func (c *compiler) freeze() {
 		p.code[pc] = uint64(op) | uint64(uint8(load>>8))<<8 | uint64(uint8(load>>16))<<16 | uint64(uint16(arg))<<24 | uint64(uint8(call>>48))<<40 | uint64(uint16(call>>32))<<48
 	}
 	c.code = nil
+}
+
+func selfArguments(code []uint64, pc int) int {
+	self := code[pc]
+	if opcode(self) != opSelf {
+		return 0
+	}
+	method := uint8(self >> 8)
+	for count := 1; count <= 4 && pc+count < len(code); count++ {
+		word := code[pc+count]
+		if opcode(word) == opCall {
+			if uint8(word>>8) != method || int16(word>>16) != int16(count) {
+				return 0
+			}
+			return count
+		}
+		if uint8(word>>8) != method+uint8(count)+1 || opcode(word) == opMove && uint8(word>>16) >= method || opcode(word) != opMove && opcode(word) != opConstant {
+			return 0
+		}
+	}
+	return 0
 }
 
 func fusedArguments(code []uint64, pc int) int {

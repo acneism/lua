@@ -192,3 +192,48 @@ func (s *State) callMethod(method Value, count int, first, second, third Value, 
 	t.boundary--
 	return values
 }
+
+func (s *State) callSelf(frameIndex, pc, remaining int, self, method Value) bool {
+	t := s.current
+	f := &t.frames[frameIndex]
+	code, constants := f.proto.code, f.proto.constants
+	count := int(uint8(code[pc-1] >> 24))
+	callee := method.object.function
+	p := callee.proto
+	start := max(t.used, t.top)
+	if p.needsArgTable() || f.proto.longest > s.options.MaxString || remaining <= vmCallWeight || len(t.frames) >= freshCalls-1 || start+count+256 > len(t.stack) {
+		return false
+	}
+	base := int(f.base)
+	frameBase := start
+	if p.vararg {
+		frameBase += max(0, count-p.parameters)
+	}
+	for argument := range count {
+		value := self
+		if argument > 0 {
+			if load := code[pc+argument-1]; opcode(load) == opMove {
+				value = t.stack[base+int(uint8(load>>16))]
+			} else {
+				value = constants[uint32(load>>16)]
+			}
+		}
+		if argument < p.parameters {
+			t.stack[frameBase+argument] = value
+		} else if frameBase != start {
+			t.stack[start+argument-p.parameters] = value
+		}
+	}
+	clearRegisters(t.stack[frameBase+min(p.parameters, count) : frameBase+p.maxRegisters])
+	if p.argRegister >= 0 {
+		t.stack[frameBase+p.argRegister] = Nil()
+	}
+	call := code[pc+count-1]
+	f.pc = int32(pc + count)
+	if len(t.frames) == cap(t.frames) {
+		t.growFrameCapacity()
+	}
+	t.pushLua(callee, start, frameBase, base+int(uint8(call>>48)), int(int16(call>>32)))
+	s.steps = s.options.HookEvery - remaining + vmCallWeight
+	return true
+}

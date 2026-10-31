@@ -738,30 +738,27 @@ frames:
 				value := registers[uint8(word>>16)]
 				if value.Type() == TypeTable || value.Type() == TypeString {
 					key := rkOperand(int(int16(word>>48)), registers, constants)
+					found, hit := Nil(), false
 					if key.text != nil && value.object != nil {
-						if table := value.object.table; table != nil {
-							if found := table.getString(key.text); !found.IsNil() || table.metatable == nil {
-								registers[register+1] = value
-								registers[register] = found
-								continue
-							}
-							if found := s.inheritedString(table, key.text); !found.IsNil() {
-								registers[register+1] = value
-								registers[register] = found
-								continue
-							}
+						table := value.object.table
+						if found = table.getString(key.text); !found.IsNil() || table.metatable == nil {
+							hit = true
+						} else if found = s.inheritedString(table, key.text); !found.IsNil() {
+							hit = true
 						}
+					} else if method, ok := s.cached(eventIndex, s.stringMeta); ok && key.text != nil && method.object != nil && method.object.kind == TypeTable {
+						found = method.object.table.getString(key.text)
+						hit = !found.IsNil()
 					}
-					if method, ok := s.cached(eventIndex, s.stringMeta); ok && value.object == nil && key.text != nil && method.object != nil && method.object.kind == TypeTable {
-						if found := method.object.table.getString(key.text); !found.IsNil() {
-							registers[register+1] = value
-							registers[register] = found
-							continue
-						}
+					receiver, status := Nil(), indexFound
+					if !hit {
+						found, receiver, status = s.indexChain(value, key)
 					}
-					found, receiver, status := s.indexChain(value, key)
 					if status == indexFound {
 						registers[register+1] = value
+						if word>>24&255 != 0 && found.luaFunction() && s.callSelf(frameIndex, pc, remaining, value, found) {
+							continue frames
+						}
 						registers[register] = found
 						continue
 					}

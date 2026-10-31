@@ -17442,5 +17442,29 @@
   {
     "src": "local function f(a, b, c) error(a .. b .. c) end local x = 'x' return pcall(function() local y = 'y' return f(x, y, 'z') end)",
     "want": "false,user_script:1: xyz"
+  },
+  {
+    "src": "local o = {v = 1} function o:add(a, b, c) return self.v + a + b + (c or 0) end local x = 2 return o:add(x, 3), o:add(x, 3, 4), o:add(1, 2, 3, 4)",
+    "want": "6,10,7"
+  },
+  {
+    "src": "local o = {} function o:count(...) return select('#', ...), ... end local x = 'k' return o:count(), o:count(x), o:count(x, 2, 3)",
+    "want": "0,1,3,k,2,3"
+  },
+  {
+    "src": "local Base = {} Base.__index = Base function Base:get(k) return self[k] end local o = setmetatable({a = 5}, Base) local s = 0 for i = 1, 3 do s = s + o:get('a') end return s",
+    "want": "15"
+  },
+  {
+    "src": "local o = {} function o:fail(m) error(m .. tostring(self == o)) end local x = 'e' return pcall(function() return o:fail(x) end)",
+    "want": "false,user_script:1: etrue"
+  },
+  {
+    "src": "local o = {n = 0} function o:inc() self.n = self.n + 1 return self.n end local r = {} for i = 1, 3 do r[i] = o:inc() end return table.concat(r, ',')",
+    "want": "1,2,3"
+  },
+  {
+    "src": "local s = 'hello' local o = {f = function(self, a) return #self.t + a end, t = 'abc'} local x = 1 return s:sub(2, 3), o:f(x), ('x'):rep(3)",
+    "want": "el,4,xxx"
   }
 ]
