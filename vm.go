@@ -861,7 +861,7 @@ frames:
 				if table, control := t.stack[a+1], t.stack[a+2]; object.function == s.ipairsStep && i.c == 2 && remaining > 1 && t.cDepth < 199 && table.object != nil && table.object.kind == TypeTable && control.object == &numberMarker {
 					remaining--
 					index := int(control.number) + 1
-					value := table.object.table.RawGet(Number(float64(index)))
+					value := table.object.table.arrayOrRawGet(index)
 					t.top = a + 5
 					if value.IsNil() {
 						t.stack[a+3], t.stack[a+4] = Nil(), Nil()

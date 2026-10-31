@@ -159,6 +159,13 @@ func (t *Table) replaceString(key *stringValue, value Value) bool {
 	return false
 }
 
+func (t *Table) arrayOrRawGet(index int) Value {
+	if uint(index-1) < uint(t.arraySize()) {
+		return t.arrayAt(index - 1)
+	}
+	return t.RawGet(Number(float64(index)))
+}
+
 func (t *Table) RawGet(key Value) Value {
 	if index := arrayIndex(key); index > 0 && index <= t.arraySize() {
 		return t.arrayAt(index - 1)
