@@ -42,10 +42,21 @@ jobs:
               print(f"{r['Name']:<20} {r['Ratio']:.3f}")
           print('over 1.5:', [r['Name'] for r in rows if r['Ratio'] > 1.5])
           PY
+      - name: Profile the three slowest scenarios
+        run: |
+          names=$(python3 -c "import json; rows = json.load(open('work/bench.json'))['Results']; print(' '.join(r['Name'] for r in sorted(rows, key=lambda r: -r['Ratio'])[:3]))")
+          for name in $names; do
+            go run ./internal/cmd/bench -addr 127.0.0.1:6379 -scenario "$name" -rounds 10 -cpuprofile "work/$name.pprof" -output "work/$name.json" > /dev/null
+            echo "== $name"
+            go tool pprof -top -nodecount=20 "work/$name.pprof" 2>/dev/null | tail -n +5
+            go tool pprof -top -lines -nodecount=25 "work/$name.pprof" 2>/dev/null | tail -n +5
+          done
       - uses: actions/upload-artifact@v7
         with:
           name: performance
-          path: work/bench.json
+          path: |
+            work/bench.json
+            work/*.pprof
           retention-days: 7
 
   compare:
