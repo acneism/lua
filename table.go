@@ -94,6 +94,19 @@ func (t *Table) find(key Value) int {
 	return -1
 }
 
+func (t *Table) getString(key *stringValue) Value {
+	if len(t.nodes) == 0 {
+		return Nil()
+	}
+	for i := int(key.hash & uint32(len(t.nodes)-1)); i >= 0; i = t.nodes[i].next {
+		node := &t.nodes[i]
+		if text := node.key.text; text == key || text != nil && text.hash == key.hash && text.text == key.text {
+			return node.value
+		}
+	}
+	return Nil()
+}
+
 func (t *Table) RawGet(key Value) Value {
 	if index := arrayIndex(key); index > 0 && index <= len(t.array) {
 		return t.array[index-1]

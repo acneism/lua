@@ -8,11 +8,27 @@ const (
 
 func (s *State) indexChain(value, key Value) (Value, Value, int) {
 	for range 100 {
+		if value.Type() == TypeString {
+			method := s.eventMethod(s.stringMeta, eventIndex)
+			if method.Type() == TypeFunction {
+				return method, value, indexMethod
+			}
+			if method.Type() != TypeTable {
+				return Nil(), Nil(), indexSlow
+			}
+			value = method
+			continue
+		}
 		if value.Type() != TypeTable {
 			return Nil(), Nil(), indexSlow
 		}
 		table := value.object.table
-		result := table.RawGet(key)
+		var result Value
+		if key.text != nil {
+			result = table.getString(key.text)
+		} else {
+			result = table.RawGet(key)
+		}
 		if !result.IsNil() || table.metatable == nil {
 			return result, Nil(), indexFound
 		}
