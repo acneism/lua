@@ -232,6 +232,11 @@ frames:
 					case compareLessEqual:
 						matched = left.number <= right.number
 					}
+				} else if l, r, cache := left.object, right.object, &s.methodCache[eventLess]; comparisonKind(mode) == compareLess && l != nil && r != nil && l.kind == TypeTable && r.kind == TypeTable && l.table.metatable != nil && l.table.metatable == r.table.metatable && cache.table == l.table.metatable && cache.version == cache.table.version && cache.method.object != nil && cache.method.object.kind == TypeFunction && cache.method.object.function.proto != nil {
+					t.frames[frameIndex].pc = int32(pc)
+					s.steps = s.options.HookEvery - remaining
+					s.enterPair(cache.method, *left, *right, 0, compareWant-int(mode&expectTrue)/expectTrue)
+					continue frames
 				} else if comparisonKind(mode) == compareEqual && (left.object == nil || left.object.kind != TypeTable && left.object.kind != TypeUserdata) {
 					matched = left.Equal(*right)
 				} else {
@@ -727,7 +732,20 @@ frames:
 					key, assigned = rkOperand(int(int32(word>>16)), registers, constants), rkOperand(int(int16(word>>48)), registers, constants)
 				}
 				table := value.object.table
+				if cache := &s.methodCache[eventNewIndex]; table.metatable != nil && key.object == &numberMarker && key.number == key.number && cache.table == table.metatable && cache.version == cache.table.version && cache.method.object != nil && cache.method.object.kind == TypeFunction && cache.method.object.function.proto != nil {
+					index := int(key.number)
+					inArray := uint(index-1) < uint(table.arraySize()) && float64(index) == key.number
+					if inArray && table.arrayAt(index-1).IsNil() || !inArray && len(table.nodes) == 0 {
+						t.frames[frameIndex].pc = int32(pc)
+						s.steps = s.options.HookEvery - remaining
+						s.enterMethod(cache.method, 3, value, key, assigned, base, 0)
+						continue frames
+					}
+				}
 				if table.metatable != nil && table.RawGet(key).IsNil() {
+					if key.IsNil() || key.object == &numberMarker && key.number != key.number {
+						break
+					}
 					method := s.eventMethod(table.metatable, eventNewIndex)
 					if method.Type() == TypeFunction {
 						t.frames[frameIndex].pc = int32(pc)
@@ -1023,6 +1041,12 @@ func (s *State) set(value, key, assigned Value, info nameInfo) {
 					s.runtimeError(err.Error())
 				}
 				return
+			}
+			if key.IsNil() {
+				s.runtimeError("table index is nil")
+			}
+			if key.Type() == TypeNumber && math.IsNaN(key.number) {
+				s.runtimeError("table index is NaN")
 			}
 		}
 		meta := s.metaFor(value, eventNewIndex)

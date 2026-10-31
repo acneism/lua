@@ -17378,5 +17378,37 @@
   {
     "src": "local mt = {__concat = function(a, b) return 'cat' end, __eq = function() return true end, __lt = function() return true end, __le = function() return false end, __call = function() return 'call' end, __index = function(t, k) return k end, __newindex = function(t, k, v) rawset(t, k, v .. '!') end} local a = setmetatable({}, mt) local b = setmetatable({}, mt) a.z = 'v' return a .. 'x', a == b, a < b, a <= b, a(), a.q, a.z",
     "want": "cat,true,true,false,call,q,v!"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({},{__newindex=function() n=n+1 end}) local ok,e=pcall(function() t[0/0]=1 end) return ok,e,n",
+    "want": "false,user_script:1: table index is NaN,0"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({},{__newindex=function() n=n+1 end}) local ok,e=pcall(function() t[nil]=1 end) return ok,e,n",
+    "want": "false,user_script:1: table index is nil,0"
+  },
+  {
+    "src": "local n=0 local t=setmetatable({},{__newindex=function(t,k,v) n=n+k end}) for i=1,5 do t[i]=i end t[2.5]=1 rawset(t,7,1) t[7]=2 t[8]=1 return n,rawget(t,7)",
+    "want": "25.5,2"
+  },
+  {
+    "src": "local t=setmetatable({},{__index=function(t,k) return k end}) local x=t[0/0] return x~=x, t[2.5], t[-1], t[1e300]",
+    "want": "true,2.5,-1,1e+300"
+  },
+  {
+    "src": "local mt={__lt=function(a,b) return rawlen and 1 or a.v<b.v end} local a,b=setmetatable({v=1},mt),setmetatable({v=2},mt) local r={} for i=1,3 do r[#r+1]=tostring(a<b)..tostring(b<a)..tostring(not (a<b)) end return table.concat(r,',')",
+    "want": "user_script:1: Script attempted to access nonexistent global variable 'rawlen'"
+  },
+  {
+    "src": "local t=setmetatable({},{__newindex=function() end}) for i=1,5 do t['k'..i]=1 end setmetatable(t,nil) for i=1,6 do t['x'..i]=i end local r={} for k in pairs(t) do r[#r+1]=k end return table.concat(r,',')",
+    "want": "x6,x5,x4,x2,x3,x1"
+  },
+  {
+    "src": "local t=setmetatable({a=1,b=2,c=3},{__newindex=function() end}) for i=1,9 do t['k'..i]=1 end setmetatable(t,nil) t.d=4 local r={} for k in pairs(t) do r[#r+1]=k end return table.concat(r,',')",
+    "want": "a,d,c,b"
+  },
+  {
+    "src": "local t=setmetatable({1,2,3},{__newindex=function() end}) for i=4,20 do t[i]=i end setmetatable(t,nil) for i=4,6 do t[i]=i end local r={} for k in pairs(t) do r[#r+1]=k end return #t, table.concat(r,',')",
+    "want": "6,1,2,3,4,5,6"
   }
 ]
