@@ -621,6 +621,13 @@ frames:
 					if op == opGetTableK {
 						key = constants[uint16(word>>48)]
 					}
+					if key.text != nil && value.object != nil {
+						table := value.object.table
+						if found := table.getString(key.text); !found.IsNil() || table.metatable == nil {
+							registers[register] = found
+							continue
+						}
+					}
 					if key.object == &numberMarker && value.object.kind == TypeTable {
 						table := value.object.table
 						index := int(key.number)
@@ -653,6 +660,15 @@ frames:
 				value := registers[uint8(word>>16)]
 				if value.Type() == TypeTable || value.Type() == TypeString {
 					key := rkOperand(int(int16(word>>48)), registers, constants)
+					if key.text != nil && value.object != nil {
+						if table := value.object.table; table != nil {
+							if found := table.getString(key.text); !found.IsNil() || table.metatable == nil {
+								registers[register+1] = value
+								registers[register] = found
+								continue
+							}
+						}
+					}
 					if cache := &s.methodCache[eventIndex]; value.object == nil && key.text != nil && cache.table != nil && cache.table == s.stringMeta && cache.version == cache.table.version && cache.method.object != nil && cache.method.object.kind == TypeTable {
 						if found := cache.method.object.table.getString(key.text); !found.IsNil() {
 							registers[register+1] = value
