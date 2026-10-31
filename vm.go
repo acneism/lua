@@ -576,10 +576,10 @@ frames:
 					continue frames
 				}
 			case opReturn:
-				if want := f.want; (want == 0 || want == 1 && int16(word>>16) == 1) && f.returnDest >= 0 && frameIndex != stop && (t.open == nil || t.open.index < base) {
+				if want := f.want; want >= 0 && int32(int16(word>>16)) >= want && f.returnDest >= 0 && frameIndex != stop && (t.open == nil || t.open.index < base) {
 					dest := int(f.returnDest)
-					if want == 1 {
-						t.stack[dest] = registers[register]
+					for index := range int(want) {
+						t.stack[dest+index] = registers[int(register)+index]
 					}
 					t.used, t.top = int(f.start), dest+int(want)
 					if f.metacallTop > 0 {
