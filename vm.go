@@ -667,6 +667,13 @@ frames:
 								registers[register] = found
 								continue
 							}
+							if cache := &s.methodCache[eventIndex]; table.metatable != nil && cache.table == table.metatable && cache.version == cache.table.version && cache.method.object != nil && cache.method.object.kind == TypeTable {
+								if found := cache.method.object.table.getString(key.text); !found.IsNil() {
+									registers[register+1] = value
+									registers[register] = found
+									continue
+								}
+							}
 						}
 					}
 					if cache := &s.methodCache[eventIndex]; value.object == nil && key.text != nil && cache.table != nil && cache.table == s.stringMeta && cache.version == cache.table.version && cache.method.object != nil && cache.method.object.kind == TypeTable {
@@ -859,6 +866,18 @@ frames:
 				continue
 			case opVararg:
 				i := f.function.proto.instruction(pc - 1)
+				if i.b >= 0 {
+					varargs := t.stack[int(f.start):int(f.base)]
+					for index := range i.b {
+						if index < len(varargs) {
+							registers[i.a+index] = varargs[index]
+						} else {
+							registers[i.a+index] = Nil()
+						}
+					}
+					t.top = base + i.a + i.b
+					continue
+				}
 				t.frames[frameIndex].pc = int32(pc)
 				s.steps = s.options.HookEvery - remaining
 				t.writeResults(base+i.a, i.b, t.stack[int(f.start):int(f.base)])
