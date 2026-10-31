@@ -70,8 +70,15 @@ func (s *State) enterMethod(method Value, count int, first, second, third Value,
 	if !proto.vararg && len(t.frames) < freshCalls-1 && start+256 <= len(t.stack) {
 		parameters := proto.parameters
 		provided := min(parameters, count)
-		arguments := [3]Value{first, second, third}
-		copy(t.stack[start:start+provided], arguments[:provided])
+		if provided > 0 {
+			t.stack[start] = first
+		}
+		if provided > 1 {
+			t.stack[start+1] = second
+		}
+		if provided > 2 {
+			t.stack[start+2] = third
+		}
 		clearRegisters(t.stack[start+provided : start+proto.maxRegisters])
 		depth := len(t.frames)
 		if depth == cap(t.frames) {
