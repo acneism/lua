@@ -187,15 +187,6 @@ func (t *thread) returnValues(frameIndex, first, count int) {
 	t.frames = t.frames[:frameIndex]
 }
 
-func (t *thread) resumeMove() {
-	caller := &t.frames[len(t.frames)-1]
-	if next := caller.function.proto.code[caller.pc]; opcode(next) == opMove {
-		base := int(caller.base)
-		t.stack[base+int(uint8(next>>8))] = t.stack[base+int(uint8(next>>16))]
-		caller.pc++
-	}
-}
-
 func (t *thread) writeResults(dest, want int, values []Value) {
 	if want == 1 && dest < len(t.stack) {
 		if len(values) > 0 {
@@ -589,7 +580,6 @@ frames:
 						t.boundary--
 					}
 					t.frames = t.frames[:frameIndex]
-					t.resumeMove()
 					s.steps = s.options.HookEvery - remaining
 					continue frames
 				}
@@ -612,7 +602,6 @@ frames:
 					if frameIndex == stop {
 						return nil
 					}
-					t.resumeMove()
 					continue frames
 				}
 			case opConstant:
