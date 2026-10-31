@@ -509,7 +509,7 @@ frames:
 				}
 				start := max(t.used, t.top)
 				count := int(uint8(word >> 24))
-				if !value.luaFunction() || value.object.function.proto.needsArgTable() || checkConstants || remaining <= vmCallWeight || len(t.frames) >= freshCalls-1 || start+count+256 > len(t.stack) {
+				if !value.luaFunction() || value.object.function.proto.needsArgTable() || checkConstants || remaining <= vmCallWeight || len(t.frames) >= freshCalls-1 {
 					registers[register] = value
 					continue
 				}
@@ -517,6 +517,10 @@ frames:
 				parameters, size, frameBase := callee.proto.parameters, callee.proto.maxRegisters, start
 				if callee.proto.vararg {
 					frameBase += max(0, count-parameters)
+				}
+				if frameBase+256 > len(t.stack) {
+					registers[register] = value
+					continue
 				}
 				for argument := range count {
 					slot := start + argument - parameters

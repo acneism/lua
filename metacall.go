@@ -201,14 +201,14 @@ func (s *State) callSelf(frameIndex, pc, remaining int, self, method Value) bool
 	callee := method.object.function
 	p := callee.proto
 	start := max(t.used, t.top)
-	if p.needsArgTable() || f.proto.longest > s.options.MaxString || remaining <= vmCallWeight || len(t.frames) >= freshCalls-1 || start+count+256 > len(t.stack) {
-		return false
-	}
-	base := int(f.base)
 	frameBase := start
 	if p.vararg {
 		frameBase += max(0, count-p.parameters)
 	}
+	if p.needsArgTable() || f.proto.longest > s.options.MaxString || remaining <= vmCallWeight || len(t.frames) >= freshCalls-1 || frameBase+256 > len(t.stack) {
+		return false
+	}
+	base := int(f.base)
 	for argument := range count {
 		value := self
 		if argument > 0 {
