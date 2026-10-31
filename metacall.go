@@ -154,9 +154,21 @@ func (s *State) returnCompare(value Value) {
 	t.cDepth--
 	t.boundary--
 	t.frames = t.frames[:len(t.frames)-1]
+	s.jumpOn(value.Truth() != (kind&2 != 0) == (kind&1 != 0))
+}
+
+func (s *State) compareSlow(left, right Value, mode opcode) {
+	t := s.current
+	f := &t.frames[len(t.frames)-1]
+	i := f.function.proto.instruction(int(f.pc) - 1)
+	s.jumpOn(s.binary(i.text, left, right, i.left, i.right).Truth() == (mode&4 != 0))
+}
+
+func (s *State) jumpOn(jump bool) {
+	t := s.current
 	caller := &t.frames[len(t.frames)-1]
 	pc := int(caller.pc)
-	if value.Truth() != (kind&2 != 0) != (kind&1 != 0) {
+	if !jump {
 		caller.pc = int32(pc + 1)
 		return
 	}

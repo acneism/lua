@@ -119,6 +119,15 @@ func (s *State) nativeStack(fn *function, args []Value, site *instruction, start
 	return values
 }
 
+func (t *thread) resumeMove() {
+	caller := &t.frames[len(t.frames)-1]
+	if next := caller.function.proto.code[caller.pc]; opcode(next) == opMove {
+		base := int(caller.base)
+		t.stack[base+int(uint8(next>>8))] = t.stack[base+int(uint8(next>>16))]
+		caller.pc++
+	}
+}
+
 func (t *thread) writeResults(dest, want int, values []Value) {
 	if want == 1 && dest < len(t.stack) {
 		if len(values) > 0 {
@@ -225,14 +234,10 @@ frames:
 				} else {
 					t.frames[frameIndex].pc = int32(pc)
 					s.steps = s.options.HookEvery - remaining
-					if s.enterCompareMethod(*left, *right, int(mode)) {
-						continue frames
+					if !s.enterCompareMethod(*left, *right, int(mode)) {
+						s.compareSlow(*left, *right, mode)
 					}
-					i := f.function.proto.instruction(pc - 1)
-					matched = s.binary(i.text, *left, *right, i.left, i.right).Truth()
-					f = &t.frames[frameIndex]
-					registers = (*[256]Value)(t.stack[base : base+256])
-					remaining = s.options.HookEvery - s.steps
+					continue frames
 				}
 				if matched == (mode&4 != 0) {
 					target := int(uint32(code[pc] >> 16))
@@ -361,11 +366,8 @@ frames:
 				if remaining <= 0 {
 					t.frames[frameIndex].pc = int32(pc)
 					s.pollHook()
-					f = &t.frames[frameIndex]
-					registers = (*[256]Value)(t.stack[base : base+256])
-					remaining = s.options.HookEvery - s.steps
+					continue frames
 				}
-
 				continue
 
 			case opCallDirect, opCallDirectUpvalue, opCallDirectConstant, opCallDirectUpvalueConstant, opCallArithmetic, opCallArithmeticUpvalue:
@@ -422,13 +424,12 @@ frames:
 				}
 				start := max(t.used, t.top)
 				if proto != nil && !proto.vararg && len(t.frames) < freshCalls-1 && start+256 <= len(t.stack) && (argument.Type() != TypeString || len(argument.Text()) <= s.options.MaxString) {
-					pc += 2
-					remaining -= vmCallWeight
-					if remaining <= 0 {
-						s.pollPreparedHook(frameIndex, pc, int(register), value, argument)
-						remaining = s.options.HookEvery - s.steps
+					if remaining <= vmCallWeight {
+						registers[register] = value
+						continue
 					}
-					t.frames[frameIndex].pc = int32(pc)
+					remaining -= vmCallWeight
+					t.frames[frameIndex].pc = int32(pc + 2)
 					parameters, size := proto.parameters, proto.maxRegisters
 					if parameters > 0 {
 						t.stack[start] = argument
@@ -446,25 +447,17 @@ frames:
 					entered.returnDest, entered.want = int32(base+int(uint8(word>>40))), int32(int16(word>>48))
 					entered.metacallTop, entered.tailcalls = 0, 0
 					t.used, t.top = start+size, start+parameters
-					frameIndex++
-					f = &t.frames[frameIndex]
-					base, pc = start, 0
-					code, constants = proto.code, proto.constants
-					registers = (*[256]Value)(t.stack[base : base+256])
-					continue
+					s.steps = s.options.HookEvery - remaining
+					continue frames
 				}
 				registers[register] = value
 				continue
 			case opCall:
 				remaining -= vmCallWeight
 				if remaining <= 0 {
-					t.frames[frameIndex].pc = int32(pc)
-					s.pollHook()
-					f = &t.frames[frameIndex]
-					registers = (*[256]Value)(t.stack[base : base+256])
-					remaining = s.options.HookEvery - s.steps
+					s.pollRetry(frameIndex, pc)
+					continue frames
 				}
-
 				count := int(int16(word >> 16))
 				if count < 0 {
 					count = t.top - (base + int(register) + 1)
@@ -488,10 +481,7 @@ frames:
 						return values
 					}
 					t.writeResults(dest, want, values)
-					f = &t.frames[frameIndex]
-					registers = (*[256]Value)(t.stack[base : base+256])
-					remaining = s.options.HookEvery - s.steps
-					continue
+					continue frames
 				}
 				if value.Type() == TypeFunction && value.object.function.proto != nil && !value.object.function.proto.vararg && len(t.frames) < freshCalls-1 {
 					callee := value.object.function
@@ -516,13 +506,8 @@ frames:
 						entered.returnDest, entered.want = int32(base+int(uint8(word>>48))), int32(int16(word>>32))
 						entered.metacallTop, entered.tailcalls = 0, 0
 						t.used, t.top = start+callee.proto.maxRegisters, start+parameters
-						frameIndex++
-						f = &t.frames[frameIndex]
-						proto = callee.proto
-						base, pc = start, 0
-						code, constants = proto.code, proto.constants
-						registers = (*[256]Value)(t.stack[base : base+256])
-						continue
+						s.steps = s.options.HookEvery - remaining
+						continue frames
 					}
 				}
 				if object := value.object; object != nil && object.kind == TypeFunction && object.function.proto != nil {
@@ -539,18 +524,9 @@ frames:
 					}
 					t.used, t.top = int(f.start), dest+int(want)
 					t.frames = t.frames[:frameIndex]
-					frameIndex--
-					f = &t.frames[frameIndex]
-					proto = f.function.proto
-					base, pc = int(f.base), int(f.pc)
-					code, constants = proto.code, proto.constants
-					registers = (*[256]Value)(t.stack[base : base+256])
-					next := code[pc]
-					if opcode(next) == opMove {
-						registers[uint8(next>>8)] = registers[uint8(next>>16)]
-						pc++
-					}
-					continue
+					t.resumeMove()
+					s.steps = s.options.HookEvery - remaining
+					continue frames
 				}
 				if f.returnDest >= 0 {
 					count := int(int16(word >> 16))
@@ -596,18 +572,9 @@ frames:
 						s.steps = s.options.HookEvery - remaining
 						return nil
 					}
-					frameIndex--
-					f = &t.frames[frameIndex]
-					proto = f.function.proto
-					base, pc = int(f.base), int(f.pc)
-					code, constants = proto.code, proto.constants
-					registers = (*[256]Value)(t.stack[base : base+256])
-					next := code[pc]
-					if opcode(next) == opMove {
-						registers[uint8(next>>8)] = registers[uint8(next>>16)]
-						pc++
-					}
-					continue
+					t.resumeMove()
+					s.steps = s.options.HookEvery - remaining
+					continue frames
 				}
 			case opConstant:
 				value := constants[uint32(word>>16)]
@@ -664,12 +631,10 @@ frames:
 							s.enterPair(found, receiver, key, base+int(register), 1)
 							continue frames
 						}
+						dest := base + int(register)
 						result := first(s.callMethod(found, 2, receiver, key, Nil(), f.function.proto.instruction(pc-1)))
-						f = &t.frames[frameIndex]
-						registers = (*[256]Value)(t.stack[base : base+256])
-						registers[register] = result
-						remaining = s.options.HookEvery - s.steps
-						continue
+						t.stack[dest] = result
+						continue frames
 					}
 				}
 			case opSelf:
@@ -690,12 +655,10 @@ frames:
 							s.enterPair(found, receiver, key, base+int(register), 1)
 							continue frames
 						}
+						dest := base + int(register)
 						result := first(s.callMethod(found, 2, receiver, key, Nil(), f.function.proto.instruction(pc-1)))
-						f = &t.frames[frameIndex]
-						registers = (*[256]Value)(t.stack[base : base+256])
-						registers[register] = result
-						remaining = s.options.HookEvery - s.steps
-						continue
+						t.stack[dest] = result
+						continue frames
 					}
 				}
 			case opSetTable, opSetTableRK:
@@ -720,10 +683,7 @@ frames:
 							continue frames
 						}
 						s.callMethod(method, 3, value, key, assigned, f.function.proto.instruction(pc-1))
-						f = &t.frames[frameIndex]
-						registers = (*[256]Value)(t.stack[base : base+256])
-						remaining = s.options.HookEvery - s.steps
-						continue
+						continue frames
 					}
 					if !method.IsNil() {
 						break
@@ -824,15 +784,12 @@ frames:
 				t.cDepth--
 				t.boundary--
 				t.writeResults(a+3, i.c, values)
-				registers = (*[256]Value)(t.stack[base : base+256])
-				f = &t.frames[frameIndex]
-				remaining = s.options.HookEvery - s.steps
 				if t.stack[a+3].IsNil() {
-					pc = i.d
+					t.frames[frameIndex].pc = int32(i.d)
 				} else {
 					t.stack[a+2] = t.stack[a+3]
 				}
-				continue
+				continue frames
 			case opNewTable:
 				i := f.function.proto.instruction(pc - 1)
 				t.frames[frameIndex].pc = int32(pc)
@@ -854,9 +811,10 @@ frames:
 				continue
 			case opVararg:
 				i := f.function.proto.instruction(pc - 1)
+				t.frames[frameIndex].pc = int32(pc)
+				s.steps = s.options.HookEvery - remaining
 				t.writeResults(base+i.a, i.b, t.stack[int(f.start):int(f.base)])
-				registers = (*[256]Value)(t.stack[base : base+256])
-				continue
+				continue frames
 			case opClose:
 				if t.open != nil {
 					t.close(base + int(register))
@@ -865,11 +823,8 @@ frames:
 			case opForLoop, opForAccumulate:
 				remaining -= vmCallWeight
 				if remaining <= 0 {
-					t.frames[frameIndex].pc = int32(pc)
-					s.pollHook()
-					f = &t.frames[frameIndex]
-					registers = (*[256]Value)(t.stack[base : base+256])
-					remaining = s.options.HookEvery - s.steps
+					s.pollRetry(frameIndex, pc)
+					continue frames
 				}
 				step := registers[register+2].number
 				next := registers[register].number + step

@@ -481,6 +481,14 @@ func (s *State) pollHook() {
 	s.pollHookRoots(nil)
 }
 
+func (s *State) pollRetry(frameIndex, pc int) {
+	t := s.current
+	t.frames[frameIndex].pc = int32(pc)
+	s.pollHook()
+	t.frames[frameIndex].pc = int32(pc - 1)
+	s.steps = -vmCallWeight
+}
+
 func (s *State) pollJump(frameIndex, pc, target int) {
 	t := s.current
 	t.frames[frameIndex].pc = int32(pc)
