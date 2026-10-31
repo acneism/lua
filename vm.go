@@ -500,7 +500,7 @@ frames:
 				value := registers[register]
 				argStart := base + int(register) + 1
 				if object := value.object; object != nil && object.kind == TypeTable {
-					method := Nil()
+					var method Value
 					if cached, ok := s.cached(eventCall, object.table.metatable); ok {
 						method = cached
 					} else {
