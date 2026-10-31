@@ -529,12 +529,17 @@ frames:
 					continue frames
 				}
 			case opReturn:
-				if want := f.want; (want == 0 || want == 1 && int16(word>>16) == 1) && f.returnDest >= 0 && f.metacallTop == 0 && frameIndex != stop && (t.open == nil || t.open.index < base) {
+				if want := f.want; (want == 0 || want == 1 && int16(word>>16) == 1) && f.returnDest >= 0 && frameIndex != stop && (t.open == nil || t.open.index < base) {
 					dest := int(f.returnDest)
 					if want == 1 {
 						t.stack[dest] = registers[register]
 					}
 					t.used, t.top = int(f.start), dest+int(want)
+					if f.metacallTop > 0 {
+						t.top = int(f.metacallTop) - 1
+						t.cDepth--
+						t.boundary--
+					}
 					t.frames = t.frames[:frameIndex]
 					t.resumeMove()
 					s.steps = s.options.HookEvery - remaining
@@ -631,11 +636,18 @@ frames:
 					if key.object == &numberMarker && value.object.kind == TypeTable {
 						table := value.object.table
 						index := int(key.number)
-						if uint(index-1) < uint(table.arraySize()) && float64(index) == key.number {
+						inArray := uint(index-1) < uint(table.arraySize()) && float64(index) == key.number
+						if inArray {
 							if found := table.arrayAt(index - 1); !found.IsNil() || table.metatable == nil {
 								registers[register] = found
 								continue
 							}
+						}
+						if cache := &s.methodCache[eventIndex]; (inArray || len(table.nodes) == 0) && table.metatable != nil && cache.table == table.metatable && cache.version == cache.table.version && cache.method.object != nil && cache.method.object.kind == TypeFunction && cache.method.object.function.proto != nil {
+							t.frames[frameIndex].pc = int32(pc)
+							s.steps = s.options.HookEvery - remaining
+							s.enterPair(cache.method, value, key, base+int(register), 1)
+							continue frames
 						}
 					}
 					found, receiver, status := s.indexChain(value, key)
