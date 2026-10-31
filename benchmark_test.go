@@ -1,6 +1,9 @@
 package lua
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func benchmarkScript(b *testing.B, source string) {
 	proto, err := Compile([]byte(source), "@benchmark")
@@ -84,19 +87,33 @@ func BenchmarkCoroutine(b *testing.B) {
 	benchmarkScript(b, "local co = coroutine.wrap(function() while true do coroutine.yield(1) end end) for i = 1, 100000 do co() end")
 }
 
-func TestLuaCallsDoNotAllocatePerCall(t *testing.T) {
-	s := NewState(Options{})
-	measure := func(iterations string) float64 {
-		fn := s.Load(compileTest(t, "local function f(x) return x+1 end local n=0 for i=1,"+iterations+" do n=f(n) end return n"), nil)
-		var callError error
-		allocations := testing.AllocsPerRun(5, func() { _, callError = s.Call(fn) })
-		if callError != nil {
-			t.Fatal(callError)
-		}
-		return allocations
-	}
-	small, large := measure("10"), measure("1000")
-	if large > small {
-		t.Fatalf("allocations grew with Lua calls: %g -> %g", small, large)
+func TestSteadyStateDoesNotAllocate(t *testing.T) {
+	for _, item := range []struct{ name, source string }{
+		{"loop", "local s=0 for i=1,N do s=s+i end return s"},
+		{"lua call", "local function f(x) return x+1 end local n=0 for i=1,N do n=f(n) end return n"},
+		{"go call", "local n=0 for i=1,N do if type(i)=='number' then n=n+math.max(i%7,3) end end return n"},
+		{"pcall", "local n=0 for i=1,N do local ok,v=pcall(tonumber,i) if ok then n=n+v end end return n"},
+		{"ipairs", "local t={1,2,3,4,5,6,7,8} local s=0 for r=1,N do for _,v in ipairs(t) do s=s+v end end return s"},
+		{"pairs", "local t={a=1,b=2,c=3} local s=0 for r=1,N do for k,v in pairs(t) do s=s+v end end return s"},
+		{"next", "local t={a=1,b=2} local s=0 for r=1,N do local k,v=next(t) s=s+v end return s"},
+		{"resume and yield", "local co=coroutine.create(function() while true do coroutine.yield(1) end end) local s=0 for i=1,N do local ok,v=coroutine.resume(co) s=s+v end return s"},
+		{"wrap", "local co=coroutine.wrap(function() while true do coroutine.yield(1) end end) local s=0 for i=1,N do s=s+co() end return s"},
+	} {
+		t.Run(item.name, func(t *testing.T) {
+			s := NewState(Options{})
+			measure := func(iterations string) float64 {
+				fn := s.Load(compileTest(t, strings.ReplaceAll(item.source, "N", iterations)), nil)
+				var callError error
+				allocations := testing.AllocsPerRun(5, func() { _, callError = s.Call(fn) })
+				if callError != nil {
+					t.Fatal(callError)
+				}
+				return allocations
+			}
+			small, large := measure("10"), measure("1000")
+			if large > small {
+				t.Fatalf("allocations grew with iterations: %g -> %g", small, large)
+			}
+		})
 	}
 }

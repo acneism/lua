@@ -36,7 +36,7 @@ func (s *State) openCoroutine() {
 			if err != nil {
 				return s.values2(Bool(false), err.(*Error).Value), nil
 			}
-			return append([]Value{Bool(true)}, values...), nil
+			return s.prepend(Bool(true), values), nil
 		},
 		"yield": func(s *State, args []Value) ([]Value, error) {
 			t := s.current
