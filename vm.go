@@ -842,7 +842,7 @@ frames:
 				i := f.function.proto.instruction(pc - 1)
 				t.frames[frameIndex].pc = int32(pc)
 				child := f.function.proto.children[i.b]
-				upvalues := make([]*upvalue, len(child.upvalues))
+				closure, upvalues := s.closure(child, f.function.env, len(child.upvalues))
 				for index, descriptor := range child.upvalues {
 					if descriptor.local {
 						upvalues[index] = t.capture(base + descriptor.index)
@@ -850,7 +850,7 @@ frames:
 						upvalues[index] = f.function.upvalues[descriptor.index]
 					}
 				}
-				registers[i.a] = s.closure(child, f.function.env, upvalues)
+				registers[i.a] = closure
 				continue
 			case opVararg:
 				i := f.function.proto.instruction(pc - 1)
@@ -1330,7 +1330,7 @@ func (s *State) executeSlow(frameIndex, pc, remaining int) ([]Value, bool) {
 		}
 	case opClosure:
 		child := f.function.proto.children[i.b]
-		upvalues := make([]*upvalue, len(child.upvalues))
+		closure, upvalues := s.closure(child, f.function.env, len(child.upvalues))
 		for index, descriptor := range child.upvalues {
 			if descriptor.local {
 				upvalues[index] = t.capture(base + descriptor.index)
@@ -1338,7 +1338,7 @@ func (s *State) executeSlow(frameIndex, pc, remaining int) ([]Value, bool) {
 				upvalues[index] = f.function.upvalues[descriptor.index]
 			}
 		}
-		t.stack[a] = s.closure(child, f.function.env, upvalues)
+		t.stack[a] = closure
 	case opVararg:
 		t.writeResults(a, i.b, t.stack[int(f.start):int(f.base)])
 	case opUnary:

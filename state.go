@@ -213,13 +213,29 @@ func (s *State) Load(proto *Proto, env *Table) Value {
 	if env == nil {
 		env = s.globals
 	}
-	return s.closure(proto, env, nil)
+	value, _ := s.closure(proto, env, 0)
+	return value
 }
 
-func (s *State) closure(proto *Proto, env *Table, upvalues []*upvalue) Value {
+type closureBlock struct {
+	object   object
+	function function
+	inline   [2]*upvalue
+}
+
+func (s *State) closure(proto *Proto, env *Table, count int) (Value, []*upvalue) {
 	s.nextID++
-	s.reserve(128 + int64(len(upvalues))*8)
-	return Value{object: &object{kind: TypeFunction, id: s.nextID, function: &function{proto: proto, env: env, upvalues: upvalues}}}
+	s.reserve(128 + int64(count)*8)
+	block := &closureBlock{}
+	var upvalues []*upvalue
+	if count > len(block.inline) {
+		upvalues = make([]*upvalue, count)
+	} else {
+		upvalues = block.inline[:count:count]
+	}
+	block.function = function{proto: proto, env: env, upvalues: upvalues}
+	block.object = object{kind: TypeFunction, id: s.nextID, function: &block.function}
+	return Value{object: &block.object}, upvalues
 }
 
 func (s *State) Call(fn Value, args ...Value) (values []Value, err error) {
