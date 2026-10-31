@@ -57,7 +57,9 @@ func (s *State) push(fn *function, args []Value, dest, want int, site *instructi
 	t.used, t.top = limit, base+p.parameters
 	if p.argRegister >= 0 && p.needsArg && !p.usesVararg {
 		arg := s.NewTable(extra, 1)
-		copy(arg.array, t.stack[start:base])
+		for index, value := range t.stack[start:base] {
+			arg.setArray(index, value)
+		}
 		arg.sequence = -1
 		arg.set(String("n"), Number(float64(extra)))
 		t.stack[base+p.argRegister] = arg.Value()
@@ -641,8 +643,8 @@ frames:
 					if key.object == &numberMarker && value.object.kind == TypeTable {
 						table := value.object.table
 						index := int(key.number)
-						if uint(index-1) < uint(len(table.array)) && float64(index) == key.number {
-							if found := table.array[index-1]; !found.IsNil() || table.metatable == nil {
+						if uint(index-1) < uint(table.arraySize()) && float64(index) == key.number {
+							if found := table.arrayAt(index - 1); !found.IsNil() || table.metatable == nil {
 								registers[register] = found
 								continue
 							}
@@ -727,7 +729,7 @@ frames:
 				}
 				if key.object == &numberMarker {
 					index := int(key.number)
-					if index > 0 && index <= len(table.array) && float64(index) == key.number {
+					if index > 0 && index <= table.arraySize() && float64(index) == key.number {
 						table.setArray(index-1, assigned)
 						continue
 					}
@@ -1309,10 +1311,12 @@ func (s *State) executeSlow(frameIndex, pc, remaining int) ([]Value, bool) {
 			count = t.top - b
 		}
 		table := t.stack[a].Table()
-		if i.d+count > len(table.array) {
+		if i.d+count > table.arraySize() {
 			table.resize(i.d+count, len(table.nodes))
 		}
-		copy(table.array[i.d:i.d+count], t.stack[b:b+count])
+		for index, value := range t.stack[b : b+count] {
+			table.setArray(i.d+index, value)
+		}
 		if count > 0 {
 			table.sequence = -1
 		}

@@ -141,7 +141,7 @@ func (g *collector) table(t *Table) {
 	if keys || values {
 		g.weak = append(g.weak, weakTable{t, keys, values})
 	}
-	if !values {
+	if !values && t.generic {
 		for _, value := range t.array {
 			g.value(value)
 		}
@@ -192,7 +192,7 @@ func (s *State) collect() {
 	}
 	for _, weak := range g.weak {
 		t := weak.table
-		if weak.values {
+		if weak.values && t.generic {
 			for index, value := range t.array {
 				if g.dead(value) {
 					t.setArray(index, Nil())
