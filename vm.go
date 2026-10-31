@@ -55,7 +55,7 @@ func (s *State) push(fn *function, args []Value, dest, want int, site *instructi
 	entered.returnDest, entered.want = int32(dest), int32(want)
 	entered.metacallTop, entered.tailcalls = 0, 0
 	t.used, t.top = limit, base+p.parameters
-	if p.argRegister >= 0 && p.needsArg && !p.usesVararg {
+	if p.needsArgTable() {
 		arg := s.NewTable(extra, 1)
 		for index, value := range t.stack[start:base] {
 			arg.setArray(index, value)
@@ -118,6 +118,8 @@ func (s *State) nativeStack(fn *function, args []Value, site *instruction, start
 	}
 	return values
 }
+
+func (p *Proto) needsArgTable() bool { return p.argRegister >= 0 && p.needsArg && !p.usesVararg }
 
 func (t *thread) resumeMove() {
 	caller := &t.frames[len(t.frames)-1]
@@ -483,17 +485,27 @@ frames:
 					t.writeResults(dest, want, values)
 					continue frames
 				}
-				if value.Type() == TypeFunction && value.object.function.proto != nil && !value.object.function.proto.vararg && len(t.frames) < freshCalls-1 {
+				if value.Type() == TypeFunction && value.object.function.proto != nil && !value.object.function.proto.needsArgTable() && len(t.frames) < freshCalls-1 {
 					callee := value.object.function
-					start := max(t.used, t.top)
-					if start+256 <= len(t.stack) {
+					callProto := callee.proto
+					start, extra := max(t.used, t.top), 0
+					if callProto.vararg {
+						extra = max(0, count-callProto.parameters)
+					}
+					if frameBase := start + extra; frameBase+256 <= len(t.stack) {
 						t.frames[frameIndex].pc = int32(pc)
-						parameters := callee.proto.parameters
+						parameters := callProto.parameters
 						provided := min(parameters, count)
 						for argument := 0; argument < provided; argument++ {
-							t.stack[start+argument] = t.stack[argStart+argument]
+							t.stack[frameBase+argument] = t.stack[argStart+argument]
 						}
-						clearRegisters(t.stack[start+provided : start+callee.proto.maxRegisters])
+						clearRegisters(t.stack[frameBase+provided : frameBase+callProto.maxRegisters])
+						if callProto.argRegister >= 0 {
+							t.stack[frameBase+callProto.argRegister] = Nil()
+						}
+						for argument := 0; argument < extra; argument++ {
+							t.stack[start+argument] = t.stack[argStart+parameters+argument]
+						}
 						depth := len(t.frames)
 						if depth == cap(t.frames) {
 							t.frames = append(t.frames, frame{})
@@ -502,10 +514,10 @@ frames:
 						}
 						entered := &t.frames[depth]
 						entered.function, entered.site = callee, nil
-						entered.start, entered.base, entered.pc = int32(start), int32(start), 0
+						entered.start, entered.base, entered.pc = int32(start), int32(frameBase), 0
 						entered.returnDest, entered.want = int32(base+int(uint8(word>>48))), int32(int16(word>>32))
 						entered.metacallTop, entered.tailcalls = 0, 0
-						t.used, t.top = start+callee.proto.maxRegisters, start+parameters
+						t.used, t.top = frameBase+callProto.maxRegisters, frameBase+parameters
 						s.steps = s.options.HookEvery - remaining
 						continue frames
 					}
