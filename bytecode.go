@@ -8,7 +8,6 @@ const numericEnd opcode = numericBase + 12*4
 const numericJumpBase opcode = numericEnd
 const numericJumpEnd opcode = numericJumpBase + 6*4
 const comparisonBase opcode = numericJumpEnd
-const comparisonEnd opcode = comparisonBase + 3*8
 
 const (
 	opAdd opcode = numericBase + 4*iota

@@ -507,15 +507,6 @@ func (s *State) pollBinaryHook(method, left, right Value) {
 	s.pollHook()
 }
 
-func (s *State) pollPreparedHook(frameIndex, pc, register int, fn, arg Value) {
-	t := s.current
-	f := &t.frames[frameIndex]
-	base := int(f.base) + register
-	t.stack[base], t.stack[base+1] = fn, arg
-	f.pc = int32(pc)
-	s.pollHookRoots(nil)
-}
-
 func (s *State) pollHookRoots(roots []Value) {
 	s.steps = 0
 	if s.options.Hook != nil {
