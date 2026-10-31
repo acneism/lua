@@ -139,7 +139,7 @@ func (s *State) enterCompareMethod(left, right Value, mode int) bool {
 	if method.Type() != TypeFunction || method.object.function.proto == nil {
 		return false
 	}
-	s.enterMethod(method, 2, left, right, Nil(), 0, compareWant-kind)
+	s.enterPair(method, left, right, 0, compareWant-kind)
 	return true
 }
 

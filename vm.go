@@ -659,7 +659,7 @@ frames:
 						t.frames[frameIndex].pc = int32(pc)
 						s.steps = s.options.HookEvery - remaining
 						if found.object.function.proto != nil {
-							s.enterMethod(found, 2, receiver, key, Nil(), base+int(register), 1)
+							s.enterPair(found, receiver, key, base+int(register), 1)
 							continue frames
 						}
 						result := first(s.callMethod(found, 2, receiver, key, Nil(), f.function.proto.instruction(pc-1)))
@@ -685,7 +685,7 @@ frames:
 						t.frames[frameIndex].pc = int32(pc)
 						s.steps = s.options.HookEvery - remaining
 						if found.object.function.proto != nil {
-							s.enterMethod(found, 2, receiver, key, Nil(), base+int(register), 1)
+							s.enterPair(found, receiver, key, base+int(register), 1)
 							continue frames
 						}
 						result := first(s.callMethod(found, 2, receiver, key, Nil(), f.function.proto.instruction(pc-1)))
@@ -905,35 +905,39 @@ func (s *State) enterArithmeticMethod(left, right *Value, index, dest int) bool 
 	if method.Type() != TypeFunction || method.object.function.proto == nil {
 		return false
 	}
+	s.enterPair(method, *left, *right, dest, 1)
+	return true
+}
+
+func (s *State) enterPair(method, left, right Value, dest, want int) {
 	t := s.current
 	callee := method.object.function
 	proto := callee.proto
 	start := max(t.used, t.top)
 	depth := len(t.frames)
 	if s.steps+vmCallWeight >= s.options.HookEvery || t.cDepth >= 199 || proto.vararg || depth >= freshCalls-1 || depth == cap(t.frames) || start+256 > len(t.stack) {
-		s.enterMethod(method, 2, *left, *right, Nil(), dest, 1)
-		return true
+		s.enterMethod(method, 2, left, right, Nil(), dest, want)
+		return
 	}
 	s.steps += vmCallWeight
 	t.cDepth++
 	parameters := proto.parameters
 	provided := min(parameters, 2)
 	if provided > 0 {
-		t.stack[start] = *left
+		t.stack[start] = left
 	}
 	if provided > 1 {
-		t.stack[start+1] = *right
+		t.stack[start+1] = right
 	}
 	clearRegisters(t.stack[start+provided : start+proto.maxRegisters])
 	t.frames = t.frames[:depth+1]
 	entered := &t.frames[depth]
 	entered.function, entered.site = callee, nil
 	entered.start, entered.base, entered.pc = int32(start), int32(start), 0
-	entered.returnDest, entered.want = int32(dest), 1
+	entered.returnDest, entered.want = int32(dest), int32(want)
 	entered.metacallTop, entered.tailcalls = int32(t.top+1), 0
 	t.used, t.top = start+proto.maxRegisters, start+parameters
 	t.boundary++
-	return true
 }
 
 func (s *State) meta(value Value, name string) Value {
