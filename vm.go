@@ -472,7 +472,13 @@ frames:
 				value := registers[register]
 				argStart := base + int(register) + 1
 				if object := value.object; object != nil && object.kind == TypeTable {
-					if method := s.metaFor(value, eventCall); method.Type() == TypeFunction {
+					method := Nil()
+					if cache := &s.methodCache[eventCall]; object.table.metatable != nil && cache.table == object.table.metatable && cache.version == cache.table.version {
+						method = cache.method
+					} else {
+						method = s.metaFor(value, eventCall)
+					}
+					if method.Type() == TypeFunction {
 						value, argStart, count = method, argStart-1, count+1
 					}
 				}
