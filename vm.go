@@ -653,6 +653,13 @@ frames:
 				value := registers[uint8(word>>16)]
 				if value.Type() == TypeTable || value.Type() == TypeString {
 					key := rkOperand(int(int16(word>>48)), registers, constants)
+					if cache := &s.methodCache[eventIndex]; value.object == nil && key.text != nil && cache.table != nil && cache.table == s.stringMeta && cache.version == cache.table.version && cache.method.object != nil && cache.method.object.kind == TypeTable {
+						if found := cache.method.object.table.getString(key.text); !found.IsNil() {
+							registers[register+1] = value
+							registers[register] = found
+							continue
+						}
+					}
 					found, receiver, status := s.indexChain(value, key)
 					if status == indexFound {
 						registers[register+1] = value
