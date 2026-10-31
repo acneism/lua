@@ -877,8 +877,12 @@ frames:
 				registers[i.a] = s.newClosure(f, f.function.proto.children[i.b], base)
 				continue
 			case opVararg:
-				if wanted := int(int32(uint32(word >> 16))); wanted >= 0 {
-					varargs := t.stack[int(f.start):int(f.base)]
+				varargs := t.stack[int(f.start):int(f.base)]
+				wanted := int(int32(uint32(word >> 16)))
+				if wanted < 0 {
+					wanted = len(varargs)
+				}
+				if int(register)+wanted <= len(registers) {
 					for index := range wanted {
 						if index < len(varargs) {
 							registers[int(register)+index] = varargs[index]
