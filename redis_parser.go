@@ -8,6 +8,7 @@ type redisParser struct {
 	lookahead       *token
 	lastLine, depth int
 	fs              *redisFunc
+	strings         map[string]Value
 }
 
 func (p *redisParser) next() {
@@ -55,8 +56,20 @@ func (p *redisParser) match(what, who string, line int) {
 	p.fail(fmt.Sprintf("'%s' expected (to close '%s' at line %d)", what, who, line))
 }
 func (p *redisParser) name() string { p.check("<name>"); name := p.current.text; p.next(); return name }
+func (p *redisParser) intern(text string) Value {
+	if value, ok := p.strings[text]; ok {
+		return value
+	}
+	if p.strings == nil {
+		p.strings = make(map[string]Value)
+	}
+	value := String(text)
+	p.strings[text] = value
+	return value
+}
+
 func (p *redisParser) stringexp(e *redisExp, s string) {
-	*e = redisExpression(rK, p.fs.addconstant(String(s)))
+	*e = redisExpression(rK, p.fs.addconstant(p.intern(s)))
 }
 func (p *redisParser) checkname(e *redisExp) { p.stringexp(e, p.name()) }
 func (f *redisFunc) limit(value, limit int, what string) {
@@ -141,7 +154,7 @@ func redisSinglevar(f *redisFunc, name string, v *redisExp, base bool) redisExpK
 func (p *redisParser) singlevar(v *redisExp) {
 	name := p.name()
 	if redisSinglevar(p.fs, name, v, true) == rGlobal {
-		v.info = p.fs.addconstant(String(name))
+		v.info = p.fs.addconstant(p.intern(name))
 	}
 }
 func (p *redisParser) adjustassign(nvars, nexps int, e *redisExp) {
