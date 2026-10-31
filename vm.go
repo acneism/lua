@@ -698,12 +698,10 @@ frames:
 								registers[register] = found
 								continue
 							}
-							if method, ok := s.cached(eventIndex, table.metatable); ok && method.object != nil && method.object.kind == TypeTable {
-								if found := method.object.table.getString(key.text); !found.IsNil() {
-									registers[register+1] = value
-									registers[register] = found
-									continue
-								}
+							if found := s.inheritedString(table, key.text); !found.IsNil() {
+								registers[register+1] = value
+								registers[register] = found
+								continue
 							}
 						}
 					}

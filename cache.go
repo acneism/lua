@@ -28,6 +28,8 @@ var eventNames = [eventCount]Value{
 	String("__concat"), String("__unm"), String("__len"), String("__tostring"),
 }
 
+const methodWays = 4
+
 type methodCache struct {
 	table   *Table
 	version uint64
@@ -44,7 +46,7 @@ func eventFor(name string) (metaEvent, bool) {
 }
 
 func (s *State) eventMethod(table *Table, event metaEvent) Value {
-	cache := &s.methodCache[event]
+	cache := &s.methodCache[event][table.object.id%methodWays]
 	if cache.table == table && cache.version == table.version {
 		return cache.method
 	}
@@ -79,8 +81,11 @@ func (s *State) metaFor(value Value, event metaEvent) Value {
 }
 
 func (s *State) cached(event metaEvent, table *Table) (Value, bool) {
-	cache := &s.methodCache[event]
-	return cache.method, table != nil && cache.table == table && cache.version == table.version
+	if table == nil {
+		return Nil(), false
+	}
+	cache := &s.methodCache[event][table.object.id%methodWays]
+	return cache.method, cache.table == table && cache.version == table.version
 }
 
 func (v Value) luaFunction() bool {
@@ -97,4 +102,18 @@ func (s *State) lessMethod(left, right *Value) (Value, bool) {
 	}
 	method, ok := s.cached(eventLess, meta)
 	return method, ok && method.luaFunction()
+}
+
+func (s *State) inheritedString(table *Table, key *stringValue) Value {
+	for range 4 {
+		method, ok := s.cached(eventIndex, table.metatable)
+		if !ok || method.object == nil || method.object.kind != TypeTable {
+			return Nil()
+		}
+		table = method.object.table
+		if found := table.getString(key); !found.IsNil() {
+			return found
+		}
+	}
+	return Nil()
 }

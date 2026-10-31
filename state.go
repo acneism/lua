@@ -109,7 +109,7 @@ func (t *thread) restoreCallLimit(depth int) {
 }
 
 type State struct {
-	methodCache [eventCount]methodCache
+	methodCache [eventCount][methodWays]methodCache
 	options     Options
 	globals     *Table
 	stringMeta  *Table
