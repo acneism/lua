@@ -211,3 +211,11 @@ func (v Value) toString() (string, bool) {
 	}
 	return "", false
 }
+
+func setNumber(slot *Value, n float64) {
+	if slot.object == &numberMarker {
+		slot.number = n
+		return
+	}
+	*slot = Number(n)
+}

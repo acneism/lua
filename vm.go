@@ -226,7 +226,7 @@ frames:
 			case opAdd, opAdd + 1, opAdd + 2, opAdd + 3:
 				left, right := numericOperands(op, word, registers, constants)
 				if left.object == &numberMarker && right.object == &numberMarker {
-					registers[register] = Number(luaNaN(left.number+right.number, left.number, right.number))
+					setNumber(&registers[register], luaNaN(left.number+right.number, left.number, right.number))
 					continue
 				}
 				t.frames[frameIndex].pc = int32(pc)
@@ -237,7 +237,7 @@ frames:
 			case opSubtract, opSubtract + 1, opSubtract + 2, opSubtract + 3:
 				left, right := numericOperands(op, word, registers, constants)
 				if left.object == &numberMarker && right.object == &numberMarker {
-					registers[register] = Number(luaNaN(left.number-right.number, left.number, right.number))
+					setNumber(&registers[register], luaNaN(left.number-right.number, left.number, right.number))
 					continue
 				}
 				t.frames[frameIndex].pc = int32(pc)
@@ -248,7 +248,7 @@ frames:
 			case opMultiply, opMultiply + 1, opMultiply + 2, opMultiply + 3:
 				left, right := numericOperands(op, word, registers, constants)
 				if left.object == &numberMarker && right.object == &numberMarker {
-					registers[register] = Number(luaNaN(left.number*right.number, left.number, right.number))
+					setNumber(&registers[register], luaNaN(left.number*right.number, left.number, right.number))
 					continue
 				}
 				t.frames[frameIndex].pc = int32(pc)
@@ -259,7 +259,7 @@ frames:
 			case opDivide, opDivide + 1, opDivide + 2, opDivide + 3:
 				left, right := numericOperands(op, word, registers, constants)
 				if left.object == &numberMarker && right.object == &numberMarker {
-					registers[register] = Number(luaDivide(left.number, right.number))
+					setNumber(&registers[register], luaDivide(left.number, right.number))
 					continue
 				}
 				t.frames[frameIndex].pc = int32(pc)
@@ -270,7 +270,7 @@ frames:
 			case opModulo, opModulo + 1, opModulo + 2, opModulo + 3:
 				left, right := numericOperands(op, word, registers, constants)
 				if left.object == &numberMarker && right.object == &numberMarker {
-					registers[register] = Number(luaModulo(left.number, right.number))
+					setNumber(&registers[register], luaModulo(left.number, right.number))
 					continue
 				}
 				t.frames[frameIndex].pc = int32(pc)
@@ -281,7 +281,7 @@ frames:
 			case opPower, opPower + 1, opPower + 2, opPower + 3:
 				left, right := numericOperands(op, word, registers, constants)
 				if left.object == &numberMarker && right.object == &numberMarker {
-					registers[register] = Number(luaPower(left.number, right.number))
+					setNumber(&registers[register], luaPower(left.number, right.number))
 					continue
 				}
 				t.frames[frameIndex].pc = int32(pc)
@@ -847,7 +847,7 @@ frames:
 				limit := registers[register+1].number
 				if step > 0 && next <= limit || step <= 0 && limit <= next {
 					registers[register].number = next
-					registers[register+3] = Number(next)
+					setNumber(&registers[register+3], next)
 					pc = int(uint32(word >> 16))
 					if op == opForAccumulate {
 						sum := &registers[uint8(word>>48)]
