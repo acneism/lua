@@ -125,6 +125,7 @@ type State struct {
 	hostRoots   map[uint64]Value
 	rootID      uint64
 	results     [8]Value
+	short       [64]*stringValue
 }
 
 func NewState(options Options) *State {

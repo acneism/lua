@@ -1,6 +1,9 @@
 package lua
 
-import "math"
+import (
+	"math"
+	"strings"
+)
 
 func luaInteger(number float64) int64 {
 	if math.IsNaN(number) || number >= 0x1p63 || number < -0x1p63 {
@@ -50,5 +53,18 @@ func (s *State) checkFunction(args []Value, index int) Value {
 
 func (s *State) stringResult(text string) ([]Value, error) {
 	s.checkString(len(text))
-	return s.values1(String(text)), nil
+	return s.values1(s.shortString(text)), nil
+}
+
+func (s *State) shortString(text string) Value {
+	if len(text) > 32 {
+		return String(text)
+	}
+	hash := stringHash(text)
+	slot := &s.short[hash%uint32(len(s.short))]
+	if cached := *slot; cached != nil && cached.hash == hash && cached.text == text {
+		return Value{text: cached}
+	}
+	*slot = &stringValue{strings.Clone(text), hash}
+	return Value{text: *slot}
 }
