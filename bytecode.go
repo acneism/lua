@@ -40,6 +40,13 @@ func numericOperands(op opcode, word uint64, registers *[256]Value, constants []
 	return left, right
 }
 
+func rkOperand(index int, registers *[256]Value, constants []Value) Value {
+	if index < 0 {
+		return constants[-1-index]
+	}
+	return registers[uint8(index)]
+}
+
 func numericOperation(operator string) int {
 	switch operator {
 	case "+":

@@ -615,6 +615,16 @@ frames:
 					if op == opGetTableK {
 						key = constants[uint16(word>>48)]
 					}
+					if key.object == &numberMarker && value.object.kind == TypeTable {
+						table := value.object.table
+						index := int(key.number)
+						if uint(index-1) < uint(len(table.array)) && float64(index) == key.number {
+							if found := table.array[index-1]; !found.IsNil() || table.metatable == nil {
+								registers[register] = found
+								continue
+							}
+						}
+					}
 					found, receiver, status := s.indexChain(value, key)
 					if status == indexFound {
 						registers[register] = found
@@ -636,31 +646,27 @@ frames:
 					}
 				}
 			case opSelf:
-				i := f.function.proto.instruction(pc - 1)
-				value := registers[i.b]
+				value := registers[uint8(word>>16)]
 				if value.Type() == TypeTable || value.Type() == TypeString {
-					key := registers[uint8(i.c)]
-					if i.c < 0 {
-						key = constants[-1-i.c]
-					}
+					key := rkOperand(int(int16(word>>48)), registers, constants)
 					found, receiver, status := s.indexChain(value, key)
 					if status == indexFound {
-						registers[i.a+1] = value
-						registers[i.a] = found
+						registers[register+1] = value
+						registers[register] = found
 						continue
 					}
 					if status == indexMethod {
-						registers[i.a+1] = value
+						registers[register+1] = value
 						t.frames[frameIndex].pc = int32(pc)
 						s.steps = s.options.HookEvery - remaining
 						if found.object.function.proto != nil {
-							s.enterMethod(found, 2, receiver, key, Nil(), base+i.a, 1)
+							s.enterMethod(found, 2, receiver, key, Nil(), base+int(register), 1)
 							continue frames
 						}
-						result := first(s.callMethod(found, 2, receiver, key, Nil(), i))
+						result := first(s.callMethod(found, 2, receiver, key, Nil(), f.function.proto.instruction(pc-1)))
 						f = &t.frames[frameIndex]
 						registers = (*[256]Value)(t.stack[base : base+256])
-						registers[i.a] = result
+						registers[register] = result
 						remaining = s.options.HookEvery - s.steps
 						continue
 					}
@@ -674,14 +680,7 @@ frames:
 				if op == opSetTable {
 					key, assigned = registers[uint8(word>>16)], registers[uint8(word>>48)]
 				} else {
-					i := f.function.proto.instruction(pc - 1)
-					key, assigned = registers[uint8(i.b)], registers[uint8(i.c)]
-					if i.b < 0 {
-						key = constants[-1-i.b]
-					}
-					if i.c < 0 {
-						assigned = constants[-1-i.c]
-					}
+					key, assigned = rkOperand(int(int32(word>>16)), registers, constants), rkOperand(int(int16(word>>48)), registers, constants)
 				}
 				table := value.object.table
 				if table.metatable != nil && table.RawGet(key).IsNil() {
