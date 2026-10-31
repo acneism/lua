@@ -50,3 +50,13 @@ func TestNaNNormalizationIsNarrow(t *testing.T) {
 		}
 	}
 }
+
+func TestLuaFloorMatchesMath(t *testing.T) {
+	values := []float64{0, math.Copysign(0, -1), 0.5, -0.5, 1, -1, 2.5, -2.5, 1e15 + 0.5, -1e15 - 0.5, 0x1p52 - 0.5, -0x1p52 + 0.5, 0x1p52, -0x1p52, 0x1p53 + 2, 1e300, -1e300, math.Inf(1), math.Inf(-1), math.NaN(), 4.9e-324, -4.9e-324}
+	for _, value := range values {
+		got, want := luaFloor(value), math.Floor(value)
+		if math.Float64bits(got) != math.Float64bits(want) && !(math.IsNaN(got) && math.IsNaN(want)) {
+			t.Fatalf("floor(%v) = %v, want %v", value, got, want)
+		}
+	}
+}

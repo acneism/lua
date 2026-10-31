@@ -25,7 +25,7 @@ func (s *State) openMath() {
 	for name, operation := range map[string]func(float64) float64{
 		"abs": math.Abs, "acos": trig.Acos, "asin": trig.Asin, "atan": trig.Atan,
 		"ceil": math.Ceil, "cos": trig.Cos, "cosh": fdCosh, "exp": armExp,
-		"floor": math.Floor, "log": armLog, "log10": fdLog10,
+		"floor": luaFloor, "log": armLog, "log10": fdLog10,
 		"sin": trig.Sin, "sinh": fdSinh, "sqrt": math.Sqrt, "tan": trig.Tan, "tanh": fdTanh,
 		"deg": func(x float64) float64 { return x / (math.Pi / 180) },
 		"rad": func(x float64) float64 { return x * (math.Pi / 180) },
@@ -136,4 +136,18 @@ func defaultAcos(x float64) float64 {
 		return math.Pi - 2*math.Asin(math.Sqrt(float64((1+x)*0.5)))
 	}
 	return math.Acos(x)
+}
+
+func luaFloor(x float64) float64 {
+	if x > -0x1p52 && x < 0x1p52 {
+		whole := float64(int64(x))
+		if whole == x {
+			return x
+		}
+		if whole > x {
+			whole--
+		}
+		return whole
+	}
+	return math.Floor(x)
 }

@@ -110,6 +110,9 @@ func RunCorpus(t *testing.T, files []string, options lua.Options) {
 		rule := normalizations[item.Src]
 		delete(normalizations, item.Src)
 		t.Run(fmt.Sprintf("%03d", index+1), func(t *testing.T) {
+			if options.Hook == nil {
+				t.Parallel()
+			}
 			runSnippet(t, item, options, steps, rule)
 		})
 	}

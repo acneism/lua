@@ -329,10 +329,10 @@ func stringFind(s *State, args []Value, find bool) ([]Value, error) {
 	if find && (argument(args, 3).Truth() || !strings.ContainsAny(cString(pattern), "^$*+?.([%-")) {
 		index := strings.Index(source[start:], pattern)
 		if index < 0 {
-			return []Value{Nil()}, nil
+			return s.values1(Nil()), nil
 		}
 		index += start
-		return []Value{Number(float64(index + 1)), Number(float64(index + len(pattern)))}, nil
+		return s.values2(Number(float64(index+1)), Number(float64(index+len(pattern)))), nil
 	}
 	m := patternMatcher{state: s, source: source, pattern: pattern}
 	position, anchored := 0, false
@@ -351,7 +351,7 @@ func stringFind(s *State, args []Value, find bool) ([]Value, error) {
 			break
 		}
 	}
-	return []Value{Nil()}, nil
+	return s.values1(Nil()), nil
 }
 
 func stringGMatch(s *State, args []Value) ([]Value, error) {
