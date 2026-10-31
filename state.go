@@ -465,6 +465,13 @@ func (s *State) pollHook() {
 	s.pollHookRoots(nil)
 }
 
+func (s *State) pollJump(frameIndex, pc, target int) {
+	t := s.current
+	t.frames[frameIndex].pc = int32(pc)
+	s.pollHook()
+	t.frames[frameIndex].pc = int32(target)
+}
+
 func (s *State) pollBinaryHook(method, left, right Value) {
 	t := s.current
 	base := len(t.hookRoots)

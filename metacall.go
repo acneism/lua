@@ -154,14 +154,13 @@ func (s *State) returnCompare(value Value) {
 		return
 	}
 	target := int(uint32(caller.function.proto.code[pc] >> 16))
+	caller.pc = int32(target)
 	if target < pc {
 		s.steps += vmCallWeight
 		if s.steps >= s.options.HookEvery {
-			s.pollHook()
-			caller = &t.frames[len(t.frames)-1]
+			s.pollJump(len(t.frames)-1, pc, target)
 		}
 	}
-	caller.pc = int32(target)
 }
 
 func (s *State) callMethod(method Value, count int, first, second, third Value, site *instruction) []Value {

@@ -214,11 +214,8 @@ frames:
 					if target < pc {
 						remaining -= vmCallWeight
 						if remaining <= 0 {
-							t.frames[frameIndex].pc = int32(pc)
-							s.pollHook()
-							f = &t.frames[frameIndex]
-							registers = (*[256]Value)(t.stack[base : base+256])
-							remaining = s.options.HookEvery - s.steps
+							s.pollJump(frameIndex, pc, target)
+							continue frames
 						}
 					}
 					pc = target
@@ -325,11 +322,8 @@ frames:
 							if target < pc {
 								remaining -= vmCallWeight
 								if remaining <= 0 {
-									t.frames[frameIndex].pc = int32(pc)
-									s.pollHook()
-									f = &t.frames[frameIndex]
-									registers = (*[256]Value)(t.stack[base : base+256])
-									remaining = s.options.HookEvery - s.steps
+									s.pollJump(frameIndex, pc, target)
+									continue frames
 								}
 							}
 							pc = target
@@ -451,12 +445,17 @@ frames:
 					count = t.top - (base + int(register) + 1)
 				}
 				value := registers[register]
+				argStart := base + int(register) + 1
+				if object := value.object; object != nil && object.kind == TypeTable {
+					if method := s.metaFor(value, eventCall); method.Type() == TypeFunction {
+						value, argStart, count = method, argStart-1, count+1
+					}
+				}
 				if object := value.object; object != nil && object.kind == TypeFunction && object.function.native != nil {
 					t.frames[frameIndex].pc = int32(pc)
 					s.steps = s.options.HookEvery - remaining
 					dest, want := base+int(uint8(word>>48)), int(int16(word>>32))
 					t.resumeDest, t.resumeWant, t.resumeReturn = dest, want, false
-					argStart := base + int(register) + 1
 					values := s.nativeStack(object.function, t.stack[argStart:argStart+count], f.function.proto.instruction(pc-1), argStart)
 					if t.yielded {
 						t.yielded = false
@@ -469,31 +468,6 @@ frames:
 					remaining = s.options.HookEvery - s.steps
 					continue
 				}
-				if object := value.object; object != nil && object.kind == TypeTable {
-					method := s.metaFor(value, eventCall)
-					if method.Type() == TypeFunction {
-						t.frames[frameIndex].pc = int32(pc)
-						s.steps = s.options.HookEvery - remaining
-						dest, want := base+int(uint8(word>>48)), int(int16(word>>32))
-						callStart := base + int(register)
-						if method.object.function.proto != nil {
-							s.push(method.object.function, t.stack[callStart:callStart+1+count], dest, want, nil)
-							continue frames
-						}
-						t.resumeDest, t.resumeWant, t.resumeReturn = dest, want, false
-						values := s.nativeStack(method.object.function, t.stack[callStart:callStart+1+count], f.function.proto.instruction(pc-1), callStart)
-						if t.yielded {
-							t.yielded = false
-							t.status = "suspended"
-							return values
-						}
-						t.writeResults(dest, want, values)
-						f = &t.frames[frameIndex]
-						registers = (*[256]Value)(t.stack[base : base+256])
-						remaining = s.options.HookEvery - s.steps
-						continue
-					}
-				}
 				if value.Type() == TypeFunction && value.object.function.proto != nil && !value.object.function.proto.vararg && len(t.frames) < freshCalls-1 {
 					callee := value.object.function
 					start := max(t.used, t.top)
@@ -502,7 +476,7 @@ frames:
 						parameters := callee.proto.parameters
 						provided := min(parameters, count)
 						for argument := 0; argument < provided; argument++ {
-							t.stack[start+argument] = registers[int(register)+1+argument]
+							t.stack[start+argument] = t.stack[argStart+argument]
 						}
 						clearRegisters(t.stack[start+provided : start+callee.proto.maxRegisters])
 						depth := len(t.frames)
@@ -527,7 +501,6 @@ frames:
 					}
 				}
 				if object := value.object; object != nil && object.kind == TypeFunction && object.function.proto != nil {
-					argStart := base + int(register) + 1
 					t.frames[frameIndex].pc = int32(pc)
 					s.steps = s.options.HookEvery - remaining
 					s.push(object.function, t.stack[argStart:argStart+count], base+int(uint8(word>>48)), int(int16(word>>32)), nil)
@@ -769,11 +742,8 @@ frames:
 				if target < pc {
 					remaining -= vmCallWeight
 					if remaining <= 0 {
-						t.frames[frameIndex].pc = int32(pc)
-						s.pollHook()
-						f = &t.frames[frameIndex]
-						registers = (*[256]Value)(t.stack[base : base+256])
-						remaining = s.options.HookEvery - s.steps
+						s.pollJump(frameIndex, pc, target)
+						continue frames
 					}
 				}
 				pc = target
@@ -784,11 +754,8 @@ frames:
 					if target < pc {
 						remaining -= vmCallWeight
 						if remaining <= 0 {
-							t.frames[frameIndex].pc = int32(pc)
-							s.pollHook()
-							f = &t.frames[frameIndex]
-							registers = (*[256]Value)(t.stack[base : base+256])
-							remaining = s.options.HookEvery - s.steps
+							s.pollJump(frameIndex, pc, target)
+							continue frames
 						}
 					}
 					pc = target
@@ -800,11 +767,8 @@ frames:
 					if target < pc {
 						remaining -= vmCallWeight
 						if remaining <= 0 {
-							t.frames[frameIndex].pc = int32(pc)
-							s.pollHook()
-							f = &t.frames[frameIndex]
-							registers = (*[256]Value)(t.stack[base : base+256])
-							remaining = s.options.HookEvery - s.steps
+							s.pollJump(frameIndex, pc, target)
+							continue frames
 						}
 					}
 					pc = target
