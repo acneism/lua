@@ -48,6 +48,9 @@ const (
 	opCompare
 	opCallArithmetic
 	opCallArithmeticUpvalue
+	opNegate
+	opNot
+	opLength
 )
 
 type nameInfo struct {

@@ -3,17 +3,12 @@ package lua
 const vmPollStride = 32
 const vmCallWeight = 4
 
-const numericBase opcode = 64
+const numericBase opcode = (opLength + 4) &^ 3
 const numericEnd opcode = numericBase + 12*4
-const numericJumpBase opcode = 160
+const numericJumpBase opcode = numericEnd
 const numericJumpEnd opcode = numericJumpBase + 6*4
-const comparisonBase opcode = 192
+const comparisonBase opcode = numericJumpEnd
 const comparisonEnd opcode = comparisonBase + 3*8
-const (
-	opNegate opcode = 128 + iota
-	opNot
-	opLength
-)
 
 const (
 	opAdd opcode = numericBase + 4*iota
