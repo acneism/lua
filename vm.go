@@ -875,22 +875,21 @@ frames:
 				registers[i.a] = s.newClosure(f, f.function.proto.children[i.b], base)
 				continue
 			case opVararg:
-				i := f.function.proto.instruction(pc - 1)
-				if i.b >= 0 {
+				if wanted := int(int32(uint32(word >> 16))); wanted >= 0 {
 					varargs := t.stack[int(f.start):int(f.base)]
-					for index := range i.b {
+					for index := range wanted {
 						if index < len(varargs) {
-							registers[i.a+index] = varargs[index]
+							registers[int(register)+index] = varargs[index]
 						} else {
-							registers[i.a+index] = Nil()
+							registers[int(register)+index] = Nil()
 						}
 					}
-					t.top = base + i.a + i.b
+					t.top = base + int(register) + wanted
 					continue
 				}
 				t.frames[frameIndex].pc = int32(pc)
 				s.steps = s.options.HookEvery - remaining
-				t.writeResults(base+i.a, i.b, t.stack[int(f.start):int(f.base)])
+				t.writeResults(base+int(register), -1, t.stack[int(f.start):int(f.base)])
 				continue frames
 			case opClose:
 				if t.open != nil {
