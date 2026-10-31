@@ -769,6 +769,19 @@ frames:
 				if object == nil || object.kind != TypeFunction || object.function.native == nil {
 					break
 				}
+				if table, control := t.stack[a+1], t.stack[a+2]; object.function == s.ipairsStep && i.c == 2 && remaining > 1 && t.cDepth < 199 && table.object != nil && table.object.kind == TypeTable && control.object == &numberMarker {
+					remaining--
+					index := int(control.number) + 1
+					value := table.object.table.RawGet(Number(float64(index)))
+					t.top = a + 5
+					if value.IsNil() {
+						t.stack[a+3], t.stack[a+4] = Nil(), Nil()
+						pc = i.d
+						continue
+					}
+					t.stack[a+2], t.stack[a+3], t.stack[a+4] = Number(float64(index)), Number(float64(index)), value
+					continue
+				}
 				t.frames[frameIndex].pc = int32(pc)
 				s.steps = s.options.HookEvery - remaining
 				t.cDepth++

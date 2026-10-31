@@ -113,6 +113,7 @@ type State struct {
 	options     Options
 	globals     *Table
 	stringMeta  *Table
+	ipairsStep  *function
 	main        *thread
 	current     *thread
 	threads     []*thread

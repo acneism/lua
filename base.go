@@ -108,6 +108,7 @@ func (s *State) openBase() {
 		}
 		return s.values2(Number(float64(index)), value), nil
 	})
+	s.ipairsStep = ipairs.object.function
 	s.globals.set(String("next"), next)
 	functions := map[string]GoFunction{
 		"assert": baseAssert, "error": baseError, "tonumber": baseToNumber,
