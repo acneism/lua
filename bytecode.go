@@ -15,6 +15,31 @@ const (
 	opLength
 )
 
+const (
+	opAdd opcode = numericBase + 4*iota
+	opSubtract
+	opMultiply
+	opDivide
+	opModulo
+	opPower
+)
+
+const (
+	leftConstant  = 1
+	rightConstant = 2
+)
+
+func numericOperands(op opcode, word uint64, registers *[256]Value, constants []Value) (*Value, *Value) {
+	left, right := &registers[uint8(word>>16)], &registers[uint8(word>>32)]
+	if op&leftConstant != 0 {
+		left = &constants[uint16(word>>16)]
+	}
+	if op&rightConstant != 0 {
+		right = &constants[uint16(word>>32)]
+	}
+	return left, right
+}
+
 func numericOperation(operator string) int {
 	switch operator {
 	case "+":

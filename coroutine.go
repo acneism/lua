@@ -43,7 +43,8 @@ func (s *State) openCoroutine() {
 			if t == s.main || t.boundary > 0 || t.nativeDepth > 1 {
 				return nil, plainError("attempt to yield across metamethod/C-call boundary")
 			}
-			return nil, &yieldSignal{values: args}
+			t.yielded = true
+			return args, nil
 		},
 		"status": func(s *State, args []Value) ([]Value, error) {
 			return []Value{String(s.checkThread(args, 0).status)}, nil

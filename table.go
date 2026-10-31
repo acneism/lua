@@ -67,7 +67,7 @@ func (t *Table) mainPosition(key Value) int {
 	}
 	switch key.Type() {
 	case TypeString:
-		return int(stringHash(key.Text()) & uint32(len(t.nodes)-1))
+		return int(key.text.hash & uint32(len(t.nodes)-1))
 	case TypeBoolean:
 		return int(key.number) & (len(t.nodes) - 1)
 	case TypeNumber:

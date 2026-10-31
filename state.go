@@ -83,6 +83,7 @@ type thread struct {
 	handlerActive bool
 	handlerRoots  []Value
 	callLimit     int
+	yielded       bool
 }
 
 const (

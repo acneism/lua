@@ -5,10 +5,6 @@ import (
 	"math"
 )
 
-type yieldSignal struct{ values []Value }
-
-func (y *yieldSignal) Error() string { return "coroutine yielded" }
-
 func clearRegisters(values []Value) {
 	switch len(values) {
 	case 1:
@@ -87,9 +83,6 @@ func (s *State) nativeStack(fn *function, args []Value, site *instruction, start
 	s.tick()
 	values, err := fn.native(s, args)
 	if err != nil {
-		if _, ok := err.(*yieldSignal); ok {
-			panic(err)
-		}
 		if failure, ok := err.(*Error); ok {
 			if failure.cDepth == 0 {
 				failure.cDepth = t.cDepth
@@ -153,16 +146,6 @@ func (s *State) finish(values []Value) (bool, []Value) {
 
 func (s *State) execute(stop int) (result []Value) {
 	t := s.current
-	defer func() {
-		if raised := recover(); raised != nil {
-			if signal, ok := raised.(*yieldSignal); ok {
-				t.status = "suspended"
-				result = signal.values
-			} else {
-				panic(raised)
-			}
-		}
-	}()
 
 	if s.options.Hook != nil {
 		s.steps += vmCallWeight - 1
@@ -181,179 +164,199 @@ func (s *State) execute(stop int) (result []Value) {
 			word := code[pc]
 			pc++
 			op, register := opcode(word), uint8(word>>8)
-			if op >= numericBase {
-				if op >= comparisonBase && op < comparisonEnd {
-					mode := op - comparisonBase
-					left, right := &registers[uint8(word>>8)], &registers[uint8(word>>16)]
-					if mode&1 != 0 {
-						left = &constants[uint8(word>>8)]
+			switch op {
+			case comparisonBase + 0, comparisonBase + 1, comparisonBase + 2, comparisonBase + 3, comparisonBase + 4, comparisonBase + 5, comparisonBase + 6, comparisonBase + 7, comparisonBase + 8, comparisonBase + 9, comparisonBase + 10, comparisonBase + 11, comparisonBase + 12, comparisonBase + 13, comparisonBase + 14, comparisonBase + 15, comparisonBase + 16, comparisonBase + 17, comparisonBase + 18, comparisonBase + 19, comparisonBase + 20, comparisonBase + 21, comparisonBase + 22, comparisonBase + 23:
+				mode := op - comparisonBase
+				left, right := &registers[uint8(word>>8)], &registers[uint8(word>>16)]
+				if mode&1 != 0 {
+					left = &constants[uint8(word>>8)]
+				}
+				if mode&2 != 0 {
+					right = &constants[uint8(word>>16)]
+				}
+				var matched bool
+				if left.object == &numberMarker && right.object == &numberMarker {
+					switch mode / 8 {
+					case 0:
+						matched = left.number == right.number
+					case 1:
+						matched = left.number < right.number
+					case 2:
+						matched = left.number <= right.number
 					}
-					if mode&2 != 0 {
-						right = &constants[uint8(word>>16)]
-					}
-					var matched bool
-					if left.object == &numberMarker && right.object == &numberMarker {
-						switch mode / 8 {
-						case 0:
-							matched = left.number == right.number
-						case 1:
-							matched = left.number < right.number
-						case 2:
-							matched = left.number <= right.number
+				} else {
+					t.frames[frameIndex].pc = int32(pc)
+					s.steps = s.options.HookEvery - remaining
+					i := f.function.proto.instruction(pc - 1)
+					matched = s.binary(i.text, *left, *right, i.left, i.right).Truth()
+					f = &t.frames[frameIndex]
+					registers = (*[256]Value)(t.stack[base : base+256])
+					remaining = s.options.HookEvery - s.steps
+				}
+				if matched == (mode&4 != 0) {
+					target := int(uint32(code[pc] >> 16))
+					if target < pc {
+						remaining -= vmCallWeight
+						if remaining <= 0 {
+							t.frames[frameIndex].pc = int32(pc)
+							s.pollHook()
+							f = &t.frames[frameIndex]
+							registers = (*[256]Value)(t.stack[base : base+256])
+							remaining = s.options.HookEvery - s.steps
 						}
-					} else {
-						t.frames[frameIndex].pc = int32(pc)
-						s.steps = s.options.HookEvery - remaining
-						i := f.function.proto.instruction(pc - 1)
-						matched = s.binary(i.text, *left, *right, i.left, i.right).Truth()
-						f = &t.frames[frameIndex]
-						registers = (*[256]Value)(t.stack[base : base+256])
-						remaining = s.options.HookEvery - s.steps
 					}
-					if matched == (mode&4 != 0) {
-						target := int(uint32(code[pc] >> 16))
-						if target < pc {
-							remaining -= vmCallWeight
-							if remaining <= 0 {
-								t.frames[frameIndex].pc = int32(pc)
-								s.pollHook()
-								f = &t.frames[frameIndex]
-								registers = (*[256]Value)(t.stack[base : base+256])
-								remaining = s.options.HookEvery - s.steps
-							}
-						}
-						pc = target
-					} else {
+					pc = target
+				} else {
+					pc++
+				}
+				continue
+			case opAdd, opAdd + 1, opAdd + 2, opAdd + 3:
+				left, right := numericOperands(op, word, registers, constants)
+				if left.object == &numberMarker && right.object == &numberMarker {
+					registers[register] = Number(luaNaN(left.number+right.number, left.number, right.number))
+					continue
+				}
+				t.frames[frameIndex].pc = int32(pc)
+				s.steps = s.options.HookEvery - remaining
+				if s.enterArithmeticMethod(*left, *right, 0, base+int(register)) {
+					frameIndex++
+					f = &t.frames[frameIndex]
+					base, pc = int(f.base), 0
+					code, constants = f.function.proto.code, f.function.proto.constants
+					registers = (*[256]Value)(t.stack[base : base+256])
+					remaining = s.options.HookEvery - s.steps
+					continue
+				}
+			case opSubtract, opSubtract + 1, opSubtract + 2, opSubtract + 3:
+				left, right := numericOperands(op, word, registers, constants)
+				if left.object == &numberMarker && right.object == &numberMarker {
+					registers[register] = Number(luaNaN(left.number-right.number, left.number, right.number))
+					continue
+				}
+				t.frames[frameIndex].pc = int32(pc)
+				s.steps = s.options.HookEvery - remaining
+				if s.enterArithmeticMethod(*left, *right, 1, base+int(register)) {
+					frameIndex++
+					f = &t.frames[frameIndex]
+					base, pc = int(f.base), 0
+					code, constants = f.function.proto.code, f.function.proto.constants
+					registers = (*[256]Value)(t.stack[base : base+256])
+					remaining = s.options.HookEvery - s.steps
+					continue
+				}
+			case opMultiply, opMultiply + 1, opMultiply + 2, opMultiply + 3:
+				left, right := numericOperands(op, word, registers, constants)
+				if left.object == &numberMarker && right.object == &numberMarker {
+					registers[register] = Number(luaNaN(left.number*right.number, left.number, right.number))
+					continue
+				}
+				t.frames[frameIndex].pc = int32(pc)
+				s.steps = s.options.HookEvery - remaining
+				if s.enterArithmeticMethod(*left, *right, 2, base+int(register)) {
+					frameIndex++
+					f = &t.frames[frameIndex]
+					base, pc = int(f.base), 0
+					code, constants = f.function.proto.code, f.function.proto.constants
+					registers = (*[256]Value)(t.stack[base : base+256])
+					remaining = s.options.HookEvery - s.steps
+					continue
+				}
+			case opDivide, opDivide + 1, opDivide + 2, opDivide + 3:
+				left, right := numericOperands(op, word, registers, constants)
+				if left.object == &numberMarker && right.object == &numberMarker {
+					registers[register] = Number(luaDivide(left.number, right.number))
+					continue
+				}
+				t.frames[frameIndex].pc = int32(pc)
+				s.steps = s.options.HookEvery - remaining
+				if s.enterArithmeticMethod(*left, *right, 3, base+int(register)) {
+					frameIndex++
+					f = &t.frames[frameIndex]
+					base, pc = int(f.base), 0
+					code, constants = f.function.proto.code, f.function.proto.constants
+					registers = (*[256]Value)(t.stack[base : base+256])
+					remaining = s.options.HookEvery - s.steps
+					continue
+				}
+			case opModulo, opModulo + 1, opModulo + 2, opModulo + 3:
+				left, right := numericOperands(op, word, registers, constants)
+				if left.object == &numberMarker && right.object == &numberMarker {
+					registers[register] = Number(luaModulo(left.number, right.number))
+					continue
+				}
+				t.frames[frameIndex].pc = int32(pc)
+				s.steps = s.options.HookEvery - remaining
+				if s.enterArithmeticMethod(*left, *right, 4, base+int(register)) {
+					frameIndex++
+					f = &t.frames[frameIndex]
+					base, pc = int(f.base), 0
+					code, constants = f.function.proto.code, f.function.proto.constants
+					registers = (*[256]Value)(t.stack[base : base+256])
+					remaining = s.options.HookEvery - s.steps
+					continue
+				}
+			case opPower, opPower + 1, opPower + 2, opPower + 3:
+				left, right := numericOperands(op, word, registers, constants)
+				if left.object == &numberMarker && right.object == &numberMarker {
+					registers[register] = Number(luaPower(left.number, right.number))
+					continue
+				}
+				t.frames[frameIndex].pc = int32(pc)
+				s.steps = s.options.HookEvery - remaining
+				if s.enterArithmeticMethod(*left, *right, 5, base+int(register)) {
+					frameIndex++
+					f = &t.frames[frameIndex]
+					base, pc = int(f.base), 0
+					code, constants = f.function.proto.code, f.function.proto.constants
+					registers = (*[256]Value)(t.stack[base : base+256])
+					remaining = s.options.HookEvery - s.steps
+					continue
+				}
+			case numericBase + 24, numericBase + 25, numericBase + 26, numericBase + 27, numericBase + 28, numericBase + 29, numericBase + 30, numericBase + 31, numericBase + 32, numericBase + 33, numericBase + 34, numericBase + 35, numericBase + 36, numericBase + 37, numericBase + 38, numericBase + 39, numericBase + 40, numericBase + 41, numericBase + 42, numericBase + 43, numericBase + 44, numericBase + 45, numericBase + 46, numericBase + 47, numericJumpBase + 0, numericJumpBase + 1, numericJumpBase + 2, numericJumpBase + 3, numericJumpBase + 4, numericJumpBase + 5, numericJumpBase + 6, numericJumpBase + 7, numericJumpBase + 8, numericJumpBase + 9, numericJumpBase + 10, numericJumpBase + 11, numericJumpBase + 12, numericJumpBase + 13, numericJumpBase + 14, numericJumpBase + 15, numericJumpBase + 16, numericJumpBase + 17, numericJumpBase + 18, numericJumpBase + 19, numericJumpBase + 20, numericJumpBase + 21, numericJumpBase + 22, numericJumpBase + 23:
+				operation := op
+				fused := op >= numericJumpBase
+				if fused {
+					operation -= numericJumpBase - (numericBase + 6*4)
+				}
+				left, right := numericOperands(operation, word, registers, constants)
+				if left.object == &numberMarker && right.object == &numberMarker {
+					x, y := left.number, right.number
+					var value Value
+					switch (operation - numericBase) / 4 {
+					case 6:
+						value = Bool(x < y)
+					case 7:
+						value = Bool(x <= y)
+					case 8:
+						value = Bool(x > y)
+					case 9:
+						value = Bool(x >= y)
+					case 10:
+						value = Bool(x == y)
+					case 11:
+						value = Bool(x != y)
+					}
+					registers[register] = value
+					if fused {
+						branch := code[pc]
 						pc++
+						if value.Truth() == (opcode(branch) == opJumpTrue) {
+							target := int(uint32(branch >> 16))
+							if target < pc {
+								remaining -= vmCallWeight
+								if remaining <= 0 {
+									t.frames[frameIndex].pc = int32(pc)
+									s.pollHook()
+									f = &t.frames[frameIndex]
+									registers = (*[256]Value)(t.stack[base : base+256])
+									remaining = s.options.HookEvery - s.steps
+								}
+							}
+							pc = target
+						}
 					}
 					continue
 				}
-				if op < numericEnd || op >= numericJumpBase && op < numericJumpEnd {
-					operation := op
-					fused := op >= numericJumpBase
-					if fused {
-						operation -= numericJumpBase - (numericBase + 6*4)
-					}
-					left, right := &registers[uint8(word>>16)], &registers[uint8(word>>32)]
-					if operation&1 != 0 {
-						left = &constants[uint16(word>>16)]
-					}
-					if operation&2 != 0 {
-						right = &constants[uint16(word>>32)]
-					}
-					if left.object == &numberMarker && right.object == &numberMarker {
-						x, y := left.number, right.number
-						var value Value
-						switch (operation - numericBase) / 4 {
-						case 0:
-							value = Number(luaNaN(x+y, x, y))
-						case 1:
-							value = Number(luaNaN(x-y, x, y))
-						case 2:
-							value = Number(luaNaN(x*y, x, y))
-						case 3:
-							value = Number(luaDivide(x, y))
-						case 4:
-							value = Number(luaModulo(x, y))
-						case 5:
-							value = Number(luaPower(x, y))
-						case 6:
-							value = Bool(x < y)
-						case 7:
-							value = Bool(x <= y)
-						case 8:
-							value = Bool(x > y)
-						case 9:
-							value = Bool(x >= y)
-						case 10:
-							value = Bool(x == y)
-						case 11:
-							value = Bool(x != y)
-						}
-						registers[register] = value
-						if fused {
-							branch := code[pc]
-							pc++
-							if value.Truth() == (opcode(branch) == opJumpTrue) {
-								target := int(uint32(branch >> 16))
-								if target < pc {
-									remaining -= vmCallWeight
-									if remaining <= 0 {
-										t.frames[frameIndex].pc = int32(pc)
-										s.pollHook()
-										f = &t.frames[frameIndex]
-										registers = (*[256]Value)(t.stack[base : base+256])
-										remaining = s.options.HookEvery - s.steps
-									}
-								}
-								pc = target
-							}
-						}
-						continue
-					}
-					index := int((operation - numericBase) / 4)
-					if index < 6 {
-						method := s.binaryTableMethod(*left, index)
-						if method.IsNil() {
-							method = s.binaryTableMethod(*right, index)
-						}
-						if method.Type() == TypeFunction && method.object.function.proto != nil {
-							t.frames[frameIndex].pc = int32(pc)
-							remaining -= vmCallWeight
-							if remaining <= 0 {
-								s.pollBinaryHook(method, *left, *right)
-								remaining = s.options.HookEvery - s.steps
-							}
-							t.cDepth++
-							if t.cDepth == 200 {
-								s.runtimeError("C stack overflow")
-							}
-							if t.cDepth >= 225 {
-								panic(plainError("error in error handling"))
-							}
-							previousTop := t.top
-							callee := method.object.function
-							start := max(t.used, t.top)
-							if !callee.proto.vararg && len(t.frames) < freshCalls-1 && start+256 <= len(t.stack) {
-								parameters := callee.proto.parameters
-								provided := min(parameters, 2)
-								if provided > 0 {
-									t.stack[start] = *left
-								}
-								if provided > 1 {
-									t.stack[start+1] = *right
-								}
-								clearRegisters(t.stack[start+provided : start+callee.proto.maxRegisters])
-								depth := len(t.frames)
-								if depth == cap(t.frames) {
-									t.frames = append(t.frames, frame{})
-								} else {
-									t.frames = t.frames[:depth+1]
-								}
-								entered := &t.frames[depth]
-								entered.function, entered.site = callee, nil
-								entered.start, entered.base, entered.pc = int32(start), int32(start), 0
-								entered.returnDest, entered.want = int32(base+int(register)), 1
-								entered.metacallTop, entered.tailcalls = 0, 0
-								t.used, t.top = start+callee.proto.maxRegisters, start+parameters
-							} else {
-								arguments := [2]Value{*left, *right}
-								s.push(callee, arguments[:], base+int(register), 1, nil)
-							}
-							t.boundary++
-							frameIndex++
-							f = &t.frames[frameIndex]
-							f.metacallTop = int32(previousTop + 1)
-							proto = callee.proto
-							base, pc = int(f.base), 0
-							code, constants = proto.code, proto.constants
-							registers = (*[256]Value)(t.stack[base : base+256])
-							continue
-						}
-					}
-				}
-			}
-			switch op {
 			case opPoll:
 				remaining -= vmPollStride
 				if remaining <= 0 {
@@ -722,213 +725,68 @@ func (s *State) execute(stop int) (result []Value) {
 			}
 			t.frames[frameIndex].pc = int32(pc)
 			s.steps = s.options.HookEvery - remaining
-			i := f.function.proto.instruction(pc - 1)
-			if i.op == opTailCall || i.op == opForCall {
-				remaining -= vmCallWeight
-				if remaining <= 0 {
-					t.frames[frameIndex].pc = int32(pc)
-					s.pollHook()
-					f = &t.frames[frameIndex]
-					remaining = s.options.HookEvery - s.steps
-				}
-
-				s.steps = s.options.HookEvery - remaining
-			}
-			a, b, c := base+i.a, base+i.b, base+i.c
-			switch i.op {
-			case opGetGlobal:
-				t.stack[a] = s.get(f.function.env.Value(), constants[i.b], nameInfo{})
-			case opSetGlobal:
-				s.set(f.function.env.Value(), constants[i.a], t.stack[b], nameInfo{})
-			case opGetTable:
-				t.stack[a] = s.get(t.stack[b], t.stack[c], i.left)
-			case opGetTableK:
-				t.stack[a] = s.get(t.stack[b], constants[i.c], i.left)
-			case opSetTable:
-				s.set(t.stack[a], t.stack[b], t.stack[c], i.left)
-			case opSetTableRK:
-				var key, value Value
-				if i.b < 0 {
-					key = constants[-1-i.b]
-				} else {
-					key = t.stack[b]
-				}
-				if i.c < 0 {
-					value = constants[-1-i.c]
-				} else {
-					value = t.stack[c]
-				}
-				s.set(t.stack[a], key, value, i.left)
-			case opSelf:
-				value := t.stack[b]
-				var key Value
-				if i.c < 0 {
-					key = constants[-1-i.c]
-				} else {
-					key = t.stack[c]
-				}
-				t.stack[a+1] = value
-				t.stack[a] = s.get(value, key, i.left)
-			case opTestSet:
-				if t.stack[b].Truth() == (i.c != 0) {
-					t.stack[a] = t.stack[b]
-				} else {
-					t.frames[frameIndex].pc = int32(i.d)
-				}
-			case opConcat:
-				for reg := i.c; reg > i.b; reg-- {
-					leftName, rightName := nameInfo{kind: "register", register: int16(reg - 1)}, nameInfo{kind: "register", register: int16(reg)}
-					value := s.binary("..", t.stack[base+reg-1], t.stack[base+reg], leftName, rightName)
-					t.stack[base+reg-1] = value
-				}
-				t.stack[a] = t.stack[b]
-			case opNewTable:
-				t.stack[a] = s.NewTable(i.b, i.c).Value()
-			case opSetList:
-				count := i.c
-				if count < 0 {
-					count = t.top - b
-				}
-				table := t.stack[a].Table()
-				if i.d+count > len(table.array) {
-					table.resize(i.d+count, len(table.nodes))
-				}
-				copy(table.array[i.d:i.d+count], t.stack[b:b+count])
-				if count > 0 {
-					table.sequence = -1
-				}
-			case opClosure:
-				child := f.function.proto.children[i.b]
-				upvalues := make([]*upvalue, len(child.upvalues))
-				for index, descriptor := range child.upvalues {
-					if descriptor.local {
-						upvalues[index] = t.capture(base + descriptor.index)
-					} else {
-						upvalues[index] = f.function.upvalues[descriptor.index]
-					}
-				}
-				t.stack[a] = s.closure(child, f.function.env, upvalues)
-			case opVararg:
-				t.writeResults(a, i.b, t.stack[int(f.start):int(f.base)])
-			case opUnary:
-				t.stack[a] = s.unary(i.text, t.stack[b], i.left)
-			case opBinary:
-				var left, right Value
-				if i.b < 0 {
-					left = constants[-1-i.b]
-				} else {
-					left = t.stack[b]
-				}
-				if i.c < 0 {
-					right = constants[-1-i.c]
-				} else {
-					right = t.stack[c]
-				}
-				method := s.binaryMethod(i.text, left, right)
-				if method.Type() == TypeFunction && method.object.function.proto != nil {
-					remaining -= vmCallWeight
-					if remaining <= 0 {
-						s.pollBinaryHook(method, left, right)
-						remaining = s.options.HookEvery - s.steps
-					}
-					s.steps = s.options.HookEvery - remaining
-					arguments := [2]Value{left, right}
-					previousTop := t.top
-					t.cDepth++
-					if t.cDepth == 200 {
-						s.runtimeError("C stack overflow")
-					}
-					if t.cDepth >= 225 {
-						panic(plainError("error in error handling"))
-					}
-					s.push(method.object.function, arguments[:], a, 1, nil)
-					t.boundary++
-					t.frames[len(t.frames)-1].metacallTop = int32(previousTop + 1)
-					break
-				}
-				t.stack[a] = s.binary(i.text, left, right, i.left, i.right)
-			case opCall, opTailCall:
-				count := i.b
-				if count < 0 {
-					count = t.top - a - 1
-				}
-				fn := t.stack[a]
-				args := t.stack[a+1 : a+1+count]
-				argStart := a + 1
-				if fn.Type() != TypeFunction {
-					fn, args = s.callable(fn, args, i.left)
-					argStart = -1
-				}
-				if fn.object.function.native != nil {
-					t.resumeDest, t.resumeWant, t.resumeReturn = base+i.d, i.c, i.op == opTailCall
-					var values []Value
-					if argStart >= 0 {
-						values = s.nativeStack(fn.object.function, args, i, argStart)
-					} else {
-						values = s.native(fn.object.function, args, i)
-					}
-					if i.op == opTailCall {
-						done, values := s.finish(values)
-						if done {
-							return values
-						}
-					} else {
-						t.writeResults(base+i.d, i.c, values)
-					}
-				} else if i.op == opTailCall {
-					metaTop := f.metacallTop
-					tailcalls := f.tailcalls + 1
-					t.tail = append(t.tail[:0], args...)
-					t.close(int(f.base))
-					t.frames = t.frames[:frameIndex]
-					t.used, t.top = int(f.start), int(f.start)
-					s.push(fn.object.function, t.tail, int(f.returnDest), int(f.want), i)
-					t.frames[len(t.frames)-1].metacallTop = metaTop
-					t.frames[len(t.frames)-1].tailcalls = tailcalls
-				} else {
-					s.push(fn.object.function, args, base+i.d, i.c, i)
-				}
-			case opReturn:
-				count := i.b
-				if count < 0 {
-					count = t.top - a
-				}
-				done, values := s.finish(t.stack[a : a+count])
-				if done {
-					return values
-				}
-			case opForPrep:
-				labels := [...]string{"initial value", "limit", "step"}
-				for offset, label := range labels {
-					number, ok := t.stack[a+offset].toNumber()
-					if !ok {
-						s.runtimeError("'for' " + label + " must be a number")
-					}
-					t.stack[a+offset] = Number(number)
-				}
-				t.stack[a].number -= t.stack[a+2].number
-				t.frames[frameIndex].pc = int32(i.b)
-			case opForCall:
-				values := s.invoke(t.stack[a], []Value{t.stack[a+1], t.stack[a+2]})
-				t.writeResults(a+3, i.c, values)
-				if !t.stack[a+3].IsNil() {
-					t.stack[a+2] = t.stack[a+3]
-					t.frames[frameIndex].pc = int32(i.b)
-				}
-			case opForIterator:
-				arguments := [2]Value{t.stack[a+1], t.stack[a+2]}
-				values := s.invoke(t.stack[a], arguments[:])
-				t.writeResults(a+3, i.c, values)
-				if !t.stack[a+3].IsNil() {
-					t.stack[a+2] = t.stack[a+3]
-				} else {
-					t.frames[frameIndex].pc = int32(i.d)
-				}
+			if values, done := s.executeSlow(frameIndex, pc, remaining); done {
+				return values
 			}
 			break
 		}
 	}
 	return nil
+}
+
+func (s *State) enterArithmeticMethod(left, right Value, index, dest int) bool {
+	method := s.binaryTableMethod(left, index)
+	if method.IsNil() {
+		method = s.binaryTableMethod(right, index)
+	}
+	if method.Type() != TypeFunction || method.object.function.proto == nil {
+		return false
+	}
+	t := s.current
+	s.steps += vmCallWeight
+	if s.steps >= s.options.HookEvery {
+		s.pollBinaryHook(method, left, right)
+	}
+	t.cDepth++
+	if t.cDepth == 200 {
+		s.runtimeError("C stack overflow")
+	}
+	if t.cDepth >= 225 {
+		panic(plainError("error in error handling"))
+	}
+	previousTop := t.top
+	callee := method.object.function
+	proto := callee.proto
+	start := max(t.used, t.top)
+	if !proto.vararg && len(t.frames) < freshCalls-1 && start+256 <= len(t.stack) {
+		parameters := proto.parameters
+		provided := min(parameters, 2)
+		if provided > 0 {
+			t.stack[start] = left
+		}
+		if provided > 1 {
+			t.stack[start+1] = right
+		}
+		clearRegisters(t.stack[start+provided : start+proto.maxRegisters])
+		depth := len(t.frames)
+		if depth == cap(t.frames) {
+			t.frames = append(t.frames, frame{})
+		} else {
+			t.frames = t.frames[:depth+1]
+		}
+		entered := &t.frames[depth]
+		entered.function, entered.site = callee, nil
+		entered.start, entered.base, entered.pc = int32(start), int32(start), 0
+		entered.returnDest, entered.want = int32(dest), 1
+		entered.metacallTop, entered.tailcalls = int32(previousTop+1), 0
+		t.used, t.top = start+proto.maxRegisters, start+parameters
+	} else {
+		arguments := [2]Value{left, right}
+		s.push(callee, arguments[:], dest, 1, nil)
+		t.frames[len(t.frames)-1].metacallTop = int32(previousTop + 1)
+	}
+	t.boundary++
+	return true
 }
 
 func (s *State) meta(value Value, name string) Value {
@@ -1236,4 +1094,220 @@ func (s *State) less(left, right Value, equal bool) bool {
 	}
 	s.runtimeError(fmt.Sprintf("attempt to compare %s with %s", left.Type(), right.Type()))
 	return false
+}
+
+func (s *State) executeSlow(frameIndex, pc, remaining int) ([]Value, bool) {
+	t := s.current
+	f := &t.frames[frameIndex]
+	base := int(f.base)
+	constants := f.function.proto.constants
+	i := f.function.proto.instruction(pc - 1)
+	if i.op == opTailCall || i.op == opForCall {
+		remaining -= vmCallWeight
+		if remaining <= 0 {
+			t.frames[frameIndex].pc = int32(pc)
+			s.pollHook()
+			f = &t.frames[frameIndex]
+			remaining = s.options.HookEvery - s.steps
+		}
+
+		s.steps = s.options.HookEvery - remaining
+	}
+	a, b, c := base+i.a, base+i.b, base+i.c
+	switch i.op {
+	case opGetGlobal:
+		t.stack[a] = s.get(f.function.env.Value(), constants[i.b], nameInfo{})
+	case opSetGlobal:
+		s.set(f.function.env.Value(), constants[i.a], t.stack[b], nameInfo{})
+	case opGetTable:
+		t.stack[a] = s.get(t.stack[b], t.stack[c], i.left)
+	case opGetTableK:
+		t.stack[a] = s.get(t.stack[b], constants[i.c], i.left)
+	case opSetTable:
+		s.set(t.stack[a], t.stack[b], t.stack[c], i.left)
+	case opSetTableRK:
+		var key, value Value
+		if i.b < 0 {
+			key = constants[-1-i.b]
+		} else {
+			key = t.stack[b]
+		}
+		if i.c < 0 {
+			value = constants[-1-i.c]
+		} else {
+			value = t.stack[c]
+		}
+		s.set(t.stack[a], key, value, i.left)
+	case opSelf:
+		value := t.stack[b]
+		var key Value
+		if i.c < 0 {
+			key = constants[-1-i.c]
+		} else {
+			key = t.stack[c]
+		}
+		t.stack[a+1] = value
+		t.stack[a] = s.get(value, key, i.left)
+	case opTestSet:
+		if t.stack[b].Truth() == (i.c != 0) {
+			t.stack[a] = t.stack[b]
+		} else {
+			t.frames[frameIndex].pc = int32(i.d)
+		}
+	case opConcat:
+		for reg := i.c; reg > i.b; reg-- {
+			leftName, rightName := nameInfo{kind: "register", register: int16(reg - 1)}, nameInfo{kind: "register", register: int16(reg)}
+			value := s.binary("..", t.stack[base+reg-1], t.stack[base+reg], leftName, rightName)
+			t.stack[base+reg-1] = value
+		}
+		t.stack[a] = t.stack[b]
+	case opNewTable:
+		t.stack[a] = s.NewTable(i.b, i.c).Value()
+	case opSetList:
+		count := i.c
+		if count < 0 {
+			count = t.top - b
+		}
+		table := t.stack[a].Table()
+		if i.d+count > len(table.array) {
+			table.resize(i.d+count, len(table.nodes))
+		}
+		copy(table.array[i.d:i.d+count], t.stack[b:b+count])
+		if count > 0 {
+			table.sequence = -1
+		}
+	case opClosure:
+		child := f.function.proto.children[i.b]
+		upvalues := make([]*upvalue, len(child.upvalues))
+		for index, descriptor := range child.upvalues {
+			if descriptor.local {
+				upvalues[index] = t.capture(base + descriptor.index)
+			} else {
+				upvalues[index] = f.function.upvalues[descriptor.index]
+			}
+		}
+		t.stack[a] = s.closure(child, f.function.env, upvalues)
+	case opVararg:
+		t.writeResults(a, i.b, t.stack[int(f.start):int(f.base)])
+	case opUnary:
+		t.stack[a] = s.unary(i.text, t.stack[b], i.left)
+	case opBinary:
+		var left, right Value
+		if i.b < 0 {
+			left = constants[-1-i.b]
+		} else {
+			left = t.stack[b]
+		}
+		if i.c < 0 {
+			right = constants[-1-i.c]
+		} else {
+			right = t.stack[c]
+		}
+		method := s.binaryMethod(i.text, left, right)
+		if method.Type() == TypeFunction && method.object.function.proto != nil {
+			remaining -= vmCallWeight
+			if remaining <= 0 {
+				s.pollBinaryHook(method, left, right)
+				remaining = s.options.HookEvery - s.steps
+			}
+			s.steps = s.options.HookEvery - remaining
+			arguments := [2]Value{left, right}
+			previousTop := t.top
+			t.cDepth++
+			if t.cDepth == 200 {
+				s.runtimeError("C stack overflow")
+			}
+			if t.cDepth >= 225 {
+				panic(plainError("error in error handling"))
+			}
+			s.push(method.object.function, arguments[:], a, 1, nil)
+			t.boundary++
+			t.frames[len(t.frames)-1].metacallTop = int32(previousTop + 1)
+			break
+		}
+		t.stack[a] = s.binary(i.text, left, right, i.left, i.right)
+	case opCall, opTailCall:
+		count := i.b
+		if count < 0 {
+			count = t.top - a - 1
+		}
+		fn := t.stack[a]
+		args := t.stack[a+1 : a+1+count]
+		argStart := a + 1
+		if fn.Type() != TypeFunction {
+			fn, args = s.callable(fn, args, i.left)
+			argStart = -1
+		}
+		if fn.object.function.native != nil {
+			t.resumeDest, t.resumeWant, t.resumeReturn = base+i.d, i.c, i.op == opTailCall
+			var values []Value
+			if argStart >= 0 {
+				values = s.nativeStack(fn.object.function, args, i, argStart)
+			} else {
+				values = s.native(fn.object.function, args, i)
+			}
+			if t.yielded {
+				t.yielded = false
+				t.status = "suspended"
+				return values, true
+			}
+			if i.op == opTailCall {
+				done, values := s.finish(values)
+				if done {
+					return values, true
+				}
+			} else {
+				t.writeResults(base+i.d, i.c, values)
+			}
+		} else if i.op == opTailCall {
+			metaTop := f.metacallTop
+			tailcalls := f.tailcalls + 1
+			t.tail = append(t.tail[:0], args...)
+			t.close(int(f.base))
+			t.frames = t.frames[:frameIndex]
+			t.used, t.top = int(f.start), int(f.start)
+			s.push(fn.object.function, t.tail, int(f.returnDest), int(f.want), i)
+			t.frames[len(t.frames)-1].metacallTop = metaTop
+			t.frames[len(t.frames)-1].tailcalls = tailcalls
+		} else {
+			s.push(fn.object.function, args, base+i.d, i.c, i)
+		}
+	case opReturn:
+		count := i.b
+		if count < 0 {
+			count = t.top - a
+		}
+		done, values := s.finish(t.stack[a : a+count])
+		if done {
+			return values, true
+		}
+	case opForPrep:
+		labels := [...]string{"initial value", "limit", "step"}
+		for offset, label := range labels {
+			number, ok := t.stack[a+offset].toNumber()
+			if !ok {
+				s.runtimeError("'for' " + label + " must be a number")
+			}
+			t.stack[a+offset] = Number(number)
+		}
+		t.stack[a].number -= t.stack[a+2].number
+		t.frames[frameIndex].pc = int32(i.b)
+	case opForCall:
+		values := s.invoke(t.stack[a], []Value{t.stack[a+1], t.stack[a+2]})
+		t.writeResults(a+3, i.c, values)
+		if !t.stack[a+3].IsNil() {
+			t.stack[a+2] = t.stack[a+3]
+			t.frames[frameIndex].pc = int32(i.b)
+		}
+	case opForIterator:
+		arguments := [2]Value{t.stack[a+1], t.stack[a+2]}
+		values := s.invoke(t.stack[a], arguments[:])
+		t.writeResults(a+3, i.c, values)
+		if !t.stack[a+3].IsNil() {
+			t.stack[a+2] = t.stack[a+3]
+		} else {
+			t.frames[frameIndex].pc = int32(i.d)
+		}
+	}
+	return nil, false
 }

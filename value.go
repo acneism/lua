@@ -43,7 +43,12 @@ func (t Type) String() string {
 type Value struct {
 	number float64
 	object *object
-	text   *string
+	text   *stringValue
+}
+
+type stringValue struct {
+	text string
+	hash uint32
 }
 
 type object struct {
@@ -66,7 +71,7 @@ func Bool(b bool) Value {
 	return Value{object: &booleanMarker}
 }
 func Number(n float64) Value { return Value{object: &numberMarker, number: n} }
-func String(s string) Value  { return Value{text: &s} }
+func String(s string) Value  { return Value{text: &stringValue{s, stringHash(s)}} }
 func (v Value) Type() Type {
 	if v.object != nil {
 		return v.object.kind
@@ -79,7 +84,7 @@ func (v Value) Type() Type {
 func (v Value) Float() float64 { return v.number }
 func (v Value) Text() string {
 	if v.text != nil {
-		return *v.text
+		return v.text.text
 	}
 	return ""
 }
@@ -120,7 +125,7 @@ func (v Value) String() string {
 	case TypeNumber:
 		return formatNumber(v.number)
 	case TypeString:
-		return *v.text
+		return v.text.text
 	default:
 		return v.Type().String() + ": 0x" + strconv.FormatUint(v.object.id, 16)
 	}

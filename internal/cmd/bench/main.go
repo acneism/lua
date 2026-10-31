@@ -15,9 +15,9 @@ import (
 	"time"
 
 	"github.com/acneism/lua"
+	"github.com/acneism/lua/internal/scenario"
 )
 
-type scenario struct{ Name, Source string }
 type sample struct {
 	RedisNS, GoNS      int64
 	Allocations, Bytes uint64
@@ -36,25 +36,11 @@ type report struct {
 	Results                     []result
 }
 
-func scenarios() []scenario {
-	return []scenario{
-		{"Loop", "local s=0 for i=1,10000000 do s=s+i end return s"},
-		{"Fib27", "local function fib(n) if n<2 then return n end return fib(n-1)+fib(n-2) end return fib(27)"},
-		{"LuaCalls", "local function f(x) return x+1 end local n=0 for i=1,1000000 do n=f(n) end return n"},
-		{"TableInsert", "local t={} for i=1,1000000 do t[#t+1]=i end return #t"},
-		{"TableHash", "local t={} for i=1,100000 do t['k'..i]=i end local n=0 for k,v in pairs(t) do n=n+v end return n"},
-		{"Sort", "local t={} for i=1,100000 do t[i]=100001-i end table.sort(t) return t[1]+t[100000]"},
-		{"GSub", "return #string.gsub(string.rep('abc ',262144),'%a+','x')"},
-		{"StringConcat", "local t={} for i=1,100000 do t[i]=tostring(i) end return #table.concat(t)"},
-		{"Metamethod", "local t=setmetatable({}, {__add=function(a,b) return b+1 end}) local n=0 for i=1,1000000 do n=t+n end return n"},
-	}
-}
-
 func main() {
 	address := flag.String("addr", "127.0.0.1:6390", "Redis 7.2.16 reference address")
 	output := flag.String("output", "work/bench.json", "JSON report with every raw timing and median")
 	rounds := flag.Int("rounds", 5, "alternating Redis and Go measurements per scenario")
-	selected := flag.String("scenario", "", "single scenario name; empty runs all nine")
+	selected := flag.String("scenario", "", "single scenario name; empty runs all scenarios")
 	profile := flag.String("cpuprofile", "", "optional Go CPU profile output file")
 	flag.Parse()
 	if err := run(*address, *output, *rounds, *selected, *profile); err != nil {
@@ -99,7 +85,7 @@ func run(address, output string, rounds int, selected, profile string) error {
 		defer pprof.StopCPUProfile()
 	}
 	report := report{GoVersion: runtime.Version(), OS: runtime.GOOS, Architecture: runtime.GOARCH, CPUs: runtime.NumCPU()}
-	for _, item := range scenarios() {
+	for _, item := range scenario.All() {
 		if selected != "" && selected != item.Name {
 			continue
 		}
