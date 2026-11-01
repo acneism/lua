@@ -57,8 +57,8 @@ func (s *State) enterMetaCall() {
 
 func (s *State) enterMethod(method Value, count int, first, second, third Value, dest, want int) {
 	t := s.current
-	s.steps += vmCallWeight
-	if s.steps >= s.options.HookEvery {
+	s.budget -= vmCallWeight
+	if s.budget <= 0 {
 		roots := [4]Value{method, first, second, third}
 		s.pollHookRoots(roots[:count+1])
 	}
@@ -175,8 +175,8 @@ func (s *State) jumpOn(jump bool) {
 	target := int(uint32(caller.function.proto.code[pc] >> 16))
 	caller.pc = int32(target)
 	if target < pc {
-		s.steps += vmCallWeight
-		if s.steps >= s.options.HookEvery {
+		s.budget -= vmCallWeight
+		if s.budget <= 0 {
 			s.pollJump(len(t.frames)-1, pc, target)
 		}
 	}
@@ -193,7 +193,7 @@ func (s *State) callMethod(method Value, count int, first, second, third Value, 
 	return values
 }
 
-func (s *State) callSelf(frameIndex, pc, remaining int, self, method Value) bool {
+func (s *State) callSelf(frameIndex, pc int, self, method Value) bool {
 	t := s.current
 	f := &t.frames[frameIndex]
 	code, constants := f.proto.code, f.proto.constants
@@ -205,7 +205,7 @@ func (s *State) callSelf(frameIndex, pc, remaining int, self, method Value) bool
 	if p.vararg {
 		frameBase += max(0, count-p.parameters)
 	}
-	if p.needsArgTable() || f.proto.longest > s.options.MaxString || remaining <= vmCallWeight || len(t.frames) >= freshCalls-1 || frameBase+256 > len(t.stack) {
+	if p.needsArgTable() || f.proto.longest > s.options.MaxString || s.budget <= vmCallWeight || len(t.frames) >= freshCalls-1 || frameBase+256 > len(t.stack) {
 		return false
 	}
 	base := int(f.base)
@@ -234,6 +234,6 @@ func (s *State) callSelf(frameIndex, pc, remaining int, self, method Value) bool
 		t.growFrameCapacity()
 	}
 	t.pushLua(callee, start, frameBase, base+int(uint8(call>>48)), int(int16(call>>32)))
-	s.steps = s.options.HookEvery - remaining + vmCallWeight
+	s.budget -= vmCallWeight
 	return true
 }

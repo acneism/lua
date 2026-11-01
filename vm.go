@@ -266,7 +266,7 @@ func (s *State) execute(stop int) (result []Value) {
 	t := s.current
 
 	if s.options.Hook != nil {
-		s.steps += vmCallWeight - 1
+		s.budget -= vmCallWeight - 1
 		s.tick()
 	}
 
@@ -278,7 +278,6 @@ frames:
 		base, pc := int(f.base), int(f.pc)
 		code, constants := proto.code, proto.constants
 		registers := (*[256]Value)(t.stack[base : base+256])
-		remaining := s.options.HookEvery - s.steps
 		checkConstants := proto.longest > s.options.MaxString
 		for {
 			word := code[pc]
@@ -308,12 +307,10 @@ frames:
 					matched = left.Equal(*right)
 				} else if method, ok := s.lessMethod(left, right); ok && comparisonKind(mode) == compareLess {
 					t.frames[frameIndex].pc = int32(pc)
-					s.steps = s.options.HookEvery - remaining
 					s.enterPair(method, *left, *right, 0, compareWant-int(mode&expectTrue)/expectTrue)
 					continue frames
 				} else {
 					t.frames[frameIndex].pc = int32(pc)
-					s.steps = s.options.HookEvery - remaining
 					if !s.enterCompareMethod(*left, *right, int(mode)) {
 						s.compareSlow(*left, *right, mode)
 					}
@@ -322,8 +319,8 @@ frames:
 				if matched == (mode&expectTrue != 0) {
 					target := int(uint32(code[pc] >> 16))
 					if target < pc {
-						remaining -= vmCallWeight
-						if remaining <= 0 {
+						s.budget -= vmCallWeight
+						if s.budget <= 0 {
 							s.pollJump(frameIndex, pc, target)
 							continue frames
 						}
@@ -340,7 +337,6 @@ frames:
 					continue
 				}
 				t.frames[frameIndex].pc = int32(pc)
-				s.steps = s.options.HookEvery - remaining
 				if s.enterArithmeticMethod(left, right, 0, base+int(register)) {
 					continue frames
 				}
@@ -351,7 +347,6 @@ frames:
 					continue
 				}
 				t.frames[frameIndex].pc = int32(pc)
-				s.steps = s.options.HookEvery - remaining
 				if s.enterArithmeticMethod(left, right, 1, base+int(register)) {
 					continue frames
 				}
@@ -362,7 +357,6 @@ frames:
 					continue
 				}
 				t.frames[frameIndex].pc = int32(pc)
-				s.steps = s.options.HookEvery - remaining
 				if s.enterArithmeticMethod(left, right, 2, base+int(register)) {
 					continue frames
 				}
@@ -373,7 +367,6 @@ frames:
 					continue
 				}
 				t.frames[frameIndex].pc = int32(pc)
-				s.steps = s.options.HookEvery - remaining
 				if s.enterArithmeticMethod(left, right, 3, base+int(register)) {
 					continue frames
 				}
@@ -384,7 +377,6 @@ frames:
 					continue
 				}
 				t.frames[frameIndex].pc = int32(pc)
-				s.steps = s.options.HookEvery - remaining
 				if s.enterArithmeticMethod(left, right, 4, base+int(register)) {
 					continue frames
 				}
@@ -395,7 +387,6 @@ frames:
 					continue
 				}
 				t.frames[frameIndex].pc = int32(pc)
-				s.steps = s.options.HookEvery - remaining
 				if s.enterArithmeticMethod(left, right, 5, base+int(register)) {
 					continue frames
 				}
@@ -415,8 +406,8 @@ frames:
 						if value.Truth() == (opcode(branch) == opJumpTrue) {
 							target := int(uint32(branch >> 16))
 							if target < pc {
-								remaining -= vmCallWeight
-								if remaining <= 0 {
+								s.budget -= vmCallWeight
+								if s.budget <= 0 {
 									s.pollJump(frameIndex, pc, target)
 									continue frames
 								}
@@ -427,8 +418,8 @@ frames:
 					continue
 				}
 			case opPoll:
-				remaining -= vmPollStride
-				if remaining <= 0 {
+				s.budget -= vmPollStride
+				if s.budget <= 0 {
 					t.frames[frameIndex].pc = int32(pc)
 					s.pollHook()
 					continue frames
@@ -482,11 +473,11 @@ frames:
 				}
 				start := max(t.used, t.top)
 				if proto != nil && !proto.vararg && len(t.frames) < freshCalls-1 && start+256 <= len(t.stack) && (argument.Type() != TypeString || len(argument.Text()) <= s.options.MaxString) {
-					if remaining <= vmCallWeight {
+					if s.budget <= vmCallWeight {
 						registers[register] = value
 						continue
 					}
-					remaining -= vmCallWeight
+					s.budget -= vmCallWeight
 					t.frames[frameIndex].pc = int32(pc + 2)
 					parameters, size := proto.parameters, proto.maxRegisters
 					if parameters > 0 {
@@ -497,7 +488,6 @@ frames:
 						t.growFrameCapacity()
 					}
 					t.pushLua(callee, start, start, base+int(uint8(word>>40)), int(int16(word>>48)))
-					s.steps = s.options.HookEvery - remaining
 					continue frames
 				}
 				registers[register] = value
@@ -509,7 +499,7 @@ frames:
 				}
 				start := max(t.used, t.top)
 				count := int(uint8(word >> 24))
-				if !value.luaFunction() || value.object.function.proto.needsArgTable() || checkConstants || remaining <= vmCallWeight || len(t.frames) >= freshCalls-1 {
+				if !value.luaFunction() || value.object.function.proto.needsArgTable() || checkConstants || s.budget <= vmCallWeight || len(t.frames) >= freshCalls-1 {
 					registers[register] = value
 					continue
 				}
@@ -540,17 +530,16 @@ frames:
 					t.stack[frameBase+callee.proto.argRegister] = Nil()
 				}
 				call := code[pc+count]
-				remaining -= vmCallWeight
+				s.budget -= vmCallWeight
 				t.frames[frameIndex].pc = int32(pc + count + 1)
 				if len(t.frames) == cap(t.frames) {
 					t.growFrameCapacity()
 				}
 				t.pushLua(callee, start, frameBase, base+int(uint8(call>>48)), int(int16(call>>32)))
-				s.steps = s.options.HookEvery - remaining
 				continue frames
 			case opCall:
-				remaining -= vmCallWeight
-				if remaining <= 0 {
+				s.budget -= vmCallWeight
+				if s.budget <= 0 {
 					s.pollRetry(frameIndex, pc)
 					continue frames
 				}
@@ -573,7 +562,6 @@ frames:
 				}
 				if object := value.object; object != nil && object.kind == TypeFunction && object.function.native != nil {
 					t.frames[frameIndex].pc = int32(pc)
-					s.steps = s.options.HookEvery - remaining
 					dest, want := base+int(uint8(word>>48)), int(int16(word>>32))
 					t.resumeDest, t.resumeWant, t.resumeReturn = dest, want, false
 					stack, frames := &t.stack[0], &t.frames[0]
@@ -587,7 +575,6 @@ frames:
 					if stack != &t.stack[0] || frames != &t.frames[0] {
 						continue frames
 					}
-					remaining = s.options.HookEvery - s.steps
 					continue
 				}
 				if value.Type() == TypeFunction && value.object.function.proto != nil && !value.object.function.proto.needsArgTable() && len(t.frames) < freshCalls-1 {
@@ -615,13 +602,11 @@ frames:
 							t.growFrameCapacity()
 						}
 						t.pushLua(callee, start, frameBase, base+int(uint8(word>>48)), int(int16(word>>32)))
-						s.steps = s.options.HookEvery - remaining
 						continue frames
 					}
 				}
 				if object := value.object; object != nil && object.kind == TypeFunction && object.function.proto != nil {
 					t.frames[frameIndex].pc = int32(pc)
-					s.steps = s.options.HookEvery - remaining
 					s.push(object.function, t.stack[argStart:argStart+count], base+int(uint8(word>>48)), int(int16(word>>32)), nil)
 					continue frames
 				}
@@ -638,7 +623,6 @@ frames:
 						t.boundary--
 					}
 					t.frames = t.frames[:frameIndex]
-					s.steps = s.options.HookEvery - remaining
 					continue frames
 				}
 				if f.returnDest >= 0 {
@@ -651,12 +635,10 @@ frames:
 						if count > 0 {
 							value = registers[register]
 						}
-						s.steps = s.options.HookEvery - remaining
 						s.returnCompare(value)
 						continue frames
 					}
 					t.returnValues(frameIndex, base+int(register), count)
-					s.steps = s.options.HookEvery - remaining
 					if frameIndex == stop {
 						return nil
 					}
@@ -703,7 +685,6 @@ frames:
 						}
 						if method, ok := s.cached(eventIndex, table.metatable); ok && method.luaFunction() {
 							t.frames[frameIndex].pc = int32(pc)
-							s.steps = s.options.HookEvery - remaining
 							s.enterPair(method, value, key, base+int(register), 1)
 							continue frames
 						}
@@ -720,7 +701,6 @@ frames:
 						}
 						if method, ok := s.cached(eventIndex, table.metatable); ok && (inArray || len(table.nodes) == 0) && method.luaFunction() {
 							t.frames[frameIndex].pc = int32(pc)
-							s.steps = s.options.HookEvery - remaining
 							s.enterPair(method, value, key, base+int(register), 1)
 							continue frames
 						}
@@ -732,7 +712,6 @@ frames:
 					}
 					if status == indexMethod {
 						t.frames[frameIndex].pc = int32(pc)
-						s.steps = s.options.HookEvery - remaining
 						if found.object.function.proto != nil {
 							s.enterPair(found, receiver, key, base+int(register), 1)
 							continue frames
@@ -765,7 +744,7 @@ frames:
 					}
 					if status == indexFound {
 						registers[register+1] = value
-						if word>>24&255 != 0 && found.luaFunction() && s.callSelf(frameIndex, pc, remaining, value, found) {
+						if word>>24&255 != 0 && found.luaFunction() && s.callSelf(frameIndex, pc, value, found) {
 							continue frames
 						}
 						registers[register] = found
@@ -774,7 +753,6 @@ frames:
 					if status == indexMethod {
 						registers[register+1] = value
 						t.frames[frameIndex].pc = int32(pc)
-						s.steps = s.options.HookEvery - remaining
 						if found.object.function.proto != nil {
 							s.enterPair(found, receiver, key, base+int(register), 1)
 							continue frames
@@ -802,7 +780,6 @@ frames:
 				}
 				if method, ok := s.cached(eventNewIndex, table.metatable); ok && method.luaFunction() && table.rawMissing(key) {
 					t.frames[frameIndex].pc = int32(pc)
-					s.steps = s.options.HookEvery - remaining
 					s.enterMethod(method, 3, value, key, assigned, base, 0)
 					continue frames
 				}
@@ -813,7 +790,6 @@ frames:
 					method := s.eventMethod(table.metatable, eventNewIndex)
 					if method.Type() == TypeFunction {
 						t.frames[frameIndex].pc = int32(pc)
-						s.steps = s.options.HookEvery - remaining
 						if method.object.function.proto != nil {
 							s.enterMethod(method, 3, value, key, assigned, base, 0)
 							continue frames
@@ -864,8 +840,8 @@ frames:
 				}
 				target := int(uint32(word >> 16))
 				if target < pc {
-					remaining -= vmCallWeight
-					if remaining <= 0 {
+					s.budget -= vmCallWeight
+					if s.budget <= 0 {
 						s.pollJump(frameIndex, pc, target)
 						continue frames
 					}
@@ -876,8 +852,8 @@ frames:
 				if !registers[register].Truth() {
 					target := int(uint32(word >> 16))
 					if target < pc {
-						remaining -= vmCallWeight
-						if remaining <= 0 {
+						s.budget -= vmCallWeight
+						if s.budget <= 0 {
 							s.pollJump(frameIndex, pc, target)
 							continue frames
 						}
@@ -889,8 +865,8 @@ frames:
 				if registers[register].Truth() {
 					target := int(uint32(word >> 16))
 					if target < pc {
-						remaining -= vmCallWeight
-						if remaining <= 0 {
+						s.budget -= vmCallWeight
+						if s.budget <= 0 {
 							s.pollJump(frameIndex, pc, target)
 							continue frames
 						}
@@ -905,8 +881,8 @@ frames:
 				if object == nil || object.kind != TypeFunction || object.function.native == nil {
 					break
 				}
-				if table, control := t.stack[a+1], t.stack[a+2]; object.function == s.ipairsStep && i.c == 2 && remaining > 1 && t.cDepth < 199 && table.object != nil && table.object.kind == TypeTable && control.object == &numberMarker {
-					remaining--
+				if table, control := t.stack[a+1], t.stack[a+2]; object.function == s.ipairsStep && i.c == 2 && s.budget > 1 && t.cDepth < 199 && table.object != nil && table.object.kind == TypeTable && control.object == &numberMarker {
+					s.budget--
 					index := int(control.number) + 1
 					value := table.object.table.arrayOrRawGet(index)
 					t.top = a + 5
@@ -919,7 +895,6 @@ frames:
 					continue
 				}
 				t.frames[frameIndex].pc = int32(pc)
-				s.steps = s.options.HookEvery - remaining
 				s.nativeIterator(frameIndex, object.function, i, a)
 				continue frames
 			case opNewTable:
@@ -950,7 +925,6 @@ frames:
 					continue
 				}
 				t.frames[frameIndex].pc = int32(pc)
-				s.steps = s.options.HookEvery - remaining
 				t.writeResults(base+int(register), -1, t.stack[int(f.start):int(f.base)])
 				continue frames
 			case opClose:
@@ -959,8 +933,8 @@ frames:
 				}
 				continue
 			case opForLoop, opForAccumulate:
-				remaining -= vmCallWeight
-				if remaining <= 0 {
+				s.budget -= vmCallWeight
+				if s.budget <= 0 {
 					s.pollRetry(frameIndex, pc)
 					continue frames
 				}
@@ -982,8 +956,7 @@ frames:
 				continue
 			}
 			t.frames[frameIndex].pc = int32(pc)
-			s.steps = s.options.HookEvery - remaining
-			if values, done := s.executeSlow(frameIndex, pc, remaining); done {
+			if values, done := s.executeSlow(frameIndex, pc); done {
 				return values
 			}
 			break
@@ -1010,11 +983,11 @@ func (s *State) enterPair(method, left, right Value, dest, want int) {
 	proto := callee.proto
 	start := max(t.used, t.top)
 	depth := len(t.frames)
-	if s.steps+vmCallWeight >= s.options.HookEvery || t.cDepth >= 199 || proto.vararg || depth >= freshCalls-1 || depth == cap(t.frames) || start+256 > len(t.stack) {
+	if s.budget <= vmCallWeight || t.cDepth >= 199 || proto.vararg || depth >= freshCalls-1 || depth == cap(t.frames) || start+256 > len(t.stack) {
 		s.enterMethod(method, 2, left, right, Nil(), dest, want)
 		return
 	}
-	s.steps += vmCallWeight
+	s.budget -= vmCallWeight
 	t.cDepth++
 	parameters := proto.parameters
 	provided := min(parameters, 2)
@@ -1345,22 +1318,19 @@ func (s *State) less(left, right Value, equal bool) bool {
 	return false
 }
 
-func (s *State) executeSlow(frameIndex, pc, remaining int) ([]Value, bool) {
+func (s *State) executeSlow(frameIndex, pc int) ([]Value, bool) {
 	t := s.current
 	f := &t.frames[frameIndex]
 	base := int(f.base)
 	constants := f.proto.constants
 	i := f.proto.instruction(pc - 1)
 	if i.op == opTailCall || i.op == opForCall {
-		remaining -= vmCallWeight
-		if remaining <= 0 {
+		s.budget -= vmCallWeight
+		if s.budget <= 0 {
 			t.frames[frameIndex].pc = int32(pc)
 			s.pollHook()
 			f = &t.frames[frameIndex]
-			remaining = s.options.HookEvery - s.steps
 		}
-
-		s.steps = s.options.HookEvery - remaining
 	}
 	a, b, c := base+i.a, base+i.b, base+i.c
 	switch i.op {
@@ -1456,12 +1426,10 @@ func (s *State) executeSlow(frameIndex, pc, remaining int) ([]Value, bool) {
 		}
 		method := s.binaryMethod(i.text, left, right)
 		if method.Type() == TypeFunction && method.object.function.proto != nil {
-			remaining -= vmCallWeight
-			if remaining <= 0 {
+			s.budget -= vmCallWeight
+			if s.budget <= 0 {
 				s.pollBinaryHook(method, left, right)
-				remaining = s.options.HookEvery - s.steps
 			}
-			s.steps = s.options.HookEvery - remaining
 			arguments := [2]Value{left, right}
 			previousTop := t.top
 			t.cDepth++

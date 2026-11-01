@@ -3,6 +3,10 @@ name: Performance
 on:
   pull_request:
   workflow_dispatch:
+    inputs:
+      base:
+        description: Commit to compare against
+        default: main
 
 permissions:
   contents: read
@@ -68,7 +72,7 @@ jobs:
           path: cand
       - uses: actions/checkout@v7.0.1
         with:
-          ref: main
+          ref: ${{ inputs.base || 'main' }}
           path: base
       - uses: actions/setup-go@v7.0.0
         with:

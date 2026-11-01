@@ -119,7 +119,7 @@ type State struct {
 	current     *thread
 	threads     []*thread
 	nextID      uint64
-	steps       int
+	budget      int
 	running     int
 	randomState uint64
 	handlers    *handlerOwner
@@ -136,7 +136,7 @@ func NewState(options Options) *State {
 	if options.MaxString <= 0 {
 		options.MaxString = 512 << 20
 	}
-	s := &State{options: options}
+	s := &State{options: options, budget: options.HookEvery}
 	s.main = &thread{status: "running", callLimit: maxCalls}
 	s.main.object.thread = s.main
 	s.current = s.main
@@ -259,7 +259,7 @@ func (s *State) call(fn Value, args []Value, handler Value, active bool) (values
 	outer := s.running == 0
 	s.running++
 	if outer {
-		s.steps = 0
+		s.budget = s.options.HookEvery
 	}
 	defer func() {
 		s.running--
@@ -483,8 +483,8 @@ func (s *State) typeError(action string, value Value, info nameInfo) {
 }
 
 func (s *State) tick() {
-	s.steps++
-	if s.steps < s.options.HookEvery {
+	s.budget--
+	if s.budget > 0 {
 		return
 	}
 	s.pollHook()
@@ -499,7 +499,7 @@ func (s *State) pollRetry(frameIndex, pc int) {
 	t.frames[frameIndex].pc = int32(pc)
 	s.pollHook()
 	t.frames[frameIndex].pc = int32(pc - 1)
-	s.steps = -vmCallWeight
+	s.budget = s.options.HookEvery + vmCallWeight
 }
 
 func (s *State) pollJump(frameIndex, pc, target int) {
@@ -521,7 +521,7 @@ func (s *State) pollBinaryHook(method, left, right Value) {
 }
 
 func (s *State) pollHookRoots(roots []Value) {
-	s.steps = 0
+	s.budget = s.options.HookEvery
 	if s.options.Hook != nil {
 		t := s.current
 		base := len(t.hookRoots)
