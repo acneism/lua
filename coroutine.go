@@ -24,7 +24,7 @@ func (s *State) openCoroutine() {
 				}
 				return values, nil
 			})
-			wrapped.object.function.upvalues = []*upvalue{{value: t.object.threadValue()}}
+			wrapped.object.function.upvalues = []*upvalue{closedUpvalue(t.object.threadValue())}
 			return s.values1(wrapped), nil
 		},
 		"resume": func(s *State, args []Value) ([]Value, error) {

@@ -187,8 +187,8 @@ func (s *State) openBase() {
 	for _, name := range names {
 		s.globals.set(sharedString(name), s.Function(name, functions[name]))
 	}
-	s.globals.RawGet(String("pairs")).object.function.upvalues = []*upvalue{{value: next}}
-	s.globals.RawGet(String("ipairs")).object.function.upvalues = []*upvalue{{value: ipairs}}
+	s.globals.RawGet(String("pairs")).object.function.upvalues = []*upvalue{closedUpvalue(next)}
+	s.globals.RawGet(String("ipairs")).object.function.upvalues = []*upvalue{closedUpvalue(ipairs)}
 	s.globals.set(sharedString("_G"), s.globals.Value())
 	s.globals.set(sharedString("_VERSION"), String("Lua 5.1"))
 }

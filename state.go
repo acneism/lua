@@ -29,26 +29,21 @@ type function struct {
 }
 
 type upvalue struct {
-	thread *thread
-	index  int
-	value  Value
-	next   *upvalue
+	slot  *Value
+	index int
+	value Value
+	next  *upvalue
 }
 
-func (u *upvalue) get() Value {
-	if u.thread != nil {
-		return u.thread.stack[u.index]
-	}
-	return u.value
+func closedUpvalue(value Value) *upvalue {
+	u := &upvalue{value: value}
+	u.slot = &u.value
+	return u
 }
 
-func (u *upvalue) set(value Value) {
-	if u.thread != nil {
-		u.thread.stack[u.index] = value
-	} else {
-		u.value = value
-	}
-}
+func (u *upvalue) get() Value { return *u.slot }
+
+func (u *upvalue) set(value Value) { *u.slot = value }
 
 type frame struct {
 	function                          *function
@@ -432,6 +427,9 @@ func (t *thread) growStack(size int) {
 		}
 	}
 	t.stack = append(t.stack, make([]Value, size-len(t.stack))...)
+	for open := t.open; open != nil; open = open.next {
+		open.slot = &t.stack[open.index]
+	}
 }
 
 func (t *thread) capture(index int) *upvalue {
@@ -442,7 +440,7 @@ func (t *thread) capture(index int) *upvalue {
 	if *link != nil && (*link).index == index {
 		return *link
 	}
-	current := &upvalue{thread: t, index: index, next: *link}
+	current := &upvalue{slot: &t.stack[index], index: index, next: *link}
 	*link = current
 	return current
 }
@@ -451,8 +449,8 @@ func (t *thread) close(base int) {
 	for t.open != nil && t.open.index >= base {
 		current := t.open
 		t.open = current.next
-		current.value = t.stack[current.index]
-		current.thread = nil
+		current.value = *current.slot
+		current.slot = &current.value
 		current.next = nil
 	}
 }
