@@ -19,9 +19,9 @@ func (s *State) library(name string, order []string, functions map[string]GoFunc
 		if function, ok := functions[key]; ok {
 			value = s.Function(key, function)
 		}
-		table.set(String(key), value)
+		table.set(sharedString(key), value)
 	}
-	s.globals.set(String(name), table.Value())
+	s.globals.set(sharedString(name), table.Value())
 	return table
 }
 

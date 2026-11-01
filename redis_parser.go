@@ -63,7 +63,7 @@ func (p *redisParser) intern(text string) Value {
 	if p.strings == nil {
 		p.strings = make(map[string]Value)
 	}
-	value := String(text)
+	value := sharedString(text)
 	p.strings[text] = value
 	return value
 }

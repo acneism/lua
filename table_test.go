@@ -156,3 +156,28 @@ func TestTableReserveMatchesAllocation(t *testing.T) {
 		}
 	}
 }
+
+func TestLibraryNamesAreShared(t *testing.T) {
+	s := NewState(Options{})
+	var walk func(table *Table, depth int)
+	walk = func(table *Table, depth int) {
+		for _, node := range table.nodes {
+			if node.key.text == nil {
+				continue
+			}
+			if node.key.text != sharedStrings[node.key.text.text] {
+				t.Fatalf("library name %q is not shared", node.key.text.text)
+			}
+			if inner := node.value.Table(); inner != nil && depth > 0 {
+				walk(inner, depth-1)
+			}
+		}
+	}
+	walk(s.globals, 1)
+	walk(s.stringMeta, 0)
+	for _, name := range eventNames {
+		if name.text != sharedStrings[name.Text()] {
+			t.Fatalf("metamethod name %q is not shared", name.Text())
+		}
+	}
+}

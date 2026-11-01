@@ -229,3 +229,20 @@ func setNumber(slot *Value, n float64) {
 	}
 	*slot = Number(n)
 }
+
+var sharedStrings = func() map[string]*stringValue {
+	names := strings.Fields(`_G _VERSION abs acos asin assert atan atan2 byte ceil char collectgarbage concat coroutine cos cosh create deg dump error exp find floor fmod foreach foreachi format frexp gcinfo getmetatable getn gfind gmatch gsub huge insert ipairs ldexp len load loadstring log log10 lower match math max maxn min mod modf next pairs pcall pi pow rad random randomseed rawequal rawget rawset remove rep resume reverse running select setmetatable setn sin sinh sort sqrt status string sub table tan tanh tonumber tostring type unpack upper wrap xpcall yield
+		__add __sub __mul __div __mod __pow __index __newindex __call __eq __lt __le __concat __unm __len __tostring __metatable __mode`)
+	shared := make(map[string]*stringValue, len(names))
+	for _, name := range names {
+		shared[name] = &stringValue{name, stringHash(name)}
+	}
+	return shared
+}()
+
+func sharedString(text string) Value {
+	if shared, ok := sharedStrings[text]; ok {
+		return Value{text: shared}
+	}
+	return String(text)
+}

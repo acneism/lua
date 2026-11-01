@@ -659,7 +659,11 @@ frames:
 				f.function.upvalues[register].set(registers[uint8(word>>16)])
 				continue
 			case opGetGlobal:
-				value := f.function.env.getString(constants[uint32(word>>16)].text)
+				name := constants[uint32(word>>16)].text
+				value, ok := f.function.env.lookup(name)
+				if !ok {
+					value = f.function.env.getString(name)
+				}
 				if !value.IsNil() {
 					registers[register] = value
 					continue
@@ -673,7 +677,11 @@ frames:
 					}
 					if key.text != nil && value.object != nil {
 						table := value.object.table
-						if found := table.getString(key.text); !found.IsNil() || table.metatable == nil {
+						found, ok := table.lookup(key.text)
+						if !ok {
+							found = table.getString(key.text)
+						}
+						if !found.IsNil() || table.metatable == nil {
 							registers[register] = found
 							continue
 						}
@@ -723,13 +731,19 @@ frames:
 					found, hit := Nil(), false
 					if key.text != nil && value.object != nil {
 						table := value.object.table
-						if found = table.getString(key.text); !found.IsNil() || table.metatable == nil {
+						var known bool
+						if found, known = table.lookup(key.text); !known {
+							found = table.getString(key.text)
+						}
+						if !found.IsNil() || table.metatable == nil {
 							hit = true
 						} else if found = s.inheritedString(table, key.text); !found.IsNil() {
 							hit = true
 						}
 					} else if method, ok := s.cached(eventIndex, s.stringMeta); ok && key.text != nil && method.object != nil && method.object.kind == TypeTable {
-						found = method.object.table.getString(key.text)
+						if found, hit = method.object.table.lookup(key.text); !hit {
+							found = method.object.table.getString(key.text)
+						}
 						hit = !found.IsNil()
 					}
 					receiver, status := Nil(), indexFound

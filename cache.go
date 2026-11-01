@@ -23,9 +23,9 @@ const (
 )
 
 var eventNames = [eventCount]Value{
-	String("__add"), String("__sub"), String("__mul"), String("__div"), String("__mod"), String("__pow"),
-	String("__index"), String("__newindex"), String("__call"), String("__eq"), String("__lt"), String("__le"),
-	String("__concat"), String("__unm"), String("__len"), String("__tostring"),
+	sharedString("__add"), sharedString("__sub"), sharedString("__mul"), sharedString("__div"), sharedString("__mod"), sharedString("__pow"),
+	sharedString("__index"), sharedString("__newindex"), sharedString("__call"), sharedString("__eq"), sharedString("__lt"), sharedString("__le"),
+	sharedString("__concat"), sharedString("__unm"), sharedString("__len"), sharedString("__tostring"),
 }
 
 const methodWays = 4
@@ -111,7 +111,11 @@ func (s *State) inheritedString(table *Table, key *stringValue) Value {
 			return Nil()
 		}
 		table = method.object.table
-		if found := table.getString(key); !found.IsNil() {
+		found, known := table.lookup(key)
+		if !known {
+			found = table.getString(key)
+		}
+		if !found.IsNil() {
 			return found
 		}
 	}

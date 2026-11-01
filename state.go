@@ -142,7 +142,7 @@ func NewState(options Options) *State {
 	s.current = s.main
 	s.globals = s.NewTable(0, 32)
 	s.stringMeta = s.NewTable(0, 1)
-	s.stringMeta.set(String("__index"), s.NewTable(0, 0).Value())
+	s.stringMeta.set(sharedString("__index"), s.NewTable(0, 0).Value())
 	s.stringMeta.readonly = true
 	s.openBase()
 	s.openCoroutine()

@@ -131,14 +131,27 @@ func (t *Table) find(key Value) int {
 	return -1
 }
 
+func (t *Table) lookup(key *stringValue) (Value, bool) {
+	if len(t.nodes) == 0 {
+		return Nil(), true
+	}
+	node := &t.nodes[key.hash&uint32(len(t.nodes)-1)]
+	return node.value, node.key.text == key
+}
+
 func (t *Table) getString(key *stringValue) Value {
 	if len(t.nodes) == 0 {
 		return Nil()
 	}
-	for i := int(key.hash & uint32(len(t.nodes)-1)); i >= 0; i = t.nodes[i].next {
-		node := &t.nodes[i]
-		if text := node.key.text; text == key || text != nil && text.hash == key.hash && text.text == key.text {
-			return node.value
+	main := int(key.hash & uint32(len(t.nodes)-1))
+	for i := main; i >= 0; i = t.nodes[i].next {
+		if t.nodes[i].key.text == key {
+			return t.nodes[i].value
+		}
+	}
+	for i := main; i >= 0; i = t.nodes[i].next {
+		if text := t.nodes[i].key.text; text != nil && text.hash == key.hash && text.text == key.text {
+			return t.nodes[i].value
 		}
 	}
 	return Nil()
