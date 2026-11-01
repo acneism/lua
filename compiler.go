@@ -31,7 +31,6 @@ const (
 	opClose
 	opForPrep
 	opForLoop
-	opForCall
 	opPoll
 	opForAccumulate
 	opCallDirect

@@ -149,7 +149,7 @@ func NewState(options Options) *State {
 
 func (s *State) Globals() *Table { return s.globals }
 
-var typeNames = [...]Value{String("nil"), String("boolean"), String("number"), String("string"), String("table"), String("function"), String("thread"), String("userdata")}
+var typeNames = [...]Value{sharedString("nil"), sharedString("boolean"), sharedString("number"), sharedString("string"), sharedString("table"), sharedString("function"), sharedString("thread"), sharedString("userdata")}
 
 func (s *State) prepend(first Value, values []Value) []Value {
 	if len(values) >= len(s.results) {
@@ -545,16 +545,18 @@ func (s *State) pollHook() {
 	s.pollHookRoots(nil)
 }
 
-func (s *State) pollRetry(frameIndex, pc int) {
+func (s *State) pollRetry(pc int) {
 	t := s.current
+	frameIndex := len(t.frames) - 1
 	t.frames[frameIndex].pc = int32(pc)
 	s.pollHook()
 	t.frames[frameIndex].pc = int32(pc - 1)
 	s.budget = s.options.HookEvery + vmCallWeight
 }
 
-func (s *State) pollJump(frameIndex, pc, target int) {
+func (s *State) pollJump(pc, target int) {
 	t := s.current
+	frameIndex := len(t.frames) - 1
 	t.frames[frameIndex].pc = int32(pc)
 	s.pollHook()
 	t.frames[frameIndex].pc = int32(target)

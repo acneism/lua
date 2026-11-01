@@ -87,7 +87,7 @@ func (s *State) enterMethod(method Value, count int, first, second, third Value,
 			t.frames = t.frames[:depth+1]
 		}
 		entered := &t.frames[depth]
-		entered.function, entered.proto, entered.site = callee, callee.proto, nil
+		entered.function, entered.proto = callee, callee.proto
 		entered.start, entered.base, entered.pc = int32(start), int32(start), 0
 		entered.returnDest, entered.want = int32(dest), int32(want)
 		entered.metacallTop, entered.tailcalls = int32(previousTop+1), 0
@@ -177,7 +177,7 @@ func (s *State) jumpOn(jump bool) {
 	if target < pc {
 		s.budget -= vmCallWeight
 		if s.budget <= 0 {
-			s.pollJump(len(t.frames)-1, pc, target)
+			s.pollJump(pc, target)
 		}
 	}
 }
@@ -193,11 +193,14 @@ func (s *State) callMethod(method Value, count int, first, second, third Value, 
 	return values
 }
 
-func (s *State) callSelf(frameIndex, pc int, self, method Value) bool {
+func (s *State) callSelf(self, method Value) {
 	t := s.current
-	f := &t.frames[frameIndex]
+	f := t.topFrame()
+	pc := int(f.pc)
 	code, constants := f.proto.code, f.proto.constants
-	count := int(uint8(code[pc-1] >> 24))
+	word := code[pc-1]
+	count := int(uint8(word >> 24))
+	base := int(f.base)
 	callee := method.object.function
 	p := callee.proto
 	start := max(t.used, t.top)
@@ -205,10 +208,10 @@ func (s *State) callSelf(frameIndex, pc int, self, method Value) bool {
 	if p.vararg {
 		frameBase += max(0, count-p.parameters)
 	}
-	if p.needsArgTable() || s.budget <= vmCallWeight || len(t.frames) >= freshCalls-1 || frameBase+256 > len(t.stack) {
-		return false
+	if p.needsArgTable() || s.budget <= vmCallWeight || len(t.frames) >= freshCalls-1 || len(t.frames) == cap(t.frames) || frameBase+256 > len(t.stack) {
+		t.stack[base+int(uint8(word>>8))] = method
+		return
 	}
-	base := int(f.base)
 	for argument := range count {
 		value := self
 		if argument > 0 {
@@ -224,16 +227,9 @@ func (s *State) callSelf(frameIndex, pc int, self, method Value) bool {
 			t.stack[start+argument-p.parameters] = value
 		}
 	}
-	clearRegisters(t.stack[frameBase+min(p.parameters, count) : frameBase+p.maxRegisters])
-	if p.argRegister >= 0 {
-		t.stack[frameBase+p.argRegister] = Nil()
-	}
 	call := code[pc+count-1]
 	f.pc = int32(pc + count)
-	if len(t.frames) == cap(t.frames) {
-		t.growFrameCapacity()
-	}
 	t.pushLua(callee, start, frameBase, base+int(uint8(call>>48)), int(int16(call>>32)))
 	s.budget -= vmCallWeight
-	return true
+	clearRegisters(t.stack[frameBase+min(p.parameters, count) : frameBase+p.maxRegisters])
 }

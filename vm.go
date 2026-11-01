@@ -129,19 +129,19 @@ func (t *thread) pushLua(callee *function, start, base, dest, want int) {
 	depth := len(t.frames)
 	t.frames = t.frames[:depth+1]
 	entered := &t.frames[depth]
-	entered.function, entered.proto, entered.site = callee, callee.proto, nil
+	entered.function, entered.proto = callee, callee.proto
 	entered.start, entered.base, entered.pc = int32(start), int32(base), 0
 	entered.returnDest, entered.want = int32(dest), int32(want)
 	entered.metacallTop, entered.tailcalls = 0, 0
 	t.used, t.top = base+callee.proto.maxRegisters, base+callee.proto.parameters
 }
 
-func (t *thread) growFrameCapacity() {
-	t.frames = append(t.frames, frame{})[:len(t.frames)]
-}
-
-func (s *State) newClosure(f *frame, child *Proto, base int) Value {
+func (s *State) newClosure() {
 	t := s.current
+	f := t.topFrame()
+	base := int(f.base)
+	i := f.proto.instruction(int(f.pc) - 1)
+	child := f.proto.children[i.b]
 	closure, upvalues := s.closure(child, f.function.env, len(child.upvalues))
 	for index, descriptor := range child.upvalues {
 		if descriptor.local {
@@ -150,11 +150,14 @@ func (s *State) newClosure(f *frame, child *Proto, base int) Value {
 			upvalues[index] = f.function.upvalues[descriptor.index]
 		}
 	}
-	return closure
+	t.stack[base+i.a] = closure
 }
 
-func (s *State) nativeIterator(frameIndex int, fn *function, i *instruction, a int) {
+func (s *State) nativeIterator(fn *function) {
 	t := s.current
+	frameIndex := len(t.frames) - 1
+	i := t.frames[frameIndex].proto.instruction(int(t.frames[frameIndex].pc) - 1)
+	a := int(t.frames[frameIndex].base) + i.a
 	t.cDepth++
 	if t.cDepth == 200 {
 		s.runtimeError("C stack overflow")
@@ -266,27 +269,39 @@ func (s *State) finish(values []Value) (bool, []Value) {
 	return false, nil
 }
 
-func (s *State) execute(stop int) (result []Value) {
-	t := s.current
+type activation struct {
+	t     *thread
+	f     *frame
+	base  int
+	index int
+	stop  int
+}
 
+func (t *thread) topFrame() *frame { return &t.frames[len(t.frames)-1] }
+
+func (s *State) execute(stop int) (result []Value) {
 	if s.options.Hook != nil {
 		s.budget -= vmCallWeight - 1
 		s.tick()
 	}
+	active := activation{t: s.current, stop: stop}
 
 frames:
-	for len(t.frames) > stop {
-		frameIndex := len(t.frames) - 1
-		f := &t.frames[frameIndex]
-		proto := f.proto
-		base, pc := int(f.base), int(f.pc)
-		code, constants := proto.code, proto.constants
-		registers := (*[256]Value)(t.stack[base : base+256])
+	for {
+		thread := active.t
+		index := len(thread.frames) - 1
+		if index < active.stop {
+			return nil
+		}
+		entered := &thread.frames[index]
+		active.f, active.index, active.base = entered, index, int(entered.base)
+		pc := int(entered.pc)
+		code, constants := entered.proto.code, entered.proto.constants
+		registers := (*[256]Value)(thread.stack[active.base : active.base+256])
 		for {
 			word := code[pc]
 			pc++
-			op, register := opcode(word), uint8(word>>8)
-			switch op {
+			switch op := opcode(word); op {
 			case comparisonBase + 0, comparisonBase + 1, comparisonBase + 2, comparisonBase + 3, comparisonBase + 4, comparisonBase + 5, comparisonBase + 6, comparisonBase + 7, comparisonBase + 8, comparisonBase + 9, comparisonBase + 10, comparisonBase + 11, comparisonBase + 12, comparisonBase + 13, comparisonBase + 14, comparisonBase + 15, comparisonBase + 16, comparisonBase + 17, comparisonBase + 18, comparisonBase + 19, comparisonBase + 20, comparisonBase + 21, comparisonBase + 22, comparisonBase + 23:
 				mode := op - comparisonBase
 				left, right := &registers[uint8(word>>8)], &registers[uint8(word>>16)]
@@ -296,8 +311,9 @@ frames:
 				if mode&rightConstant != 0 {
 					right = &constants[uint8(word>>16)]
 				}
-				var matched bool
+				var matched, known bool
 				if left.object == &numberMarker && right.object == &numberMarker {
+					known = true
 					switch comparisonKind(mode) {
 					case compareEqual:
 						matched = left.number == right.number
@@ -306,17 +322,12 @@ frames:
 					case compareLessEqual:
 						matched = left.number <= right.number
 					}
-				} else if comparisonKind(mode) == compareEqual && (left.object == nil || left.object.kind != TypeTable && left.object.kind != TypeUserdata) {
-					matched = left.Equal(*right)
-				} else if method, ok := s.compareMethod(left, right, mode); ok {
-					t.frames[frameIndex].pc = int32(pc)
-					s.enterPair(method, *left, *right, 0, compareWant-int(mode&expectTrue)/expectTrue)
-					continue frames
-				} else {
-					t.frames[frameIndex].pc = int32(pc)
-					if !s.enterCompareMethod(*left, *right, int(mode)) {
-						s.compareSlow(*left, *right, mode)
-					}
+				} else if comparisonKind(mode) == compareEqual {
+					matched, known = fastEqual(left, right)
+				}
+				if !known {
+					active.f.pc = int32(pc)
+					s.compareFrame(left, right)
 					continue frames
 				}
 				if matched == (mode&expectTrue != 0) {
@@ -324,7 +335,7 @@ frames:
 					if target < pc {
 						s.budget -= vmCallWeight
 						if s.budget <= 0 {
-							s.pollJump(frameIndex, pc, target)
+							s.pollJump(pc, target)
 							continue frames
 						}
 					}
@@ -336,288 +347,245 @@ frames:
 			case opAdd, opAdd + 1, opAdd + 2, opAdd + 3:
 				left, right := numericOperands(op, word, registers, constants)
 				if left.object == &numberMarker && right.object == &numberMarker {
-					setNumber(&registers[register], luaNaN(left.number+right.number, left.number, right.number))
+					setNumber(&registers[uint8(word>>8)], luaNaN(left.number+right.number, left.number, right.number))
 					continue
 				}
-				t.frames[frameIndex].pc = int32(pc)
-				if s.enterArithmeticMethod(left, right, 0, base+int(register)) {
-					continue frames
-				}
+				active.f.pc = int32(pc)
+				s.arithmeticFrame(left, right)
+				continue frames
 			case opSubtract, opSubtract + 1, opSubtract + 2, opSubtract + 3:
 				left, right := numericOperands(op, word, registers, constants)
 				if left.object == &numberMarker && right.object == &numberMarker {
-					setNumber(&registers[register], luaNaN(left.number-right.number, left.number, right.number))
+					setNumber(&registers[uint8(word>>8)], luaNaN(left.number-right.number, left.number, right.number))
 					continue
 				}
-				t.frames[frameIndex].pc = int32(pc)
-				if s.enterArithmeticMethod(left, right, 1, base+int(register)) {
-					continue frames
-				}
+				active.f.pc = int32(pc)
+				s.arithmeticFrame(left, right)
+				continue frames
 			case opMultiply, opMultiply + 1, opMultiply + 2, opMultiply + 3:
 				left, right := numericOperands(op, word, registers, constants)
 				if left.object == &numberMarker && right.object == &numberMarker {
-					setNumber(&registers[register], luaNaN(left.number*right.number, left.number, right.number))
+					setNumber(&registers[uint8(word>>8)], luaNaN(left.number*right.number, left.number, right.number))
 					continue
 				}
-				t.frames[frameIndex].pc = int32(pc)
-				if s.enterArithmeticMethod(left, right, 2, base+int(register)) {
-					continue frames
-				}
+				active.f.pc = int32(pc)
+				s.arithmeticFrame(left, right)
+				continue frames
 			case opDivide, opDivide + 1, opDivide + 2, opDivide + 3:
 				left, right := numericOperands(op, word, registers, constants)
 				if left.object == &numberMarker && right.object == &numberMarker {
-					setNumber(&registers[register], luaDivide(left.number, right.number))
+					setNumber(&registers[uint8(word>>8)], luaDivide(left.number, right.number))
 					continue
 				}
-				t.frames[frameIndex].pc = int32(pc)
-				if s.enterArithmeticMethod(left, right, 3, base+int(register)) {
-					continue frames
-				}
+				active.f.pc = int32(pc)
+				s.arithmeticFrame(left, right)
+				continue frames
 			case opModulo, opModulo + 1, opModulo + 2, opModulo + 3:
 				left, right := numericOperands(op, word, registers, constants)
 				if left.object == &numberMarker && right.object == &numberMarker {
-					setNumber(&registers[register], luaModulo(left.number, right.number))
-					continue
-				}
-				t.frames[frameIndex].pc = int32(pc)
-				if s.enterArithmeticMethod(left, right, 4, base+int(register)) {
-					continue frames
-				}
-			case opPower, opPower + 1, opPower + 2, opPower + 3:
-				left, right := numericOperands(op, word, registers, constants)
-				if left.object == &numberMarker && right.object == &numberMarker {
-					setNumber(&registers[register], luaPower(left.number, right.number))
-					continue
-				}
-				t.frames[frameIndex].pc = int32(pc)
-				if s.enterArithmeticMethod(left, right, 5, base+int(register)) {
-					continue frames
-				}
-			case numericCompareBase + 0, numericCompareBase + 1, numericCompareBase + 2, numericCompareBase + 3, numericCompareBase + 4, numericCompareBase + 5, numericCompareBase + 6, numericCompareBase + 7, numericCompareBase + 8, numericCompareBase + 9, numericCompareBase + 10, numericCompareBase + 11, numericCompareBase + 12, numericCompareBase + 13, numericCompareBase + 14, numericCompareBase + 15, numericCompareBase + 16, numericCompareBase + 17, numericCompareBase + 18, numericCompareBase + 19, numericCompareBase + 20, numericCompareBase + 21, numericCompareBase + 22, numericCompareBase + 23, numericJumpBase + 0, numericJumpBase + 1, numericJumpBase + 2, numericJumpBase + 3, numericJumpBase + 4, numericJumpBase + 5, numericJumpBase + 6, numericJumpBase + 7, numericJumpBase + 8, numericJumpBase + 9, numericJumpBase + 10, numericJumpBase + 11, numericJumpBase + 12, numericJumpBase + 13, numericJumpBase + 14, numericJumpBase + 15, numericJumpBase + 16, numericJumpBase + 17, numericJumpBase + 18, numericJumpBase + 19, numericJumpBase + 20, numericJumpBase + 21, numericJumpBase + 22, numericJumpBase + 23:
-				operation := op
-				fused := op >= numericJumpBase
-				if fused {
-					operation = op.withoutJump()
-				}
-				left, right := numericOperands(operation, word, registers, constants)
-				if left.object == &numberMarker && right.object == &numberMarker {
-					value := Bool(numericCompare(operation.numericOperation(), left.number, right.number))
-					registers[register] = value
-					if fused {
-						branch := code[pc]
-						pc++
-						if value.Truth() == (opcode(branch) == opJumpTrue) {
-							target := int(uint32(branch >> 16))
-							if target < pc {
-								s.budget -= vmCallWeight
-								if s.budget <= 0 {
-									s.pollJump(frameIndex, pc, target)
-									continue frames
-								}
-							}
-							pc = target
+					x, y := left.number, right.number
+					if quotient := x / y; quotient > -0x1p52 && quotient < 0x1p52 {
+						whole := float64(int64(quotient))
+						if whole > quotient {
+							whole--
+						} else if whole == quotient {
+							whole = quotient
+						}
+						product := float64(whole * y)
+						if remainder := x - product; remainder == remainder {
+							setNumber(&registers[uint8(word>>8)], remainder)
+							continue
 						}
 					}
+				}
+				active.f.pc = int32(pc)
+				s.arithmeticFrame(left, right)
+				continue frames
+			case opPower, opPower + 1, opPower + 2, opPower + 3:
+				left, right := numericOperands(op, word, registers, constants)
+				active.f.pc = int32(pc)
+				if left.object == &numberMarker && right.object == &numberMarker {
+					powerInto(&registers[uint8(word>>8)], left.number, right.number)
+					pc = int(active.f.pc)
 					continue
 				}
+				s.arithmeticFrame(left, right)
+				continue frames
 			case opPoll:
 				s.budget -= vmPollStride
 				if s.budget <= 0 {
-					t.frames[frameIndex].pc = int32(pc)
+					active.f.pc = int32(pc)
 					s.pollHook()
 					continue frames
 				}
 				continue
-
-			case opCallDirect, opCallDirectUpvalue, opCallDirectConstant, opCallDirectUpvalueConstant, opCallArithmetic, opCallArithmeticUpvalue:
-				value := registers[uint8(word>>16)]
-				if op == opCallDirectUpvalue || op == opCallDirectUpvalueConstant || op == opCallArithmeticUpvalue {
-					value = f.function.upvalues[uint8(word>>16)].get()
+			case opCallDirect, opCallDirectUpvalue, opCallDirectConstant, opCallDirectUpvalueConstant:
+				value := &registers[uint8(word>>16)]
+				if op == opCallDirectUpvalue || op == opCallDirectUpvalueConstant {
+					value = active.f.function.upvalues[uint8(word>>16)].slot
 				}
-				var argument Value
-				if op == opCallArithmetic || op == opCallArithmeticUpvalue {
-					if value.Type() != TypeFunction || value.object.function.proto == nil || value.object.function.proto.vararg {
-						registers[register] = value
-						continue
-					}
-					packed := code[pc]
-					operation := opcode(packed)
-					left, right := &registers[uint8(packed>>16)], &registers[uint8(packed>>32)]
-					if operation&leftConstant != 0 {
-						left = &constants[uint16(packed>>16)]
-					}
-					if operation&rightConstant != 0 {
-						right = &constants[uint16(packed>>32)]
-					}
-					if left.object != &numberMarker || right.object != &numberMarker {
-						registers[register] = value
-						continue
-					}
-					x, y := left.number, right.number
-					switch operation.numericOperation() {
-					case operationAdd:
-						argument = Number(luaNaN(x+y, x, y))
-					case operationSubtract:
-						argument = Number(luaNaN(x-y, x, y))
-					default:
-						argument = Number(numericArithmetic(operation.numericOperation(), x, y))
-					}
-				} else {
-					argument = registers[uint8(word>>24)]
-					if op == opCallDirectConstant || op == opCallDirectUpvalueConstant {
-						argument = constants[uint16(word>>24)]
-					}
+				argument := &registers[uint8(word>>24)]
+				if op == opCallDirectConstant || op == opCallDirectUpvalueConstant {
+					argument = &constants[uint16(word>>24)]
 				}
-				var callee *function
-				var proto *Proto
-				if object := value.object; object != nil && object.kind == TypeFunction {
-					callee = object.function
-					proto = callee.proto
-				}
+				call := code[pc+1]
+				active.f.pc = int32(pc + 2)
+				t := active.t
 				start := max(t.used, t.top)
-				if proto != nil && !proto.vararg && len(t.frames) < freshCalls-1 && start+256 <= len(t.stack) {
-					if s.budget <= vmCallWeight {
-						registers[register] = value
-						continue
-					}
+				if value.luaFunction() && !value.object.function.proto.vararg && len(t.frames) < freshCalls-1 && len(t.frames) < cap(t.frames) && start+256 <= len(t.stack) && s.budget > vmCallWeight {
+					callee := value.object.function
 					s.budget -= vmCallWeight
-					t.frames[frameIndex].pc = int32(pc + 2)
-					parameters, size := proto.parameters, proto.maxRegisters
-					if parameters > 0 {
-						t.stack[start] = argument
+					if callee.proto.parameters > 0 {
+						t.stack[start] = *argument
 					}
-					clearRegisters(t.stack[start+min(parameters, 1) : start+size])
-					if len(t.frames) == cap(t.frames) {
-						t.growFrameCapacity()
-					}
-					t.pushLua(callee, start, start, base+int(uint8(word>>40)), int(int16(word>>48)))
+					t.pushLua(callee, start, start, active.base+int(uint8(call>>48)), int(int16(call>>32)))
+					clearRegisters(t.stack[start+min(callee.proto.parameters, 1) : start+callee.proto.maxRegisters])
 					continue frames
 				}
-				registers[register] = value
+				pc = int(active.f.pc) - 2
+				registers[uint8(code[pc-1]>>8)] = *value
+				continue
+			case opCallArithmetic, opCallArithmeticUpvalue:
+				value := &registers[uint8(word>>16)]
+				if op == opCallArithmeticUpvalue {
+					value = active.f.function.upvalues[uint8(word>>16)].slot
+				}
+				packed, call := code[pc], code[pc+1]
+				left, right := numericOperands(opcode(packed), packed, registers, constants)
+				active.f.pc = int32(pc + 2)
+				t := active.t
+				start := max(t.used, t.top)
+				if value.luaFunction() && left.object == &numberMarker && right.object == &numberMarker && !value.object.function.proto.vararg && len(t.frames) < freshCalls-1 && len(t.frames) < cap(t.frames) && start+256 <= len(t.stack) && s.budget > vmCallWeight {
+					callee := value.object.function
+					x, y := left.number, right.number
+					var number float64
+					switch opcode(packed).numericOperation() {
+					case operationAdd:
+						number = luaNaN(x+y, x, y)
+					case operationSubtract:
+						number = luaNaN(x-y, x, y)
+					default:
+						number = luaNaN(x*y, x, y)
+					}
+					s.budget -= vmCallWeight
+					if callee.proto.parameters > 0 {
+						t.stack[start] = Number(number)
+					}
+					t.pushLua(callee, start, start, active.base+int(uint8(call>>48)), int(int16(call>>32)))
+					clearRegisters(t.stack[start+min(callee.proto.parameters, 1) : start+callee.proto.maxRegisters])
+					continue frames
+				}
+				pc = int(active.f.pc) - 2
+				registers[uint8(code[pc-1]>>8)] = *value
 				continue
 			case opCallFused, opCallFusedUpvalue:
-				value := registers[uint8(word>>16)]
+				value := &registers[uint8(word>>16)]
 				if op == opCallFusedUpvalue {
-					value = f.function.upvalues[uint8(word>>16)].get()
+					value = active.f.function.upvalues[uint8(word>>16)].slot
 				}
-				start := max(t.used, t.top)
 				count := int(uint8(word >> 24))
-				if !value.luaFunction() || value.object.function.proto.needsArgTable() || s.budget <= vmCallWeight || len(t.frames) >= freshCalls-1 {
-					registers[register] = value
-					continue
-				}
-				callee := value.object.function
-				parameters, size, frameBase := callee.proto.parameters, callee.proto.maxRegisters, start
-				if callee.proto.vararg {
-					frameBase += max(0, count-parameters)
-				}
-				if frameBase+256 > len(t.stack) {
-					registers[register] = value
-					continue
-				}
-				for argument := range count {
-					slot := start + argument - parameters
-					if argument < parameters {
-						slot = frameBase + argument
-					} else if frameBase == start {
-						break
+				loads := code[pc : pc+count+1]
+				active.f.pc = int32(pc + count + 1)
+				t := active.t
+				start := max(t.used, t.top)
+				if value.luaFunction() && !value.object.function.proto.needsArgTable() && s.budget > vmCallWeight && len(t.frames) < freshCalls-1 && len(t.frames) < cap(t.frames) {
+					callee := value.object.function
+					parameters, frameBase := callee.proto.parameters, start
+					if callee.proto.vararg {
+						frameBase += max(0, count-parameters)
 					}
-					if load := code[pc+argument]; opcode(load) == opMove {
-						t.stack[slot] = registers[uint8(load>>16)]
-					} else {
-						t.stack[slot] = constants[uint32(load>>16)]
+					if frameBase+256 <= len(t.stack) {
+						for argument, load := range loads[:count] {
+							slot := start + argument - parameters
+							if argument < parameters {
+								slot = frameBase + argument
+							} else if frameBase == start {
+								break
+							}
+							if opcode(load) == opMove {
+								t.stack[slot] = registers[uint8(load>>16)]
+							} else {
+								t.stack[slot] = constants[uint32(load>>16)]
+							}
+						}
+						call := loads[count]
+						s.budget -= vmCallWeight
+						t.pushLua(callee, start, frameBase, active.base+int(uint8(call>>48)), int(int16(call>>32)))
+						clearRegisters(t.stack[frameBase+min(parameters, count) : frameBase+callee.proto.maxRegisters])
+						continue frames
 					}
 				}
-				clearRegisters(t.stack[frameBase+min(parameters, count) : frameBase+size])
-				if callee.proto.argRegister >= 0 {
-					t.stack[frameBase+callee.proto.argRegister] = Nil()
-				}
-				call := code[pc+count]
-				s.budget -= vmCallWeight
-				t.frames[frameIndex].pc = int32(pc + count + 1)
-				if len(t.frames) == cap(t.frames) {
-					t.growFrameCapacity()
-				}
-				t.pushLua(callee, start, frameBase, base+int(uint8(call>>48)), int(int16(call>>32)))
-				continue frames
+				pc = int(active.f.pc) - count - 1
+				registers[uint8(code[pc-1]>>8)] = *value
+				continue
 			case opCall:
 				s.budget -= vmCallWeight
 				if s.budget <= 0 {
-					s.pollRetry(frameIndex, pc)
+					s.pollRetry(pc)
 					continue frames
 				}
+				a := uint8(word >> 8)
+				argStart := active.base + int(a) + 1
 				count := int(int16(word >> 16))
+				t := active.t
 				if count < 0 {
-					count = t.top - (base + int(register) + 1)
+					count = t.top - argStart
 				}
-				value := registers[register]
-				argStart := base + int(register) + 1
-				if object := value.object; object != nil && object.kind == TypeTable {
-					var method Value
-					if cached, ok := s.cached(eventCall, object.table.metatable); ok {
-						method = cached
-					} else {
-						method = s.metaFor(value, eventCall)
+				object := registers[a].object
+				if object != nil && object.kind == TypeTable {
+					method, ok := s.cached(eventCall, object.table.metatable)
+					if !ok || method.object == nil {
+						break
 					}
-					if method.Type() == TypeFunction {
-						value, argStart, count = method, argStart-1, count+1
-					}
+					object, argStart, count = method.object, argStart-1, count+1
 				}
-				if object := value.object; object != nil && object.kind == TypeFunction && object.function.native != nil {
-					t.frames[frameIndex].pc = int32(pc)
-					dest, want := base+int(uint8(word>>48)), int(int16(word>>32))
-					stack, frames := &t.stack[0], &t.frames[0]
-					values := s.nativeStack(object.function, t.stack[argStart:argStart+count], &callSite, argStart)
-					if t.yielded {
-						t.resumeDest, t.resumeWant, t.resumeReturn = dest, want, false
-						t.yielded = false
-						t.status = "suspended"
+				if object == nil || object.kind != TypeFunction {
+					break
+				}
+				callee := object.function
+				active.f.pc = int32(pc)
+				if callee.native != nil {
+					values, status := s.callNative(callee, argStart, count)
+					if status == nativeDone {
+						pc = int(active.f.pc)
+						continue
+					}
+					if status == nativeYielded {
 						return values
 					}
-					t.writeResults(dest, want, values)
-					if stack != &t.stack[0] || frames != &t.frames[0] {
-						continue frames
-					}
-					continue
-				}
-				if value.Type() == TypeFunction && value.object.function.proto != nil && !value.object.function.proto.needsArgTable() && len(t.frames) < freshCalls-1 {
-					callee := value.object.function
-					callProto := callee.proto
-					start, extra := max(t.used, t.top), 0
-					if callProto.vararg {
-						extra = max(0, count-callProto.parameters)
-					}
-					if frameBase := start + extra; frameBase+256 <= len(t.stack) {
-						t.frames[frameIndex].pc = int32(pc)
-						parameters := callProto.parameters
-						provided := min(parameters, count)
-						for argument := 0; argument < provided; argument++ {
-							t.stack[frameBase+argument] = t.stack[argStart+argument]
-						}
-						clearRegisters(t.stack[frameBase+provided : frameBase+callProto.maxRegisters])
-						if callProto.argRegister >= 0 {
-							t.stack[frameBase+callProto.argRegister] = Nil()
-						}
-						for argument := 0; argument < extra; argument++ {
-							t.stack[start+argument] = t.stack[argStart+parameters+argument]
-						}
-						if len(t.frames) == cap(t.frames) {
-							t.growFrameCapacity()
-						}
-						t.pushLua(callee, start, frameBase, base+int(uint8(word>>48)), int(int16(word>>32)))
-						continue frames
-					}
-				}
-				if object := value.object; object != nil && object.kind == TypeFunction && object.function.proto != nil {
-					t.frames[frameIndex].pc = int32(pc)
-					s.push(object.function, t.stack[argStart:argStart+count], base+int(uint8(word>>48)), int(int16(word>>32)), nil)
 					continue frames
 				}
+				start := max(t.used, t.top)
+				frameBase := start
+				if callee.proto.vararg {
+					frameBase += max(0, count-callee.proto.parameters)
+				}
+				dest, want := active.base+int(uint8(word>>48)), int(int16(word>>32))
+				if callee.proto.needsArgTable() || len(t.frames) >= freshCalls-1 || len(t.frames) == cap(t.frames) || frameBase+256 > len(t.stack) {
+					s.push(callee, t.stack[argStart:argStart+count], dest, want, nil)
+					continue frames
+				}
+				parameters := callee.proto.parameters
+				provided := min(parameters, count)
+				for argument := 0; argument < provided; argument++ {
+					t.stack[frameBase+argument] = t.stack[argStart+argument]
+				}
+				for argument := 0; argument < frameBase-start; argument++ {
+					t.stack[start+argument] = t.stack[argStart+parameters+argument]
+				}
+				t.pushLua(callee, start, frameBase, dest, want)
+				clearRegisters(t.stack[frameBase+provided : frameBase+callee.proto.maxRegisters])
+				continue frames
 			case opReturn:
-				if want := f.want; want >= 0 && int32(int16(word>>16)) >= want && f.returnDest >= 0 && frameIndex != stop && (t.open == nil || t.open.index < base) {
+				t, f := active.t, active.f
+				if want := f.want; want >= 0 && int32(int16(word>>16)) >= want && f.returnDest >= 0 && active.index != active.stop && (t.open == nil || t.open.index < active.base) {
 					dest := int(f.returnDest)
-					for index := range int(want) {
-						t.stack[dest+index] = registers[int(register)+index]
+					if want == 1 {
+						t.stack[dest] = registers[uint8(word>>8)]
+					} else {
+						for index := 0; index < int(want); index++ {
+							t.stack[dest+index] = registers[int(uint8(word>>8))+index]
+						}
 					}
 					t.used, t.top = int(f.start), dest+int(want)
 					if f.metacallTop > 0 {
@@ -625,250 +593,185 @@ frames:
 						t.cDepth--
 						t.boundary--
 					}
-					t.frames = t.frames[:frameIndex]
+					t.frames = t.frames[:active.index]
 					continue frames
 				}
 				if f.returnDest >= 0 {
+					from := int(uint8(word >> 8))
 					count := int(int16(word >> 16))
 					if count < 0 {
-						count = t.top - base - int(register)
+						count = t.top - active.base - from
 					}
 					if f.want < -1 {
 						value := Nil()
 						if count > 0 {
-							value = registers[register]
+							value = registers[from]
 						}
 						s.returnCompare(value)
 						continue frames
 					}
-					t.returnValues(frameIndex, base+int(register), count)
-					if frameIndex == stop {
+					t.returnValues(active.index, active.base+from, count)
+					if active.index == active.stop {
 						return nil
 					}
 					continue frames
 				}
 			case opConstant:
-				registers[register] = constants[uint32(word>>16)]
+				registers[uint8(word>>8)] = constants[uint32(word>>16)]
 				continue
 			case opMove:
-				registers[register] = registers[uint8(word>>16)]
+				registers[uint8(word>>8)] = registers[uint8(word>>16)]
 				continue
 			case opLoadNil:
-				clear(registers[int(register) : int(uint32(word>>16))+1])
+				for index, last := int(uint8(word>>8)), int(uint32(word>>16)); index <= last; index++ {
+					registers[uint8(index)] = Nil()
+				}
 				continue
 			case opGetUpvalue:
-				registers[register] = f.function.upvalues[uint32(word>>16)].get()
+				registers[uint8(word>>8)] = active.f.function.upvalues[uint32(word>>16)].get()
 				continue
 			case opSetUpvalue:
-				f.function.upvalues[register].set(registers[uint8(word>>16)])
+				active.f.function.upvalues[uint8(word>>8)].set(registers[uint8(word>>16)])
 				continue
 			case opGetGlobal:
-				name := constants[uint32(word>>16)].text
-				value, ok := f.function.env.lookup(name)
-				if !ok {
-					value = f.function.env.getString(name)
-				}
-				if !value.IsNil() {
-					registers[register] = value
+				value, known := active.f.function.env.lookup(constants[uint32(word>>16)].text)
+				if known && !value.IsNil() {
+					registers[uint8(word>>8)] = value
 					continue
 				}
+				active.f.pc = int32(pc)
+				if s.globalFrame() {
+					continue frames
+				}
+				pc = int(active.f.pc)
+				continue
 			case opGetTable, opGetTableK:
-				value := registers[uint8(word>>16)]
-				if value.Type() == TypeTable || value.Type() == TypeString {
-					key := registers[uint8(word>>48)]
-					if op == opGetTableK {
-						key = constants[uint16(word>>48)]
-					}
-					if key.text != nil && value.object != nil {
-						table := value.object.table
-						found, ok := table.lookup(key.text)
-						if !ok {
-							found = table.getString(key.text)
-						}
-						if !found.IsNil() || table.metatable == nil {
-							registers[register] = found
+				value, key := &registers[uint8(word>>16)], &registers[uint8(word>>48)]
+				if op == opGetTableK {
+					key = &constants[uint16(word>>48)]
+				}
+				if object := value.object; object != nil && object.kind == TypeTable {
+					table := object.table
+					if key.text != nil {
+						found, known := table.lookup(key.text)
+						if known && (!found.IsNil() || table.metatable == nil) {
+							registers[uint8(word>>8)] = found
 							continue
 						}
-						if method, ok := s.cached(eventIndex, table.metatable); ok && method.luaFunction() {
-							t.frames[frameIndex].pc = int32(pc)
-							s.enterPair(method, value, key, base+int(register), 1)
-							continue frames
-						}
-					}
-					if key.object == &numberMarker && value.object.kind == TypeTable {
-						table := value.object.table
+					} else if key.object == &numberMarker {
 						index := int(key.number)
-						inArray := uint(index-1) < uint(table.arraySize()) && float64(index) == key.number
-						if inArray {
+						if uint(index-1) < uint(table.arraySize()) && float64(index) == key.number {
 							if found := table.arrayAt(index - 1); !found.IsNil() || table.metatable == nil {
-								registers[register] = found
+								registers[uint8(word>>8)] = found
 								continue
 							}
 						}
-						if method, ok := s.cached(eventIndex, table.metatable); ok && (inArray || len(table.nodes) == 0) && method.luaFunction() {
-							t.frames[frameIndex].pc = int32(pc)
-							s.enterPair(method, value, key, base+int(register), 1)
-							continue frames
-						}
-					}
-					found, receiver, status := s.indexChain(value, key)
-					if status == indexFound {
-						registers[register] = found
-						continue
-					}
-					if status == indexMethod {
-						t.frames[frameIndex].pc = int32(pc)
-						if found.object.function.proto != nil {
-							s.enterPair(found, receiver, key, base+int(register), 1)
-							continue frames
-						}
-						dest := base + int(register)
-						result := first(s.callMethod(found, 2, receiver, key, Nil(), f.proto.instruction(pc-1)))
-						t.stack[dest] = result
-						continue frames
 					}
 				}
+				active.f.pc = int32(pc)
+				if s.indexFrame(value, key) {
+					continue frames
+				}
+				pc = int(active.f.pc)
+				continue
 			case opSelf:
-				value := registers[uint8(word>>16)]
-				if value.Type() == TypeTable || value.Type() == TypeString {
-					key := rkOperand(int(int16(word>>48)), registers, constants)
-					found, hit := Nil(), false
-					if key.text != nil && value.object != nil {
-						table := value.object.table
+				a := uint8(word >> 8)
+				value, key := &registers[uint8(word>>16)], rkOperand(int(int16(word>>48)), registers, constants)
+				found, hit := Nil(), false
+				if key.text != nil {
+					if object := value.object; object != nil {
+						if object.kind == TypeTable {
+							table := object.table
+							var known bool
+							found, known = table.lookup(key.text)
+							hit = known && (!found.IsNil() || table.metatable == nil)
+						}
+					} else if method, ok := s.cached(eventIndex, s.stringMeta); ok && value.text != nil && method.object != nil && method.object.kind == TypeTable {
 						var known bool
-						if found, known = table.lookup(key.text); !known {
-							found = table.getString(key.text)
-						}
-						if !found.IsNil() || table.metatable == nil {
-							hit = true
-						} else if found = s.inheritedString(table, key.text); !found.IsNil() {
-							hit = true
-						}
-					} else if method, ok := s.cached(eventIndex, s.stringMeta); ok && key.text != nil && method.object != nil && method.object.kind == TypeTable {
-						if found, hit = method.object.table.lookup(key.text); !hit {
-							found = method.object.table.getString(key.text)
-						}
-						hit = !found.IsNil()
-					}
-					receiver, status := Nil(), indexFound
-					if !hit {
-						found, receiver, status = s.indexChain(value, key)
-					}
-					if status == indexFound {
-						registers[register+1] = value
-						if word>>24&255 != 0 && found.luaFunction() && s.callSelf(frameIndex, pc, value, found) {
-							continue frames
-						}
-						registers[register] = found
-						continue
-					}
-					if status == indexMethod {
-						registers[register+1] = value
-						t.frames[frameIndex].pc = int32(pc)
-						if found.object.function.proto != nil {
-							s.enterPair(found, receiver, key, base+int(register), 1)
-							continue frames
-						}
-						dest := base + int(register)
-						result := first(s.callMethod(found, 2, receiver, key, Nil(), f.proto.instruction(pc-1)))
-						t.stack[dest] = result
-						continue frames
+						found, known = method.object.table.lookup(key.text)
+						hit = known && !found.IsNil()
 					}
 				}
+				active.f.pc = int32(pc)
+				if !hit {
+					s.selfFrame(value, key)
+					continue frames
+				}
+				self := *value
+				registers[a+1] = self
+				if word>>24&255 != 0 && found.luaFunction() {
+					s.callSelf(self, found)
+					continue frames
+				}
+				registers[a] = found
+				continue
 			case opSetTable, opSetTableRK:
-				value := registers[register]
-				if value.Type() != TypeTable || value.object.table.readonly {
-					break
-				}
-				var key, assigned Value
-				if op == opSetTable {
-					key, assigned = registers[uint8(word>>16)], registers[uint8(word>>48)]
-				} else {
+				value := &registers[uint8(word>>8)]
+				key, assigned := &registers[uint8(word>>16)], &registers[uint8(word>>48)]
+				if op == opSetTableRK {
 					key, assigned = rkOperand(int(int32(word>>16)), registers, constants), rkOperand(int(int16(word>>48)), registers, constants)
 				}
-				table := value.object.table
-				if table.metatable != nil {
-					if key.text != nil && table.replaceLive(key.text, assigned) {
-						continue
-					}
-					if method, ok := s.cached(eventNewIndex, table.metatable); ok && method.luaFunction() && (key.text != nil || table.rawMissing(key)) {
-						t.frames[frameIndex].pc = int32(pc)
-						s.enterMethod(method, 3, value, key, assigned, base, 0)
-						continue frames
-					}
-				}
-				if table.metatable != nil && table.RawGet(key).IsNil() {
-					if key.IsNil() || key.object == &numberMarker && key.number != key.number {
-						break
-					}
-					method := s.eventMethod(table.metatable, eventNewIndex)
-					if method.Type() == TypeFunction {
-						t.frames[frameIndex].pc = int32(pc)
-						if method.object.function.proto != nil {
-							s.enterMethod(method, 3, value, key, assigned, base, 0)
-							continue frames
+				if object := value.object; object != nil && object.kind == TypeTable && !object.table.readonly {
+					table := object.table
+					if key.text != nil {
+						if table.storeLive(key.text, assigned) {
+							continue
 						}
-						s.callMethod(method, 3, value, key, assigned, f.proto.instruction(pc-1))
-						continue frames
-					}
-					if !method.IsNil() {
-						break
+					} else if key.object == &numberMarker && table.metatable == nil {
+						if index := int(key.number); float64(index) == key.number && table.storeNumber(index-1, assigned) {
+							continue
+						}
 					}
 				}
-				if key.object == &numberMarker {
-					index := int(key.number)
-					if index > 0 && index <= table.arraySize() && float64(index) == key.number {
-						table.setArray(index-1, assigned)
-						continue
-					}
-				} else if key.text != nil && table.replaceString(key.text, assigned) {
-					continue
+				active.f.pc = int32(pc)
+				if s.setFrame(value, key, assigned) {
+					continue frames
 				}
-				t.frames[frameIndex].pc = int32(pc)
-				if err := table.RawSet(key, assigned); err != nil {
-					s.runtimeError(err.Error())
-				}
+				pc = int(active.f.pc)
 				continue
 			case opNegate:
-				value := registers[uint8(word>>16)]
+				value := &registers[uint8(word>>16)]
 				if value.object == &numberMarker {
-					registers[register] = Number(-value.number)
+					registers[uint8(word>>8)] = Number(-value.number)
 					continue
 				}
 			case opNot:
-				registers[register] = Bool(!registers[uint8(word>>16)].Truth())
+				registers[uint8(word>>8)] = Bool(!registers[uint8(word>>16)].Truth())
 				continue
 			case opLength:
-				value := registers[uint8(word>>16)]
-				if value.Type() == TypeString {
-					registers[register] = Number(float64(len(value.Text())))
+				value := &registers[uint8(word>>16)]
+				if value.object == nil && value.text != nil {
+					setNumber(&registers[uint8(word>>8)], float64(len(value.text.text)))
 					continue
 				}
-				if value.Type() == TypeTable {
-					registers[register] = Number(float64(value.object.table.Len()))
+				if object := value.object; object != nil && object.kind == TypeTable {
+					if object.table.sequence >= 0 {
+						setNumber(&registers[uint8(word>>8)], float64(object.table.sequence))
+						continue
+					}
+					active.f.pc = int32(pc)
+					lengthInto(&registers[uint8(word>>8)], object.table)
+					pc = int(active.f.pc)
 					continue
 				}
 			case opJump:
-				if register > 0 {
-					t.close(base + int(register) - 1)
-				}
 				target := int(uint32(word >> 16))
 				if target < pc {
 					s.budget -= vmCallWeight
 					if s.budget <= 0 {
-						s.pollJump(frameIndex, pc, target)
+						s.pollJump(pc, target)
 						continue frames
 					}
 				}
 				pc = target
 				continue
 			case opJumpFalse:
-				if !registers[register].Truth() {
+				if !registers[uint8(word>>8)].Truth() {
 					target := int(uint32(word >> 16))
 					if target < pc {
 						s.budget -= vmCallWeight
 						if s.budget <= 0 {
-							s.pollJump(frameIndex, pc, target)
+							s.pollJump(pc, target)
 							continue frames
 						}
 					}
@@ -876,88 +779,111 @@ frames:
 				}
 				continue
 			case opJumpTrue:
-				if registers[register].Truth() {
+				if registers[uint8(word>>8)].Truth() {
 					target := int(uint32(word >> 16))
 					if target < pc {
 						s.budget -= vmCallWeight
 						if s.budget <= 0 {
-							s.pollJump(frameIndex, pc, target)
+							s.pollJump(pc, target)
 							continue frames
 						}
 					}
 					pc = target
 				}
 				continue
+			case opTestSet:
+				target, source := &registers[uint8(word>>8)], &registers[uint8(word>>16)]
+				if source.Truth() == (uint16(word>>48) != 0) {
+					*target = *source
+				} else {
+					pc++
+				}
+				continue
 			case opForIterator:
-				i := f.proto.instruction(pc - 1)
-				a := base + i.a
-				object := t.stack[a].object
+				a := uint8(word >> 8)
+				object := registers[a].object
 				if object == nil || object.kind != TypeFunction || object.function.native == nil {
 					break
 				}
-				if table, control := t.stack[a+1], t.stack[a+2]; object.function == s.ipairsStep && i.c == 2 && s.budget > 1 && t.cDepth < 199 && table.object != nil && table.object.kind == TypeTable && control.object == &numberMarker {
-					s.budget--
-					index := int(control.number) + 1
-					value := table.object.table.arrayOrRawGet(index)
-					t.top = a + 5
-					if value.IsNil() {
-						t.stack[a+3], t.stack[a+4] = Nil(), Nil()
-						pc = i.d
+				if table, control := &registers[a+1], &registers[a+2]; object.function == s.ipairsStep && uint16(word>>48) == 2 && s.budget > 1 && active.t.cDepth < 199 && table.object != nil && table.object.kind == TypeTable && control.object == &numberMarker {
+					index := int(control.number)
+					if items := table.object.table; uint(index) < uint(items.arraySize()) {
+						s.budget--
+						active.t.top = active.base + int(a) + 5
+						value := items.arrayAt(index)
+						if value.IsNil() {
+							registers[a+3], registers[a+4] = Nil(), Nil()
+							pc = int(uint32(word >> 16))
+							continue
+						}
+						number := float64(index + 1)
+						control.number = number
+						setNumber(&registers[a+3], number)
+						registers[a+4] = value
 						continue
 					}
-					t.stack[a+2], t.stack[a+3], t.stack[a+4] = Number(float64(index)), Number(float64(index)), value
-					continue
 				}
-				t.frames[frameIndex].pc = int32(pc)
-				s.nativeIterator(frameIndex, object.function, i, a)
+				active.f.pc = int32(pc)
+				s.nativeIterator(object.function)
 				continue frames
 			case opNewTable:
-				i := f.proto.instruction(pc - 1)
-				t.frames[frameIndex].pc = int32(pc)
-				registers[i.a] = s.NewTable(i.b, i.c).Value()
+				active.f.pc = int32(pc)
+				s.newTableInto()
+				pc = int(active.f.pc)
 				continue
 			case opClosure:
-				i := f.proto.instruction(pc - 1)
-				t.frames[frameIndex].pc = int32(pc)
-				registers[i.a] = s.newClosure(f, f.proto.children[i.b], base)
+				active.f.pc = int32(pc)
+				s.newClosure()
+				pc = int(active.f.pc)
 				continue
 			case opVararg:
-				varargs := t.stack[int(f.start):int(f.base)]
-				wanted := int(int32(uint32(word >> 16)))
+				from, wanted := int(uint8(word>>8)), int(int32(uint32(word>>16)))
 				if wanted < 0 {
-					wanted = len(varargs)
-				}
-				if int(register)+wanted <= len(registers) {
-					for index := range wanted {
-						if index < len(varargs) {
-							registers[int(register)+index] = varargs[index]
-						} else {
-							registers[int(register)+index] = Nil()
-						}
+					wanted = active.base - int(active.f.start)
+					if from+wanted > len(registers) {
+						active.f.pc = int32(pc)
+						s.varargsAbove(from)
+						continue frames
 					}
-					t.top = base + int(register) + wanted
-					continue
 				}
-				t.frames[frameIndex].pc = int32(pc)
-				t.writeResults(base+int(register), -1, t.stack[int(f.start):int(f.base)])
-				continue frames
+				t, base := active.t, active.base
+				varargs := t.stack[int(active.f.start):base]
+				for index := 0; index < wanted; index++ {
+					if index < len(varargs) {
+						registers[from+index] = varargs[index]
+					} else {
+						registers[from+index] = Nil()
+					}
+				}
+				t.top = base + from + wanted
+				continue
 			case opClose:
-				if t.open != nil {
-					t.close(base + int(register))
+				if active.t.open != nil {
+					active.f.pc = int32(pc)
+					active.t.close(active.base + int(uint8(word>>8)))
+					pc = int(active.f.pc)
 				}
 				continue
+			case opForPrep:
+				a := uint8(word >> 8)
+				if registers[a].object == &numberMarker && registers[a+1].object == &numberMarker && registers[a+2].object == &numberMarker {
+					registers[a].number -= registers[a+2].number
+					pc = int(uint32(word >> 16))
+					continue
+				}
 			case opForLoop, opForAccumulate:
 				s.budget -= vmCallWeight
 				if s.budget <= 0 {
-					s.pollRetry(frameIndex, pc)
+					s.pollRetry(pc)
 					continue frames
 				}
-				step := registers[register+2].number
-				next := registers[register].number + step
-				limit := registers[register+1].number
+				a := uint8(word >> 8)
+				step := registers[a+2].number
+				next := registers[a].number + step
+				limit := registers[a+1].number
 				if step > 0 && next <= limit || step <= 0 && limit <= next {
-					registers[register].number = next
-					setNumber(&registers[register+3], next)
+					registers[a].number = next
+					setNumber(&registers[a+3], next)
 					pc = int(uint32(word >> 16))
 					if op == opForAccumulate {
 						sum := &registers[uint8(word>>48)]
@@ -969,20 +895,215 @@ frames:
 				}
 				continue
 			}
-			t.frames[frameIndex].pc = int32(pc)
-			if values, done := s.executeSlow(frameIndex, pc); done {
+			active.f.pc = int32(pc)
+			if values, done := s.executeSlow(); done {
 				return values
 			}
-			break
+			continue frames
 		}
 	}
-	return nil
 }
 
-func (s *State) enterArithmeticMethod(left, right *Value, index, dest int) bool {
-	method := s.binaryTableMethod(*left, index)
+func fastEqual(left, right *Value) (bool, bool) {
+	if left.text != right.text {
+		return false, left.text == nil || right.text == nil || left.text.hash != right.text.hash
+	}
+	if left.object == right.object {
+		return left.object != &booleanMarker || left.number == right.number, true
+	}
+	return false, left.object == nil || right.object == nil || left.object.table == nil
+}
+
+func (s *State) compareFrame(left, right *Value) {
+	f := s.current.topFrame()
+	mode := opcode(f.proto.code[f.pc-1]) - comparisonBase
+	if method, ok := s.compareMethod(left, right, mode); ok {
+		s.enterPair(method, *left, *right, 0, compareWant-int(mode&expectTrue)/expectTrue)
+		return
+	}
+	if !s.enterCompareMethod(*left, *right, int(mode)) {
+		s.compareSlow(*left, *right, mode)
+	}
+}
+
+func (s *State) arithmeticFrame(left, right *Value) {
+	f := s.current.topFrame()
+	word := f.proto.code[f.pc-1]
+	if !s.enterArithmeticMethod(left, right, opcode(word).numericOperation(), int(f.base)+int(uint8(word>>8))) {
+		s.executeSlow()
+	}
+}
+
+func (s *State) varargsAbove(from int) {
+	t := s.current
+	f := t.topFrame()
+	t.writeResults(int(f.base)+from, -1, t.stack[int(f.start):int(f.base)])
+}
+
+func powerInto(slot *Value, x, y float64) {
+	setNumber(slot, luaPower(x, y))
+}
+
+func lengthInto(slot *Value, table *Table) {
+	setNumber(slot, float64(table.Len()))
+}
+
+func (s *State) newTableInto() {
+	t := s.current
+	f := t.topFrame()
+	i := f.proto.instruction(int(f.pc) - 1)
+	table := s.NewTable(i.b, i.c)
+	t.stack[int(f.base)+i.a] = table.Value()
+}
+
+const (
+	nativeDone = iota
+	nativeMoved
+	nativeYielded
+)
+
+func (s *State) callNative(fn *function, argStart, count int) ([]Value, int) {
+	t := s.current
+	f := t.topFrame()
+	word := f.proto.code[f.pc-1]
+	dest, want := int(f.base)+int(uint8(word>>48)), int(int16(word>>32))
+	stack, frames := &t.stack[0], &t.frames[0]
+	values := s.nativeStack(fn, t.stack[argStart:argStart+count], &callSite, argStart)
+	if t.yielded {
+		t.resumeDest, t.resumeWant, t.resumeReturn = dest, want, false
+		t.yielded = false
+		t.status = "suspended"
+		return values, nativeYielded
+	}
+	t.writeResults(dest, want, values)
+	if stack != &t.stack[0] || frames != &t.frames[0] {
+		return nil, nativeMoved
+	}
+	return nil, nativeDone
+}
+
+func (s *State) globalFrame() bool {
+	t := s.current
+	f := t.topFrame()
+	word := f.proto.code[f.pc-1]
+	value := f.function.env.getString(f.proto.constants[uint32(word>>16)].text)
+	if value.IsNil() {
+		s.executeSlow()
+		return true
+	}
+	t.stack[int(f.base)+int(uint8(word>>8))] = value
+	return false
+}
+
+func (s *State) metaIndexResult(found, receiver, key Value, dest int) {
+	t := s.current
+	if found.object.function.proto != nil {
+		s.enterPair(found, receiver, key, dest, 1)
+		return
+	}
+	f := t.topFrame()
+	result := first(s.callMethod(found, 2, receiver, key, Nil(), f.proto.instruction(int(f.pc)-1)))
+	t.stack[dest] = result
+}
+
+func (s *State) indexFrame(value, key *Value) bool {
+	t := s.current
+	f := t.topFrame()
+	dest := int(f.base) + int(uint8(f.proto.code[f.pc-1]>>8))
+	name := *key
+	found, receiver, status := s.indexChain(*value, name)
+	switch status {
+	case indexFound:
+		t.stack[dest] = found
+		return false
+	case indexMethod:
+		s.metaIndexResult(found, receiver, name, dest)
+	default:
+		s.executeSlow()
+	}
+	return true
+}
+
+func (s *State) selfFrame(value, key *Value) {
+	t := s.current
+	f := t.topFrame()
+	word := f.proto.code[f.pc-1]
+	dest := int(f.base) + int(uint8(word>>8))
+	self, name := *value, *key
+	found, receiver, status := s.indexChain(self, name)
+	switch status {
+	case indexFound:
+		t.stack[dest+1] = self
+		if word>>24&255 != 0 && found.luaFunction() {
+			s.callSelf(self, found)
+			return
+		}
+		t.stack[dest] = found
+	case indexMethod:
+		t.stack[dest+1] = self
+		s.metaIndexResult(found, receiver, name, dest)
+	default:
+		s.executeSlow()
+	}
+}
+
+func (s *State) setFrame(target, name, written *Value) bool {
+	t := s.current
+	value, key, assigned := *target, *name, *written
+	if value.Type() != TypeTable || value.object.table.readonly {
+		s.executeSlow()
+		return true
+	}
+	f := t.topFrame()
+	base := int(f.base)
+	table := value.object.table
+	if table.metatable != nil {
+		if key.text != nil && table.replaceLive(key.text, assigned) {
+			return false
+		}
+		if method, ok := s.cached(eventNewIndex, table.metatable); ok && method.luaFunction() && (key.text != nil || table.rawMissing(key)) {
+			s.enterMethod(method, 3, value, key, assigned, base, 0)
+			return true
+		}
+		if table.RawGet(key).IsNil() {
+			if key.IsNil() || key.object == &numberMarker && key.number != key.number {
+				s.executeSlow()
+				return true
+			}
+			method := s.eventMethod(table.metatable, eventNewIndex)
+			if method.Type() == TypeFunction {
+				if method.object.function.proto != nil {
+					s.enterMethod(method, 3, value, key, assigned, base, 0)
+					return true
+				}
+				s.callMethod(method, 3, value, key, assigned, f.proto.instruction(int(f.pc)-1))
+				return true
+			}
+			if !method.IsNil() {
+				s.executeSlow()
+				return true
+			}
+		}
+	}
+	if key.object == &numberMarker {
+		index := int(key.number)
+		if index > 0 && index <= table.arraySize() && float64(index) == key.number {
+			table.setArray(index-1, assigned)
+			return false
+		}
+	} else if key.text != nil && table.replaceString(key.text, assigned) {
+		return false
+	}
+	if err := table.RawSet(key, assigned); err != nil {
+		s.runtimeError(err.Error())
+	}
+	return false
+}
+
+func (s *State) enterArithmeticMethod(left, right *Value, operation, dest int) bool {
+	method := s.binaryTableMethod(*left, operation)
 	if method.IsNil() {
-		method = s.binaryTableMethod(*right, index)
+		method = s.binaryTableMethod(*right, operation)
 	}
 	if method.Type() != TypeFunction || method.object.function.proto == nil {
 		return false
@@ -1014,7 +1135,7 @@ func (s *State) enterPair(method, left, right Value, dest, want int) {
 	clearRegisters(t.stack[start+provided : start+proto.maxRegisters])
 	t.frames = t.frames[:depth+1]
 	entered := &t.frames[depth]
-	entered.function, entered.proto, entered.site = callee, callee.proto, nil
+	entered.function, entered.proto = callee, callee.proto
 	entered.start, entered.base, entered.pc = int32(start), int32(start), 0
 	entered.returnDest, entered.want = int32(dest), int32(want)
 	entered.metacallTop, entered.tailcalls = int32(t.top+1), 0
@@ -1332,16 +1453,16 @@ func (s *State) less(left, right Value, equal bool) bool {
 	return false
 }
 
-func (s *State) executeSlow(frameIndex, pc int) ([]Value, bool) {
+func (s *State) executeSlow() ([]Value, bool) {
 	t := s.current
+	frameIndex := len(t.frames) - 1
 	f := &t.frames[frameIndex]
 	base := int(f.base)
 	constants := f.proto.constants
-	i := f.proto.instruction(pc - 1)
-	if i.op == opTailCall || i.op == opForCall {
+	i := f.proto.instruction(int(f.pc) - 1)
+	if i.op == opTailCall {
 		s.budget -= vmCallWeight
 		if s.budget <= 0 {
-			t.frames[frameIndex].pc = int32(pc)
 			s.pollHook()
 			f = &t.frames[frameIndex]
 		}
@@ -1381,12 +1502,6 @@ func (s *State) executeSlow(frameIndex, pc int) ([]Value, bool) {
 		}
 		t.stack[a+1] = value
 		t.stack[a] = s.get(value, key, i.left)
-	case opTestSet:
-		if t.stack[b].Truth() == (i.c != 0) {
-			t.stack[a] = t.stack[b]
-		} else {
-			t.frames[frameIndex].pc = int32(i.d)
-		}
 	case opConcat:
 		for reg := i.c; reg > i.b; reg-- {
 			leftName, rightName := nameInfo{kind: "register", register: int16(reg - 1)}, nameInfo{kind: "register", register: int16(reg)}
@@ -1394,8 +1509,6 @@ func (s *State) executeSlow(frameIndex, pc int) ([]Value, bool) {
 			t.stack[base+reg-1] = value
 		}
 		t.stack[a] = t.stack[b]
-	case opNewTable:
-		t.stack[a] = s.NewTable(i.b, i.c).Value()
 	case opSetList:
 		count := i.c
 		if count < 0 {
@@ -1411,19 +1524,6 @@ func (s *State) executeSlow(frameIndex, pc int) ([]Value, bool) {
 		if count > 0 {
 			table.sequence = -1
 		}
-	case opClosure:
-		child := f.proto.children[i.b]
-		closure, upvalues := s.closure(child, f.function.env, len(child.upvalues))
-		for index, descriptor := range child.upvalues {
-			if descriptor.local {
-				upvalues[index] = t.capture(base + descriptor.index)
-			} else {
-				upvalues[index] = f.function.upvalues[descriptor.index]
-			}
-		}
-		t.stack[a] = closure
-	case opVararg:
-		t.writeResults(a, i.b, t.stack[int(f.start):int(f.base)])
 	case opUnary:
 		t.stack[a] = s.unary(i.text, t.stack[b], i.left)
 	case opBinary:
@@ -1525,13 +1625,6 @@ func (s *State) executeSlow(frameIndex, pc int) ([]Value, bool) {
 		}
 		t.stack[a].number -= t.stack[a+2].number
 		t.frames[frameIndex].pc = int32(i.b)
-	case opForCall:
-		values := s.invoke(t.stack[a], []Value{t.stack[a+1], t.stack[a+2]})
-		t.writeResults(a+3, i.c, values)
-		if !t.stack[a+3].IsNil() {
-			t.stack[a+2] = t.stack[a+3]
-			t.frames[frameIndex].pc = int32(i.b)
-		}
 	case opForIterator:
 		arguments := [2]Value{t.stack[a+1], t.stack[a+2]}
 		values := s.invoke(t.stack[a], arguments[:])

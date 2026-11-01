@@ -113,21 +113,3 @@ func (s *State) compareMethod(left, right *Value, mode opcode) (Value, bool) {
 	method, ok := s.cached(event, meta)
 	return method, ok && method.luaFunction()
 }
-
-func (s *State) inheritedString(table *Table, key *stringValue) Value {
-	for range 4 {
-		method, ok := s.cached(eventIndex, table.metatable)
-		if !ok || method.object == nil || method.object.kind != TypeTable {
-			return Nil()
-		}
-		table = method.object.table
-		found, known := table.lookup(key)
-		if !known {
-			found = table.getString(key)
-		}
-		if !found.IsNil() {
-			return found
-		}
-	}
-	return Nil()
-}

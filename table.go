@@ -136,8 +136,44 @@ func (t *Table) lookup(key *stringValue) (Value, bool) {
 	if len(t.nodes) == 0 {
 		return Nil(), true
 	}
+	for i := int(key.hash & uint32(len(t.nodes)-1)); i >= 0; i = t.nodes[i].next {
+		text := t.nodes[i].key.text
+		if text == key {
+			return t.nodes[i].value, true
+		}
+		if text != nil && text.hash == key.hash {
+			return Nil(), false
+		}
+	}
+	return Nil(), true
+}
+
+func (t *Table) storeLive(key *stringValue, value *Value) bool {
+	if len(t.nodes) == 0 {
+		return false
+	}
 	node := &t.nodes[key.hash&uint32(len(t.nodes)-1)]
-	return node.value, node.key.text == key
+	if node.key.text != key || node.value.IsNil() {
+		return false
+	}
+	t.version++
+	node.value = *value
+	return true
+}
+
+func (t *Table) storeNumber(index int, value *Value) bool {
+	if uint(index) >= uint(len(t.numbers)) || value.object != &numberMarker || math.Float64bits(value.number) == holeBits {
+		return false
+	}
+	if sequence := t.sequence; index >= sequence && sequence >= 0 {
+		if index == sequence {
+			t.sequence++
+		} else {
+			t.sequence = -1
+		}
+	}
+	t.numbers[index] = value.number
+	return true
 }
 
 func (t *Table) getString(key *stringValue) Value {
@@ -189,13 +225,6 @@ func (t *Table) replaceString(key *stringValue, value Value) bool {
 		}
 	}
 	return false
-}
-
-func (t *Table) arrayOrRawGet(index int) Value {
-	if uint(index-1) < uint(t.arraySize()) {
-		return t.arrayAt(index - 1)
-	}
-	return t.RawGet(Number(float64(index)))
 }
 
 func (t *Table) rawMissing(key Value) bool {
