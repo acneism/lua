@@ -15,14 +15,21 @@ func argument(args []Value, index int) Value {
 	return Nil()
 }
 
+var callSite instruction
+
 func (s *State) argError(index int, message string) {
-	f := s.current.frames[len(s.current.frames)-1]
+	frames := s.current.frames
+	site := frames[len(frames)-1].site
+	if site == &callSite {
+		caller := &frames[len(frames)-2]
+		site = caller.proto.instruction(int(caller.pc) - 1)
+	}
 	name := ""
 	method := false
-	if f.site != nil {
-		info := s.resolveName(f.site.left)
+	if site != nil {
+		info := s.resolveName(site.left)
 		name = info.name
-		method = f.site.method || info.kind == "method"
+		method = site.method || info.kind == "method"
 	}
 	if name == "" {
 		name = "?"
@@ -377,6 +384,7 @@ func (s *State) loadReader(reader Value, chunk string) (values []Value, err erro
 			t.close(used)
 			clear(t.stack[used:t.used])
 			t.frames = t.frames[:depth]
+			t.dropNativeRoots(depth)
 			t.used, t.top, t.cDepth, t.nativeDepth, t.boundary = used, top, cDepth, nativeDepth, boundary
 			t.restoreCallLimit(depth)
 			if abortError(failure) {

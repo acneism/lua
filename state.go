@@ -314,6 +314,7 @@ func (s *State) protectedCall(fn Value, args []Value, enter bool) (values []Valu
 			t.close(used)
 			clear(t.stack[used:t.used])
 			t.frames = t.frames[:depth]
+			t.dropNativeRoots(depth)
 			t.used, t.top, t.nativeDepth, t.boundary = used, top, nativeDepth, boundary
 			t.restoreCallLimit(depth)
 		}
@@ -388,6 +389,7 @@ func (s *State) cleanup() {
 		t.tail = t.tail[:0]
 		t.entry = Nil()
 		t.frames = t.frames[:0]
+		t.dropNativeRoots(0)
 		t.used, t.top, t.nativeDepth, t.boundary = 0, 0, 0, 0
 		t.cDepth = 0
 		t.status = "dead"
@@ -402,6 +404,7 @@ func (s *State) cleanup() {
 	clear(s.main.tail)
 	s.main.tail = s.main.tail[:0]
 	s.main.frames = s.main.frames[:0]
+	s.main.dropNativeRoots(0)
 	s.main.used, s.main.top, s.main.nativeDepth, s.main.boundary = 0, 0, 0, 0
 	s.main.cDepth = 0
 	s.main.handler, s.main.handlerID, s.main.handlerActive = Nil(), 0, false

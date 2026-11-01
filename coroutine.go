@@ -116,6 +116,7 @@ func (s *State) resume(t *thread, args []Value) (values []Value, err error) {
 			t.close(0)
 			clear(t.stack)
 			t.frames = t.frames[:0]
+			t.dropNativeRoots(0)
 			t.used, t.top, t.nativeDepth = 0, 0, 0
 		}
 		s.current = parent

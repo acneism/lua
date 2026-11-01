@@ -94,14 +94,6 @@ func (s *State) nativeStack(fn *function, args []Value, site *instruction, start
 	entered.start, entered.base, entered.pc = int32(start), int32(start+len(args)), 0
 	entered.returnDest, entered.want, entered.metacallTop, entered.tailcalls = 0, 0, 0, 0
 	t.nativeDepth++
-	defer func() {
-		t.nativeDepth--
-		t.frames = t.frames[:depth]
-		for len(t.nativeRoots) > 0 && t.nativeRoots[len(t.nativeRoots)-1].frame >= depth {
-			t.nativeRoots[len(t.nativeRoots)-1] = nativeRoot{}
-			t.nativeRoots = t.nativeRoots[:len(t.nativeRoots)-1]
-		}
-	}()
 	s.tick()
 	values, err := fn.native(s, args)
 	if err != nil {
@@ -116,7 +108,19 @@ func (s *State) nativeStack(fn *function, args []Value, site *instruction, start
 		}
 		panic(&Error{Message: err.Error(), Value: String(err.Error()), Abort: err, Line: s.currentLine()})
 	}
+	t.nativeDepth--
+	t.frames = t.frames[:depth]
+	if len(t.nativeRoots) > 0 {
+		t.dropNativeRoots(depth)
+	}
 	return values
+}
+
+func (t *thread) dropNativeRoots(depth int) {
+	for len(t.nativeRoots) > 0 && t.nativeRoots[len(t.nativeRoots)-1].frame >= depth {
+		t.nativeRoots[len(t.nativeRoots)-1] = nativeRoot{}
+		t.nativeRoots = t.nativeRoots[:len(t.nativeRoots)-1]
+	}
 }
 
 func (p *Proto) needsArgTable() bool { return p.argRegister >= 0 && p.needsArg && !p.usesVararg }
@@ -562,10 +566,10 @@ frames:
 				if object := value.object; object != nil && object.kind == TypeFunction && object.function.native != nil {
 					t.frames[frameIndex].pc = int32(pc)
 					dest, want := base+int(uint8(word>>48)), int(int16(word>>32))
-					t.resumeDest, t.resumeWant, t.resumeReturn = dest, want, false
 					stack, frames := &t.stack[0], &t.frames[0]
-					values := s.nativeStack(object.function, t.stack[argStart:argStart+count], f.proto.instruction(pc-1), argStart)
+					values := s.nativeStack(object.function, t.stack[argStart:argStart+count], &callSite, argStart)
 					if t.yielded {
+						t.resumeDest, t.resumeWant, t.resumeReturn = dest, want, false
 						t.yielded = false
 						t.status = "suspended"
 						return values
