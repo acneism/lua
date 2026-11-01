@@ -65,7 +65,7 @@ func (g *collector) value(value Value) {
 	case TypeFunction:
 		g.add(value.object.function)
 	case TypeThread:
-		g.add(value.object.thread)
+		g.add(value.object.extra.thread)
 	}
 }
 
@@ -76,7 +76,7 @@ func (g *collector) dead(value Value) bool {
 	case TypeFunction:
 		return !g.marked[value.object.function]
 	case TypeThread:
-		return !g.marked[value.object.thread]
+		return !g.marked[value.object.extra.thread]
 	}
 	return false
 }

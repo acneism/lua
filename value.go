@@ -56,8 +56,12 @@ type object struct {
 	id       uint64
 	table    *Table
 	function *function
-	thread   *thread
-	data     any
+	extra    *objectExtra
+}
+
+type objectExtra struct {
+	thread *thread
+	data   any
 }
 
 var numberMarker = object{kind: TypeNumber}

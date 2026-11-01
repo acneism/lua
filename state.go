@@ -23,7 +23,6 @@ type Options struct {
 type function struct {
 	proto    *Proto
 	native   GoFunction
-	name     string
 	env      *Table
 	upvalues []*upvalue
 }
@@ -133,7 +132,7 @@ func NewState(options Options) *State {
 	}
 	s := &State{options: options, budget: options.HookEvery}
 	s.main = &thread{status: "running", callLimit: maxCalls}
-	s.main.object.thread = s.main
+	s.main.object.extra = &objectExtra{thread: s.main}
 	s.current = s.main
 	s.globals = s.NewTable(0, 32)
 	s.stringMeta = s.NewTable(0, 1)
@@ -192,17 +191,17 @@ func (s *State) NewTable(arraySize, hashSize int) *Table {
 func (s *State) Function(name string, native GoFunction) Value {
 	s.nextID++
 	s.reserve(128)
-	return Value{object: &object{kind: TypeFunction, id: s.nextID, function: &function{native: native, name: name, env: s.globals}}}
+	return Value{object: &object{kind: TypeFunction, id: s.nextID, function: &function{native: native, env: s.globals}}}
 }
 
 func (s *State) Userdata(data any) Value {
 	s.nextID++
-	return Value{object: &object{kind: TypeUserdata, id: s.nextID, data: data}}
+	return Value{object: &object{kind: TypeUserdata, id: s.nextID, extra: &objectExtra{data: data}}}
 }
 
 func (v Value) Userdata() any {
 	if v.Type() == TypeUserdata {
-		return v.object.data
+		return v.object.extra.data
 	}
 	return nil
 }

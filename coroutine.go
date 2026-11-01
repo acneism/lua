@@ -76,7 +76,7 @@ func (s *State) createThread(args []Value) *thread {
 	}
 	s.nextID++
 	t := &thread{entry: fn, status: "suspended", callLimit: freshCalls}
-	t.object = object{kind: TypeThread, id: s.nextID, thread: t}
+	t.object = object{kind: TypeThread, id: s.nextID, extra: &objectExtra{thread: t}}
 	s.threads = append(s.threads, t)
 	return t
 }
@@ -86,7 +86,7 @@ func (s *State) checkThread(args []Value, index int) *thread {
 	if value.Type() != TypeThread {
 		s.argError(index+1, "coroutine expected")
 	}
-	return value.object.thread
+	return value.object.extra.thread
 }
 
 func (s *State) resume(t *thread, args []Value) (values []Value, err error) {

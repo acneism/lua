@@ -115,7 +115,7 @@ func TestCoroutinesDoNotLeak(t *testing.T) {
 		if err != nil || len(values) != 1 {
 			t.Fatalf("%v %v", values, err)
 		}
-		thread := values[0].object.thread
+		thread := values[0].object.extra.thread
 		if thread.status != "dead" || len(thread.frames) != 0 || thread.open != nil {
 			t.Fatal("suspended coroutine survived the call boundary")
 		}

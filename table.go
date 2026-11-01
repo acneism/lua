@@ -22,15 +22,15 @@ type tableNode struct {
 
 type Table struct {
 	object    object
+	nodes     []tableNode
+	metatable *Table
 	version   uint64
-	sequence  int
 	numbers   []float64
 	array     []Value
 	generic   bool
-	nodes     []tableNode
-	lastFree  int
-	metatable *Table
 	readonly  bool
+	sequence  int
+	lastFree  int
 	memory    *Budget
 }
 
