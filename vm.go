@@ -278,7 +278,6 @@ frames:
 		base, pc := int(f.base), int(f.pc)
 		code, constants := proto.code, proto.constants
 		registers := (*[256]Value)(t.stack[base : base+256])
-		checkConstants := proto.longest > s.options.MaxString
 		for {
 			word := code[pc]
 			pc++
@@ -472,7 +471,7 @@ frames:
 					proto = callee.proto
 				}
 				start := max(t.used, t.top)
-				if proto != nil && !proto.vararg && len(t.frames) < freshCalls-1 && start+256 <= len(t.stack) && (argument.Type() != TypeString || len(argument.Text()) <= s.options.MaxString) {
+				if proto != nil && !proto.vararg && len(t.frames) < freshCalls-1 && start+256 <= len(t.stack) {
 					if s.budget <= vmCallWeight {
 						registers[register] = value
 						continue
@@ -499,7 +498,7 @@ frames:
 				}
 				start := max(t.used, t.top)
 				count := int(uint8(word >> 24))
-				if !value.luaFunction() || value.object.function.proto.needsArgTable() || checkConstants || s.budget <= vmCallWeight || len(t.frames) >= freshCalls-1 {
+				if !value.luaFunction() || value.object.function.proto.needsArgTable() || s.budget <= vmCallWeight || len(t.frames) >= freshCalls-1 {
 					registers[register] = value
 					continue
 				}
@@ -645,12 +644,7 @@ frames:
 					continue frames
 				}
 			case opConstant:
-				value := constants[uint32(word>>16)]
-				if checkConstants && value.text != nil && len(value.text.text) > s.options.MaxString {
-					t.frames[frameIndex].pc = int32(pc)
-					s.runtimeError("string length overflow")
-				}
-				registers[register] = value
+				registers[register] = constants[uint32(word>>16)]
 				continue
 			case opMove:
 				registers[register] = registers[uint8(word>>16)]

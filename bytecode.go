@@ -153,6 +153,9 @@ func (c *compiler) freeze() {
 			p.longest = max(p.longest, len(constant.text.text))
 		}
 	}
+	for _, child := range p.children {
+		p.longest = max(p.longest, child.longest)
+	}
 	p.code = make([]uint64, len(c.code))
 	p.sites = make([]uint32, len(c.code))
 	p.lines = make([]int32, len(c.code))

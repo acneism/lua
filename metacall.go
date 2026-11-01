@@ -205,7 +205,7 @@ func (s *State) callSelf(frameIndex, pc int, self, method Value) bool {
 	if p.vararg {
 		frameBase += max(0, count-p.parameters)
 	}
-	if p.needsArgTable() || f.proto.longest > s.options.MaxString || s.budget <= vmCallWeight || len(t.frames) >= freshCalls-1 || frameBase+256 > len(t.stack) {
+	if p.needsArgTable() || s.budget <= vmCallWeight || len(t.frames) >= freshCalls-1 || frameBase+256 > len(t.stack) {
 		return false
 	}
 	base := int(f.base)

@@ -216,6 +216,11 @@ func (s *State) Load(proto *Proto, env *Table) Value {
 	if env == nil {
 		env = s.globals
 	}
+	if proto.longest > s.options.MaxString {
+		return s.Function("", func(*State, []Value) ([]Value, error) {
+			return nil, plainError("string length overflow")
+		})
+	}
 	value, _ := s.closure(proto, env, 0)
 	return value
 }
