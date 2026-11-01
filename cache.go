@@ -92,7 +92,7 @@ func (v Value) luaFunction() bool {
 	return v.object != nil && v.object.kind == TypeFunction && v.object.function.proto != nil
 }
 
-func (s *State) lessMethod(left, right *Value) (Value, bool) {
+func (s *State) compareMethod(left, right *Value, mode opcode) (Value, bool) {
 	if left.object == nil || right.object == nil || left.object.kind != TypeTable || right.object.kind != TypeTable {
 		return Nil(), false
 	}
@@ -100,7 +100,17 @@ func (s *State) lessMethod(left, right *Value) (Value, bool) {
 	if meta == nil || meta != right.object.table.metatable {
 		return Nil(), false
 	}
-	method, ok := s.cached(eventLess, meta)
+	event := eventLessEqual
+	switch comparisonKind(mode) {
+	case compareEqual:
+		if left.object == right.object {
+			return Nil(), false
+		}
+		event = eventEqual
+	case compareLess:
+		event = eventLess
+	}
+	method, ok := s.cached(event, meta)
 	return method, ok && method.luaFunction()
 }
 

@@ -198,9 +198,6 @@ func (t *Table) arrayOrRawGet(index int) Value {
 }
 
 func (t *Table) rawMissing(key Value) bool {
-	if key.text != nil {
-		return t.getString(key.text).IsNil()
-	}
 	if key.object != &numberMarker || key.number != key.number {
 		return false
 	}

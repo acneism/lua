@@ -308,7 +308,7 @@ frames:
 					}
 				} else if comparisonKind(mode) == compareEqual && (left.object == nil || left.object.kind != TypeTable && left.object.kind != TypeUserdata) {
 					matched = left.Equal(*right)
-				} else if method, ok := s.lessMethod(left, right); ok && comparisonKind(mode) == compareLess {
+				} else if method, ok := s.compareMethod(left, right, mode); ok {
 					t.frames[frameIndex].pc = int32(pc)
 					s.enterPair(method, *left, *right, 0, compareWant-int(mode&expectTrue)/expectTrue)
 					continue frames
@@ -787,13 +787,15 @@ frames:
 					key, assigned = rkOperand(int(int32(word>>16)), registers, constants), rkOperand(int(int16(word>>48)), registers, constants)
 				}
 				table := value.object.table
-				if key.text != nil && table.metatable != nil && table.replaceLive(key.text, assigned) {
-					continue
-				}
-				if method, ok := s.cached(eventNewIndex, table.metatable); ok && method.luaFunction() && table.rawMissing(key) {
-					t.frames[frameIndex].pc = int32(pc)
-					s.enterMethod(method, 3, value, key, assigned, base, 0)
-					continue frames
+				if table.metatable != nil {
+					if key.text != nil && table.replaceLive(key.text, assigned) {
+						continue
+					}
+					if method, ok := s.cached(eventNewIndex, table.metatable); ok && method.luaFunction() && (key.text != nil || table.rawMissing(key)) {
+						t.frames[frameIndex].pc = int32(pc)
+						s.enterMethod(method, 3, value, key, assigned, base, 0)
+						continue frames
+					}
 				}
 				if table.metatable != nil && table.RawGet(key).IsNil() {
 					if key.IsNil() || key.object == &numberMarker && key.number != key.number {
