@@ -495,23 +495,28 @@ frames:
 						frameBase += max(0, count-parameters)
 					}
 					if frameBase+256 <= len(t.stack) {
-						for argument, load := range loads[:count] {
-							slot := start + argument - parameters
-							if argument < parameters {
-								slot = frameBase + argument
-							} else if frameBase == start {
-								break
-							}
+						window := (*[256]Value)(t.stack[frameBase : frameBase+256])
+						provided := min(parameters, count)
+						for argument, load := range loads[:provided] {
 							if opcode(load) == opMove {
-								t.stack[slot] = registers[uint8(load>>16)]
+								window[uint8(argument)] = registers[uint8(load>>16)]
 							} else {
-								t.stack[slot] = constants[uint32(load>>16)]
+								window[uint8(argument)] = constants[uint32(load>>16)]
+							}
+						}
+						if frameBase != start {
+							for argument, load := range loads[provided:count] {
+								if opcode(load) == opMove {
+									t.stack[start+argument] = registers[uint8(load>>16)]
+								} else {
+									t.stack[start+argument] = constants[uint32(load>>16)]
+								}
 							}
 						}
 						call := loads[count]
 						s.budget -= vmCallWeight
 						t.pushLua(callee, start, frameBase, active.base+int(uint8(call>>48)), int(int16(call>>32)))
-						clearRegisters(t.stack[frameBase+min(parameters, count) : frameBase+callee.proto.maxRegisters])
+						clearRegisters(t.stack[frameBase+provided : frameBase+callee.proto.maxRegisters])
 						continue frames
 					}
 				}
