@@ -9,6 +9,7 @@ import (
 const maxTableBits = 26
 
 var (
+	tableBytes  = int64(reflect.TypeFor[Table]().Size())
 	numberBytes = int64(reflect.TypeFor[float64]().Size())
 	valueBytes  = int64(reflect.TypeFor[Value]().Size())
 	nodeBytes   = int64(reflect.TypeFor[tableNode]().Size())
@@ -324,18 +325,37 @@ func countArrayKey(key Value, counts *[maxTableBits + 1]int) int {
 	return 0
 }
 
+func (t *Table) countArray(counts *[maxTableBits + 1]int) int {
+	use, size := 0, t.arraySize()
+	for bucket, lower := 0, 0; lower < size; bucket++ {
+		upper := min(1<<bucket, size)
+		count := 0
+		if t.generic {
+			for index := range t.array[lower:upper] {
+				if !t.array[lower+index].IsNil() {
+					count++
+				}
+			}
+		} else {
+			for _, number := range t.numbers[lower:upper] {
+				if math.Float64bits(number) != holeBits {
+					count++
+				}
+			}
+		}
+		counts[bucket] += count
+		use += count
+		lower = upper
+	}
+	return use
+}
+
 func (t *Table) rehash(extra Value) {
 	var counts [maxTableBits + 1]int
-	arrayUse, totalUse := 0, 0
-	for i := range t.arraySize() {
-		if !t.arrayAt(i).IsNil() {
-			counts[bits.Len(uint(i))]++
-			arrayUse++
-			totalUse++
-		}
-	}
-	for _, node := range t.nodes {
-		if !node.value.IsNil() {
+	arrayUse := t.countArray(&counts)
+	totalUse := arrayUse
+	for index := range t.nodes {
+		if node := &t.nodes[index]; !node.value.IsNil() {
 			arrayUse += countArrayKey(node.key, &counts)
 			totalUse++
 		}
@@ -362,7 +382,7 @@ func (t *Table) resize(arraySize, hashSize int) {
 	if arraySize < 0 || arraySize > 1<<maxTableBits || hashSize < 0 || hashSize > 1<<maxTableBits {
 		panic(plainError("table overflow"))
 	}
-	old := *t
+	oldGeneric, oldNumbers, oldArray := t.generic, t.numbers, t.array
 	oldSize, oldNodes := t.arraySize(), t.nodes
 	if arraySize < t.sequence {
 		t.sequence = -1
@@ -371,11 +391,11 @@ func (t *Table) resize(arraySize, hashSize int) {
 	case arraySize > oldSize && t.generic:
 		t.memory.reserve(int64(arraySize-oldSize) * valueBytes)
 		t.array = make([]Value, arraySize)
-		copy(t.array, old.array)
+		copy(t.array, oldArray)
 	case arraySize > oldSize:
 		t.memory.reserve(int64(arraySize-oldSize) * numberBytes)
 		t.numbers = make([]float64, arraySize)
-		copy(t.numbers, old.numbers)
+		copy(t.numbers, oldNumbers)
 		for index := oldSize; index < arraySize; index++ {
 			t.numbers[index] = math.Float64frombits(holeBits)
 		}
@@ -394,7 +414,13 @@ func (t *Table) resize(arraySize, hashSize int) {
 	}
 	t.lastFree = hashSize
 	for i := arraySize; i < oldSize; i++ {
-		if value := old.arrayAt(i); !value.IsNil() {
+		value := Nil()
+		if oldGeneric {
+			value = oldArray[i]
+		} else if math.Float64bits(oldNumbers[i]) != holeBits {
+			value = Number(oldNumbers[i])
+		}
+		if !value.IsNil() {
 			t.set(Number(float64(i+1)), value)
 		}
 	}

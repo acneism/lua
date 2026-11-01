@@ -3,6 +3,7 @@ package lua
 import (
 	"errors"
 	"fmt"
+	"math"
 )
 
 type GoFunction func(s *State, args []Value) ([]Value, error)
@@ -176,15 +177,60 @@ func (s *State) values3(a, b, c Value) []Value {
 
 func (s *State) SetGlobals(globals *Table) { s.globals = globals }
 
+type tableHash2 struct {
+	table Table
+	nodes [2]tableNode
+}
+
+type tableHash4 struct {
+	table Table
+	nodes [4]tableNode
+}
+
+type tableArray4 struct {
+	table   Table
+	numbers [4]float64
+}
+
 func (s *State) NewTable(arraySize, hashSize int) *Table {
-	s.reserve(192)
+	s.reserve(tableBytes)
 	s.nextID++
-	t := &Table{}
+	var t *Table
+	var nodes []tableNode
+	var numbers []float64
+	switch {
+	case arraySize == 0 && hashSize > 0 && hashSize <= 2:
+		block := new(tableHash2)
+		t, nodes = &block.table, block.nodes[:hashSize]
+	case arraySize == 0 && hashSize > 2 && hashSize <= 4:
+		block := new(tableHash4)
+		t, nodes = &block.table, block.nodes[:]
+	case hashSize == 0 && arraySize > 0 && arraySize <= 4:
+		block := new(tableArray4)
+		t, numbers = &block.table, block.numbers[:arraySize]
+	default:
+		t = new(Table)
+	}
 	if s.running > 0 {
 		t.memory = s.options.Memory
 	}
 	t.object = object{kind: TypeTable, id: s.nextID, table: t}
-	t.resize(arraySize, hashSize)
+	switch {
+	case nodes != nil:
+		t.memory.reserve(int64(len(nodes)) * nodeBytes)
+		t.nodes, t.lastFree = nodes, len(nodes)
+		for index := range nodes {
+			nodes[index].next = -1
+		}
+	case numbers != nil:
+		t.memory.reserve(int64(len(numbers)) * numberBytes)
+		t.numbers = numbers
+		for index := range numbers {
+			numbers[index] = math.Float64frombits(holeBits)
+		}
+	default:
+		t.resize(arraySize, hashSize)
+	}
 	return t
 }
 
