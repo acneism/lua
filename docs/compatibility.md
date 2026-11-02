@@ -28,7 +28,11 @@ Differences from Redis 7.2.16:
 - Redis's `COMMAND INFO` does not report `may_replicate`. Hosts set
   Command.MayReplicate themselves; read-only scripts reject such commands, as
   Redis does for PFCOUNT, PUBLISH, and SPUBLISH.
-- Extension-library names are present but their implementations belong to C.
+- Above Config.MemoryLimit a script stops with `ERR script exceeded the memory limit`
+  and the location suffix. Redis has no such limit. Accounting covers strings, tables and
+  closures and is approximate.
+- cjson and cmsgpack tick the hook, so KILL and the memory limit stop them. Redis cannot
+  interrupt its C implementations.
 
 Reply conversion follows the reference Lua stack budget, including different
 stack costs for array, map, and set entries. Captured deep and cyclic replies

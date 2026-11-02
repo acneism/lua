@@ -73,6 +73,7 @@ type execution struct {
 	abort           *Reply
 	resp            int
 	caller          [][]byte
+	command         atomic.Pointer[[][]byte]
 }
 type Engine struct {
 	config  Config
@@ -274,7 +275,9 @@ func (e *Engine) Running() []RunInfo {
 	result := make([]RunInfo, 0, len(e.running))
 	for x := range e.running {
 		info := x.info
-		info.Command = cloneArguments(info.Command)
+		if command := x.command.Load(); command != nil {
+			info.Command = cloneArguments(*command)
+		}
 		result = append(result, info)
 	}
 	return result

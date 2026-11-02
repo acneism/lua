@@ -317,6 +317,13 @@ func d2string(d float64) string {
 	return commandNumber(d)
 }
 
+func appendCommandNumber(dst []byte, d float64) []byte {
+	if value, ok := double2ll(d); ok {
+		return strconv.AppendInt(dst, value, 10)
+	}
+	return append(dst, fpconvDtoa(d)...)
+}
+
 func commandNumber(d float64) string {
 	if value, ok := double2ll(d); ok {
 		return strconv.FormatInt(value, 10)

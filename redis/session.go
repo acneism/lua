@@ -496,16 +496,27 @@ func (s *session) command(args []lua.Value, raise, acl bool) ([]lua.Value, error
 	if len(args) == 0 {
 		return fail("Please specify at least one argument for this redis lib call")
 	}
-	argv := make([][]byte, len(args))
-	for i, value := range args {
+	size := 0
+	for _, value := range args {
 		switch value.Type() {
 		case lua.TypeString:
-			argv[i] = []byte(value.Text())
+			size += len(value.Text())
 		case lua.TypeNumber:
-			argv[i] = []byte(commandNumber(value.Float()))
+			size += 24
 		default:
 			return fail("Lua redis lib command arguments must be strings or integers")
 		}
+	}
+	argv := make([][]byte, len(args))
+	arena := make([]byte, 0, size)
+	for i, value := range args {
+		start := len(arena)
+		if value.Type() == lua.TypeString {
+			arena = append(arena, value.Text()...)
+		} else {
+			arena = appendCommandNumber(arena, value.Float())
+		}
+		argv[i] = arena[start:len(arena):len(arena)]
 	}
 	host := s.active.run.Host
 	var metadata Command
@@ -544,9 +555,7 @@ func (s *session) command(args []lua.Value, raise, acl bool) ([]lua.Value, error
 	if metadata.Write {
 		s.active.written.Store(true)
 	}
-	s.engine.mu.Lock()
-	s.active.info.Command = cloneArguments(argv)
-	s.engine.mu.Unlock()
+	s.active.command.Store(&argv)
 	reply := host.Call(argv, s.active.resp)
 	if reply.Err != nil {
 		s.active.abort = &reply
@@ -555,7 +564,7 @@ func (s *session) command(args []lua.Value, raise, acl bool) ([]lua.Value, error
 	if reply.Type == ErrorReply {
 		return reject("-" + reply.Str)
 	}
-	return []lua.Value{s.toLua(reply, 0)}, nil
+	return s.state.Result(s.toLua(reply, 0)), nil
 }
 
 func (s *session) fromLua(value lua.Value, depth int) Reply {
