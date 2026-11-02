@@ -20,10 +20,14 @@ opcode:
 | `opSelf` | key at 48, number of fused arguments at 24 |
 | `opCallFused`, `opCallFusedUpvalue` | function at 16, argument count at 24, one byte per argument from 32 |
 
-A fused call replaces the `MOVE` or `GETUPVAL` that loads the function. Its
-arguments are registers below `fusedConstant` or constants above it. The loads
-and the `CALL` stay in the code: when the fast path does not apply, the word acts
-as the load it replaced and execution continues through them.
+A fused call replaces the `MOVE` or `GETUPVAL` that loads the function. An
+argument byte below `fusedConstant` is a register, a byte up to
+`fusedArithmetic` is a constant, and `fusedArithmetic` itself means that the
+argument is the add, subtract or multiply word at its place in the stream. The
+loads and the `CALL` stay in the code: when the fast path does not apply (a
+callee that needs more stack, operands that are not numbers), the word acts as
+the load it replaced and execution continues through them, so metamethods and
+errors stay where Redis has them.
 
 Named constants describe the numbering in `bytecode.go`. The plain opcodes run
 from zero to `opLength`. Arithmetic opcodes start at `numericBase`, which is

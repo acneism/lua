@@ -1,5 +1,25 @@
 # Benchmarks
 
+## P2 interpreter
+
+Measured on 2026-11-02 at 8e95f84 on GitHub Actions runners by the Performance
+workflow: Go benchmark in process against EVAL in Redis 7.2.16 with jemalloc on
+the same machine, median of five alternating samples in each run. Nine runs:
+four on EPYC 7763, three on EPYC 9V74, one on EPYC 9V45, one on Xeon Platinum
+8370C. All 37 scenarios stay at or below 1.39; the table is in the
+[README](../README.md#performance).
+
+The previous layout of the dispatch loop stored the instruction word and the PC
+on the stack for every instruction. Removing those stores changed these scenarios
+in one run on EPYC 9V74 against 3ba27ac: Ipairs 0.64, TableInsert 0.65, WhileLoop
+0.73, FieldAccess 0.77, ArrayReadWrite 0.77, MethodCall 0.79. See
+[ADR 12](adr/0012-dispatch-loop.md).
+
+Compare commits only on the same runner. Timings differ between runs by up to
+20%, and small code changes move unrelated scenarios by shifting code layout: a
+restored superinstruction sped up Fib27 by 10–18% and slowed MultiReturn by up to
+43% on the same runner type.
+
 ## P interpreter
 
 Machine: Azure Standard_B4as_v2, AMD EPYC 7763, four vCPUs, 16 GiB RAM.

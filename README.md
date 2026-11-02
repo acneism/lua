@@ -11,7 +11,7 @@ A3 completes reference compatibility for the interpreter core, base, coroutine, 
 libraries, immutable prototypes, Lua tables, metatables, closures, varargs,
 tail calls, error locations, read-only tables, and an interruption hook.
 
-The corpus has 4283 snippets. All execute through the original capture wrapper.
+The corpus has 4395 snippets. All execute through the original capture wrapper.
 `testdata/pending.json` is empty. The reference verifier checks every recorded
 answer against Redis.
 
@@ -50,37 +50,57 @@ Each scenario runs as a Go benchmark in process and as EVAL in Redis 7.2.16
 time, the median of five alternating runs; below 1 means faster than Redis.
 The limit for every scenario is 1.5.
 
-Measured on 2026-10-27 at 4643bb2 on GitHub Actions runners: 12 runs, the
-median per processor.
+Measured on 2026-11-02 at 8e95f84 on GitHub Actions runners: 9 runs, the median
+per processor. The worst figure is 1.39 of 1.5.
 
-| Scenario | AMD EPYC 7763 (7 runs) | AMD EPYC 9V45 (4 runs) | Intel Xeon Platinum 8573C (1 run) | Worst run |
-| --- | ---: | ---: | ---: | ---: |
-| Loop | 0.92 | 1.19 | 1.00 | 1.31 |
-| Fib27 | 1.18 | 1.19 | 1.36 | 1.36 |
-| LuaCalls | 1.29 | 1.23 | 1.33 | 1.33 |
-| TableInsert | 0.70 | 0.63 | 0.95 | 0.95 |
-| TableHash | 0.93 | 0.92 | 0.86 | 0.99 |
-| Sort | 1.03 | 0.97 | 1.06 | 1.09 |
-| GSub | 0.85 | 0.83 | 0.85 | 0.90 |
-| StringConcat | 0.74 | 0.72 | 0.65 | 0.83 |
-| Metamethod | 1.30 | 1.19 | 1.23 | 1.32 |
+| Scenario | AMD EPYC 7763 (4 runs) | AMD EPYC 9V74 (3 runs) | AMD EPYC 9V45 (1 run) | Intel Xeon Platinum 8370C (1 run) | Worst run |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Loop | 0.75 | 0.87 | 0.91 | 1.08 | 1.08 |
+| Fib27 | 1.08 | 1.15 | 1.19 | 1.13 | 1.19 |
+| LuaCalls | 1.01 | 1.13 | 1.00 | 1.15 | 1.15 |
+| TableInsert | 0.22 | 0.16 | 0.22 | 0.24 | 0.26 |
+| TableHash | 0.77 | 0.75 | 0.76 | 0.70 | 0.78 |
+| Sort | 1.06 | 1.06 | 0.99 | 1.20 | 1.20 |
+| GSub | 0.88 | 0.76 | 0.85 | 0.82 | 0.91 |
+| StringConcat | 0.59 | 0.60 | 0.61 | 0.55 | 0.64 |
+| Metamethod | 1.21 | 1.30 | 1.16 | 1.24 | 1.35 |
+| ArithConst | 0.75 | 0.85 | 0.98 | 0.98 | 0.98 |
+| TwoAccumulators | 0.72 | 0.88 | 0.98 | 0.98 | 0.98 |
+| WhileLoop | 0.69 | 0.73 | 0.87 | 0.85 | 0.87 |
+| Branches | 0.87 | 0.85 | 0.78 | 0.91 | 0.91 |
+| CallTwoArgs | 0.95 | 1.08 | 1.01 | 1.16 | 1.16 |
+| Upvalues | 0.87 | 0.95 | 0.98 | 1.11 | 1.11 |
+| MethodCall | 1.11 | 1.16 | 1.18 | 1.21 | 1.21 |
+| MultiReturn | 0.95 | 1.02 | 1.10 | 1.25 | 1.25 |
+| Varargs | 1.12 | 1.15 | 1.31 | 1.26 | 1.31 |
+| NativeCalls | 0.84 | 0.81 | 0.92 | 0.94 | 0.94 |
+| ClosureCreate | 1.07 | 1.07 | 0.93 | 1.00 | 1.10 |
+| ArrayReadWrite | 1.02 | 0.82 | 0.82 | 0.93 | 1.05 |
+| FieldAccess | 0.66 | 0.71 | 0.84 | 0.77 | 0.84 |
+| TableLibInsert | 0.50 | 0.48 | 0.42 | 0.47 | 0.51 |
+| Ipairs | 0.33 | 0.32 | 0.35 | 0.38 | 0.38 |
+| SmallTables | 1.16 | 1.03 | 1.20 | 1.38 | 1.38 |
+| StringKeys | 0.72 | 0.76 | 0.88 | 0.81 | 0.88 |
+| KeyBuild | 0.61 | 0.55 | 0.54 | 0.62 | 0.63 |
+| StringMethods | 0.98 | 1.03 | 1.06 | 1.12 | 1.12 |
+| StringFormat | 1.09 | 0.98 | 1.00 | 0.96 | 1.11 |
+| Match | 1.07 | 1.00 | 1.07 | 1.29 | 1.29 |
+| IndexInheritance | 1.03 | 1.28 | 1.17 | 1.34 | 1.34 |
+| IndexFunction | 1.10 | 1.18 | 1.12 | 1.14 | 1.19 |
+| NewIndexFunction | 1.02 | 1.19 | 1.07 | 1.18 | 1.20 |
+| CompareMetamethod | 0.87 | 1.10 | 0.97 | 1.09 | 1.11 |
+| CallMetamethod | 0.93 | 1.28 | 1.18 | 1.39 | 1.39 |
+| PCall | 0.95 | 0.95 | 1.02 | 1.06 | 1.06 |
+| Coroutine | 0.97 | 1.01 | 1.00 | 1.26 | 1.26 |
 
-The scenarios:
-
-- Loop: a numeric for loop of 10 million additions.
-- Fib27: recursive Fibonacci of 27.
-- LuaCalls: one million calls of a one-line Lua function.
-- TableInsert: one million appends with `t[#t+1]`.
-- TableHash: 100,000 string keys, then a pairs traversal.
-- Sort: table.sort of 100,000 numbers in reverse order.
-- GSub: string.gsub over 1 MiB of words.
-- StringConcat: tostring of 100,000 numbers and table.concat.
-- Metamethod: one million `__add` calls to a Lua function.
+The sources of all scenarios are in
+[internal/scenario/scenario.go](internal/scenario/scenario.go).
 
 The ratio varies with the processor and between runs on the same processor
-type, because Redis and Go react differently to each machine. Loop's 9V45
-median comes from runs where two measurements in the same run differed by up
-to 25%. See [benchmarks](docs/benchmarks.md) for the method and history.
+type, because Redis and Go react differently to each machine. Fib27 varies most:
+its median is about 1.2, but on a725f66, whose call path is close to the measured
+commit, it reached 1.51 and 1.58 in 2 of 15 runs, with the same binary at 1.17 in
+others. See [benchmarks](docs/benchmarks.md) for the method and history.
 
 ## Interpreter example
 
