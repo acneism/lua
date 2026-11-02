@@ -1,7 +1,9 @@
 package redis_test
 
 import (
+	"os"
 	"runtime"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"testing"
@@ -27,30 +29,52 @@ var longScripts = map[string]string{
 	"unpack":    `local t = {} for i = 1, 1e6 do t[i] = i end local s = cmsgpack.pack(t) while true do cmsgpack.unpack(s) end`,
 }
 
+func killRunning(t *testing.T, engine *redis.Engine, source string) time.Duration {
+	t.Helper()
+	finished := make(chan redis.Reply, 1)
+	go func() { finished <- engine.Eval([]byte(source), nil, nil, redis.Run{}) }()
+	for len(engine.Running()) == 0 {
+		time.Sleep(time.Millisecond)
+	}
+	time.Sleep(100 * time.Millisecond)
+	started := time.Now()
+	if reply := engine.Kill(redis.Script); reply.Type != redis.StatusReply {
+		t.Fatal(reply)
+	}
+	select {
+	case reply := <-finished:
+		if !strings.HasPrefix(reply.Str, "ERR Script killed by user with SCRIPT KILL...") {
+			t.Fatal(reply)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("not interrupted")
+	}
+	return time.Since(started)
+}
+
+func TestKillLatency(t *testing.T) {
+	limit, err := time.ParseDuration(os.Getenv("LUA_KILL_LIMIT"))
+	if err != nil {
+		t.Skip("LUA_KILL_LIMIT is not set")
+	}
+	defer debug.SetGCPercent(debug.SetGCPercent(-1))
+	for name, source := range longScripts {
+		t.Run(name, func(t *testing.T) {
+			latency := killRunning(t, redis.NewEngine(redis.Config{}), source)
+			t.Log(latency)
+			if latency > limit {
+				t.Fatalf("killed after %v, limit %v", latency, limit)
+			}
+		})
+	}
+}
+
 func TestKillInterruptsEveryLongOperation(t *testing.T) {
 	for name, source := range longScripts {
 		t.Run(name, func(t *testing.T) {
 			before := runtime.NumGoroutine()
 			engine := redis.NewEngine(redis.Config{})
-			finished := make(chan redis.Reply, 1)
-			go func() { finished <- engine.Eval([]byte(source), nil, nil, redis.Run{}) }()
-			for len(engine.Running()) == 0 {
-				time.Sleep(time.Millisecond)
-			}
-			time.Sleep(100 * time.Millisecond)
-			if reply := engine.Kill(redis.Script); reply.Type != redis.StatusReply {
-				t.Fatal(reply)
-			}
-			started := time.Now()
-			select {
-			case reply := <-finished:
-				if !strings.HasPrefix(reply.Str, "ERR Script killed by user with SCRIPT KILL...") {
-					t.Fatal(reply)
-				}
-				t.Log(time.Since(started))
-			case <-time.After(5 * time.Second):
-				t.Fatal("not interrupted")
-			}
+			t.Log(killRunning(t, engine, source))
 			if reply := engine.Eval([]byte("return 7"), nil, nil, redis.Run{}); reply.Int != 7 {
 				t.Fatal(reply)
 			}

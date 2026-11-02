@@ -152,3 +152,7 @@ jobs:
           REDIS_REF_ADDR: 127.0.0.1:6379
           LUA_DIFF_STEPS: '2000'
         run: go test ./redis -run '^Test(ScriptScenario|ScriptDifferential|RESP3Differential|LibraryDifferential|ExtensionDifferential|FunctionDifferential|FunctionDumpRestore|ShebangReadOnly|LuaDifferential)$' -count=1 -timeout=10m
+      - name: Interrupt every long operation in time without the collector
+        env:
+          LUA_KILL_LIMIT: 10ms
+        run: go test ./redis -run '^TestKillLatency$' -count=3 -timeout=3m

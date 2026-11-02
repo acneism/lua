@@ -46,6 +46,7 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 
 ### Changed
 
+- The benchmark command takes the median of five fresh processes for each scenario.
 - Report the memory limit as `ERR script exceeded the memory limit` with the location suffix, and interrupt cjson and cmsgpack through the hook.
 - Answer BUSY from Kill and FunctionStats when the other kind of script runs, and build redis.call arguments in one buffer.
 - Reject EVAL_RO of a script with a shebang and no no-writes flag, as Redis does.
@@ -70,6 +71,7 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 
 ### Fixed
 
+- string.rep reserves its whole result, so KILL no longer waits for a copy of a large string.
 - Reader failures returned by load preserve the active error handler.
 - Chunk names stop at the first zero byte, including implicit source names.
 - pcall reads err of a caught table through __index, accepts a number, and returns a non-string err as the third value, as Redis's pcall does.
