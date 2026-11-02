@@ -418,39 +418,6 @@ frames:
 					continue frames
 				}
 				continue
-			case opCallArithmetic, opCallArithmeticUpvalue:
-				value := &registers[uint8(word>>16)]
-				if op == opCallArithmeticUpvalue {
-					value = active.f.function.upvalues[uint8(word>>16)].slot
-				}
-				packed, call := code[pc], code[pc+1]
-				left, right := numericOperands(opcode(packed), packed, registers, constants)
-				active.f.pc = int32(pc + 2)
-				t := active.t
-				start := t.used
-				if value.luaFunction() && left.object == &numberMarker && right.object == &numberMarker && !value.object.function.proto.vararg && len(t.frames) < freshCalls-1 && len(t.frames) < cap(t.frames) && start+256 <= len(t.stack) && s.budget > vmCallWeight {
-					callee := value.object.function
-					x, y := left.number, right.number
-					var number float64
-					switch opcode(packed).numericOperation() {
-					case operationAdd:
-						number = luaNaN(x+y, x, y)
-					case operationSubtract:
-						number = luaNaN(x-y, x, y)
-					default:
-						number = luaNaN(x*y, x, y)
-					}
-					s.budget -= vmCallWeight
-					if callee.proto.parameters > 0 {
-						t.stack[start] = Number(number)
-					}
-					t.pushLua(callee, start, start, active.base+int(uint8(call>>48)), int(int16(call>>32)))
-					clearRegisters(t.stack[start+min(callee.proto.parameters, 1) : start+callee.proto.maxRegisters])
-					continue frames
-				}
-				pc = int(active.f.pc) - 2
-				registers[uint8(code[pc-1]>>8)] = *value
-				continue
 			case opCallFused, opCallFusedUpvalue:
 				value := &registers[uint8(word>>16)]
 				if op == opCallFusedUpvalue {
@@ -851,7 +818,7 @@ frames:
 					pc = int(uint32(word >> 16))
 					continue
 				}
-			case opForLoop, opForAccumulate:
+			case opForLoop:
 				s.budget -= vmCallWeight
 				if s.budget <= 0 {
 					s.pollRetry(pc)
@@ -865,13 +832,6 @@ frames:
 					registers[a].number = next
 					setNumber(&registers[a+3], next)
 					pc = int(uint32(word >> 16))
-					if op == opForAccumulate {
-						sum := &registers[uint8(word>>48)]
-						if sum.object == &numberMarker {
-							sum.number = luaNaN(sum.number+next, sum.number, next)
-							pc++
-						}
-					}
 				}
 				continue
 			}

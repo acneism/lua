@@ -32,7 +32,6 @@ const (
 	opForPrep
 	opForLoop
 	opPoll
-	opForAccumulate
 	opLoadNil
 	opGetTableK
 	opSetTableRK
@@ -41,8 +40,6 @@ const (
 	opConcat
 	opForIterator
 	opCompare
-	opCallArithmetic
-	opCallArithmeticUpvalue
 	opCallFused
 	opCallFusedUpvalue
 	opNegate

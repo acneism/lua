@@ -45,7 +45,6 @@ func numericOpcode(operation, mode int) opcode {
 }
 
 func (op opcode) numericOperation() int { return int(op-numericBase) / operandModes }
-func (op opcode) fusedArgument() bool   { return op >= opAdd && op < opDivide }
 
 func comparisonOpcode(comparison, mode int) opcode {
 	return comparisonBase + opcode(comparison*compareModes+mode)
@@ -173,13 +172,6 @@ func (c *compiler) freeze() {
 		p.code[pc] = word
 	}
 
-	for pc := 1; pc < len(p.code); pc++ {
-		loop, add := p.code[pc], p.code[pc-1]
-		index, sum := int(uint8(loop>>8)), int(uint8(add>>8))
-		if opcode(loop) == opForLoop && int(uint32(loop>>16)) == pc-1 && opcode(add) == opAdd && uint8(add>>16) == uint8(sum) && int(uint8(add>>32)) == index+3 && (sum < index || sum > index+3) {
-			p.code[pc] = loop&^255 | uint64(opForAccumulate) | uint64(uint8(sum))<<48
-		}
-	}
 	for pc := range p.code {
 		if count := selfArguments(p.code, pc); count > 0 {
 			p.code[pc] |= uint64(count) << 24
@@ -192,18 +184,7 @@ func (c *compiler) freeze() {
 			p.code[pc] = uint64(op) | p.code[pc]&(255<<8|255<<16) | uint64(count)<<24 | arguments<<32
 		}
 	}
-	for pc := 0; pc+2 < len(p.code); pc++ {
-		load, argument, call := p.code[pc], p.code[pc+1], p.code[pc+2]
-		loadOp := opcode(load)
-		if (loadOp != opMove && loadOp != opGetUpvalue) || !opcode(argument).fusedArgument() || opcode(call) != opCall || uint8(load>>8) != uint8(call>>8) || uint8(argument>>8) != uint8(call>>8)+1 || int16(call>>16) != 1 {
-			continue
-		}
-		op := opCallArithmetic
-		if loadOp == opGetUpvalue {
-			op = opCallArithmeticUpvalue
-		}
-		p.code[pc] = uint64(op) | uint64(uint8(load>>8))<<8 | uint64(uint8(load>>16))<<16
-	}
+
 	c.code = nil
 }
 
