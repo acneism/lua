@@ -33,6 +33,7 @@ func (s *State) OptionalInteger(args []Value, index, fallback int) int {
 	return s.optionalInt(args, index, fallback)
 }
 func (s *State) Result(value Value) []Value { return s.values1(value) }
+func (s *State) ResultBuffer() []Value      { return s.results[:0] }
 
 func (s *State) checkInt(args []Value, index int) int {
 	return int(int32(luaInteger(s.checkNumber(args, index))))

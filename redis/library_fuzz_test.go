@@ -39,3 +39,37 @@ func FuzzStruct(f *testing.F) {
 		}
 	})
 }
+
+const fuzzJSONSource = `local a = {pcall(cjson.decode, ARGV[1])}
+local b = a[1] and {pcall(cjson.encode, a[2])} or a
+local c = {pcall(cmsgpack.unpack, ARGV[1])}
+local d = c[1] and {pcall(cmsgpack.pack, c[2])} or c
+local e = {pcall(cmsgpack.unpack_one, ARGV[1], 1)}
+local f = {pcall(cmsgpack.unpack_limit, ARGV[1], 2, 1)}
+return {tostring(a[1]), tostring(b[1]), tostring(c[1]), tostring(d[1]), tostring(e[1]), tostring(f[1])}`
+
+func FuzzExtensions(f *testing.F) {
+	for _, seed := range []string{
+		`{"a":[1,2.5,null,true,"x\u00e9\ud83d\ude00"]}`,
+		`[[[[1]]]]`,
+		`nan`,
+		`-0x1p4`,
+		`1e400`,
+		`"\ud83d"`,
+		"\x93\x01\x02\x03",
+		"\x81\xa1a\x01",
+		"\xcb\x3f\xf8\x00\x00\x00\x00\x00\x00",
+		"\x81\xc0\x01",
+		"\xdd\xff\xff\xff\xff",
+		"\xdb\xff\xff\xff\xff",
+	} {
+		f.Add(seed)
+	}
+	engine := redis.NewEngine(redis.Config{})
+	f.Fuzz(func(t *testing.T, input string) {
+		reply := engine.Eval([]byte(fuzzJSONSource), nil, [][]byte{[]byte(input)}, redis.Run{})
+		if reply.Type == redis.ErrorReply && strings.Contains(reply.Str, "internal") {
+			t.Fatalf("internal error: %s", reply.Str)
+		}
+	})
+}

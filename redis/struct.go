@@ -1,7 +1,6 @@
 package redis
 
 import (
-	"encoding/binary"
 	"fmt"
 	"math"
 	"strings"
@@ -118,29 +117,38 @@ func cUint64(value float64) uint64 {
 	return uint64(cInt64(value))
 }
 
-func structInteger(value uint64, big bool, size uint64) []byte {
-	buffer := make([]byte, size)
-	for index := range buffer {
+func (b *luaBuffer) addInteger(value uint64, big bool, size uint64) {
+	var buffer [structMaxIntSize]byte
+	for index := range size {
 		slot := index
 		if big {
-			slot = int(size) - 1 - index
+			slot = size - 1 - index
 		}
 		buffer[slot] = byte(value)
 		value >>= 8
 	}
-	return buffer
+	if len(b.pending)+int(size) <= 8192 {
+		b.pending = append(b.pending, buffer[:size]...)
+		return
+	}
+	b.add(string(buffer[:size]))
 }
 
 type luaBuffer struct {
+	args    []lua.Value
 	stack   []lua.Value
-	base    int
 	levels  []string
 	pending []byte
 }
 
-func newLuaBuffer(args []lua.Value) *luaBuffer {
-	stack := append(append([]lua.Value(nil), args...), lua.Nil())
-	return &luaBuffer{stack: stack, base: len(stack)}
+func (b *luaBuffer) view(index int) []lua.Value {
+	if index < len(b.args) {
+		return b.args
+	}
+	if b.stack == nil {
+		b.stack = append(append(b.stack, b.args...), lua.Nil())
+	}
+	return b.stack
 }
 
 func (b *luaBuffer) flush() {
@@ -162,7 +170,7 @@ func (b *luaBuffer) flush() {
 		}
 		b.levels = append(b.levels[:count-taken], strings.Join(b.levels[count-taken:], ""))
 	}
-	b.stack = b.stack[:b.base]
+	b.stack = append(append(b.stack[:0], b.args...), lua.Nil())
 	for _, level := range b.levels {
 		b.stack = append(b.stack, lua.String(level))
 	}
@@ -188,7 +196,8 @@ func structPack(state *lua.State, args []lua.Value) ([]lua.Value, error) {
 	header := structHeader{align: 1}
 	argument := 2
 	total := uint64(0)
-	out := newLuaBuffer(args)
+	var inline [64]byte
+	out := luaBuffer{args: args, pending: inline[:0]}
 	for {
 		option, ok := format.next()
 		if !ok {
@@ -202,25 +211,25 @@ func structPack(state *lua.State, args []lua.Value) ([]lua.Value, error) {
 		}
 		switch option {
 		case 'b', 'B', 'h', 'H', 'l', 'L', 'T', 'i', 'I':
-			number := state.CheckNumber(out.stack, argument-1)
+			number := state.CheckNumber(out.view(argument-1), argument-1)
 			argument++
 			value := cUint64(number)
 			if number < 0 {
 				value = uint64(cInt64(number))
 			}
-			out.add(string(structInteger(value, header.big, size)))
+			out.addInteger(value, header.big, size)
 		case 'x':
 			out.add("\x00")
 		case 'f':
-			value := uint64(math.Float32bits(float32(state.CheckNumber(out.stack, argument-1))))
+			value := uint64(math.Float32bits(float32(state.CheckNumber(out.view(argument-1), argument-1))))
 			argument++
-			out.add(string(structInteger(value, header.big, 4)))
+			out.addInteger(value, header.big, 4)
 		case 'd':
-			value := math.Float64bits(state.CheckNumber(out.stack, argument-1))
+			value := math.Float64bits(state.CheckNumber(out.view(argument-1), argument-1))
 			argument++
-			out.add(string(structInteger(value, header.big, 8)))
+			out.addInteger(value, header.big, 8)
 		case 'c', 's':
-			text := state.CheckText(out.stack, argument-1)
+			text := state.CheckText(out.view(argument-1), argument-1)
 			argument++
 			if size == 0 {
 				size = uint64(len(text))
@@ -241,6 +250,18 @@ func structPack(state *lua.State, args []lua.Value) ([]lua.Value, error) {
 	return state.Result(lua.String(out.result())), nil
 }
 
+func structRead(data string, position, size uint64, big bool) uint64 {
+	value := uint64(0)
+	for index := range size {
+		slot := position + index
+		if !big {
+			slot = position + size - 1 - index
+		}
+		value = value<<8 | uint64(data[slot])
+	}
+	return value
+}
+
 func structFits(state *lua.State, size, position, length uint64) {
 	if size > length || position > length-size {
 		state.ArgError(2, "data string too short")
@@ -257,7 +278,7 @@ func structUnpack(state *lua.State, args []lua.Value) ([]lua.Value, error) {
 	}
 	position--
 	header := structHeader{align: 1}
-	var results []lua.Value
+	results := state.ResultBuffer()
 	for {
 		option, ok := format.next()
 		if !ok {
@@ -271,14 +292,7 @@ func structUnpack(state *lua.State, args []lua.Value) ([]lua.Value, error) {
 		}
 		switch option {
 		case 'b', 'B', 'h', 'H', 'l', 'L', 'T', 'i', 'I':
-			value := uint64(0)
-			for index := uint64(0); index < size; index++ {
-				slot := position + index
-				if !header.big {
-					slot = position + size - 1 - index
-				}
-				value = value<<8 | uint64(data[slot])
-			}
+			value := structRead(data, position, size, header.big)
 			if option >= 'a' {
 				mask := ^uint64(0) << ((size*8 - 1) & 63)
 				if value&mask != 0 {
@@ -290,19 +304,9 @@ func structUnpack(state *lua.State, args []lua.Value) ([]lua.Value, error) {
 			}
 		case 'x':
 		case 'f':
-			raw := []byte(data[position : position+size])
-			value := binary.LittleEndian.Uint32(raw)
-			if header.big {
-				value = binary.BigEndian.Uint32(raw)
-			}
-			results = append(results, lua.Number(float64(math.Float32frombits(value))))
+			results = append(results, lua.Number(float64(math.Float32frombits(uint32(structRead(data, position, 4, header.big))))))
 		case 'd':
-			raw := []byte(data[position : position+size])
-			value := binary.LittleEndian.Uint64(raw)
-			if header.big {
-				value = binary.BigEndian.Uint64(raw)
-			}
-			results = append(results, lua.Number(math.Float64frombits(value)))
+			results = append(results, lua.Number(math.Float64frombits(structRead(data, position, 8, header.big))))
 		case 'c':
 			if size == 0 {
 				var previous float64

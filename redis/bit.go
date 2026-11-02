@@ -7,6 +7,9 @@ import (
 )
 
 func bitArgument(state *lua.State, args []lua.Value, index int) uint32 {
+	if index < len(args) && args[index].Type() == lua.TypeNumber {
+		return uint32(math.Float64bits(args[index].Float() + 6755399441055744.0))
+	}
 	return uint32(math.Float64bits(state.CheckNumber(args, index) + 6755399441055744.0))
 }
 
@@ -14,21 +17,33 @@ func bitResult(state *lua.State, value uint32) ([]lua.Value, error) {
 	return state.Result(lua.Number(float64(int32(value)))), nil
 }
 
-func bitFold(operation func(a, b uint32) uint32) lua.GoFunction {
-	return func(state *lua.State, args []lua.Value) ([]lua.Value, error) {
-		value := bitArgument(state, args, 0)
-		for index := len(args) - 1; index > 0; index-- {
-			value = operation(value, bitArgument(state, args, index))
-		}
-		return bitResult(state, value)
+func bitAnd(state *lua.State, args []lua.Value) ([]lua.Value, error) {
+	value := bitArgument(state, args, 0)
+	for index := len(args) - 1; index > 0; index-- {
+		value &= bitArgument(state, args, index)
 	}
+	return bitResult(state, value)
 }
 
-func bitShift(operation func(value, count uint32) uint32) lua.GoFunction {
-	return func(state *lua.State, args []lua.Value) ([]lua.Value, error) {
-		value := bitArgument(state, args, 0)
-		return bitResult(state, operation(value, bitArgument(state, args, 1)&31))
+func bitOr(state *lua.State, args []lua.Value) ([]lua.Value, error) {
+	value := bitArgument(state, args, 0)
+	for index := len(args) - 1; index > 0; index-- {
+		value |= bitArgument(state, args, index)
 	}
+	return bitResult(state, value)
+}
+
+func bitXor(state *lua.State, args []lua.Value) ([]lua.Value, error) {
+	value := bitArgument(state, args, 0)
+	for index := len(args) - 1; index > 0; index-- {
+		value ^= bitArgument(state, args, index)
+	}
+	return bitResult(state, value)
+}
+
+func bitShiftArguments(state *lua.State, args []lua.Value) (uint32, uint32) {
+	value := bitArgument(state, args, 0)
+	return value, bitArgument(state, args, 1) & 31
 }
 
 func bitToHex(state *lua.State, args []lua.Value) ([]lua.Value, error) {
@@ -65,14 +80,29 @@ func (s *session) openBit() lua.Value {
 		{"bnot", func(state *lua.State, args []lua.Value) ([]lua.Value, error) {
 			return bitResult(state, ^bitArgument(state, args, 0))
 		}},
-		{"band", bitFold(func(a, b uint32) uint32 { return a & b })},
-		{"bor", bitFold(func(a, b uint32) uint32 { return a | b })},
-		{"bxor", bitFold(func(a, b uint32) uint32 { return a ^ b })},
-		{"lshift", bitShift(func(value, count uint32) uint32 { return value << count })},
-		{"rshift", bitShift(func(value, count uint32) uint32 { return value >> count })},
-		{"arshift", bitShift(func(value, count uint32) uint32 { return uint32(int32(value) >> count) })},
-		{"rol", bitShift(func(value, count uint32) uint32 { return value<<count | value>>(32-count) })},
-		{"ror", bitShift(func(value, count uint32) uint32 { return value<<(32-count) | value>>count })},
+		{"band", bitAnd},
+		{"bor", bitOr},
+		{"bxor", bitXor},
+		{"lshift", func(state *lua.State, args []lua.Value) ([]lua.Value, error) {
+			value, count := bitShiftArguments(state, args)
+			return bitResult(state, value<<count)
+		}},
+		{"rshift", func(state *lua.State, args []lua.Value) ([]lua.Value, error) {
+			value, count := bitShiftArguments(state, args)
+			return bitResult(state, value>>count)
+		}},
+		{"arshift", func(state *lua.State, args []lua.Value) ([]lua.Value, error) {
+			value, count := bitShiftArguments(state, args)
+			return bitResult(state, uint32(int32(value)>>count))
+		}},
+		{"rol", func(state *lua.State, args []lua.Value) ([]lua.Value, error) {
+			value, count := bitShiftArguments(state, args)
+			return bitResult(state, value<<count|value>>(32-count))
+		}},
+		{"ror", func(state *lua.State, args []lua.Value) ([]lua.Value, error) {
+			value, count := bitShiftArguments(state, args)
+			return bitResult(state, value<<(32-count)|value>>count)
+		}},
 		{"bswap", func(state *lua.State, args []lua.Value) ([]lua.Value, error) {
 			value := bitArgument(state, args, 0)
 			return bitResult(state, value>>24|value>>8&0xff00|value&0xff00<<8|value<<24)

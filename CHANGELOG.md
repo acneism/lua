@@ -35,7 +35,9 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 
 - A reusable test-only luatest.RunCorpus API for external math integrations.
 - RESP3 differential tests with HELLO 3 and redis.setresp, and 116 RESP3 fixtures captured from Redis.
-- The bit and struct libraries, ported from Redis 7.2.16, with 705 captured fixtures, a differential test and FuzzStruct.
+- The bit, struct, cjson and cmsgpack libraries, ported from Redis 7.2.16, with 1325 captured fixtures, differential tests, FuzzStruct and FuzzExtensions.
+- lua.NullUserdata, the light userdata behind cjson.null.
+- Library scenarios in the benchmark command, measured through the engine.
 - State.Raise, ArgError, CheckNumber, CheckText, OptionalInteger and Result for libraries written outside the lua package.
 - lua.Intern, which returns the shared value of a library or Redis global name so scripts reach it by pointer.
 - A Go command to compare nine core workloads against Redis with alternating samples.

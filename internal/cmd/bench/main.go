@@ -16,6 +16,7 @@ import (
 
 	"github.com/acneism/lua"
 	"github.com/acneism/lua/internal/scenario"
+	"github.com/acneism/lua/redis"
 )
 
 type sample struct {
@@ -85,7 +86,8 @@ func run(address, output string, rounds int, selected, profile string) error {
 		defer pprof.StopCPUProfile()
 	}
 	report := report{GoVersion: runtime.Version(), OS: runtime.GOOS, Architecture: runtime.GOARCH, CPUs: runtime.NumCPU()}
-	for _, item := range scenario.All() {
+	core := len(scenario.All())
+	for index, item := range append(scenario.All(), scenario.Library()...) {
 		if selected != "" && selected != item.Name {
 			continue
 		}
@@ -99,13 +101,36 @@ func run(address, output string, rounds int, selected, profile string) error {
 		if repetitions > 1 {
 			source = fmt.Sprintf("local function __benchmark__() %s end local __result for __round=1,%d do __result=__benchmark__() end return __result", source, repetitions)
 		}
-		proto, err := lua.Compile([]byte(source), "@benchmark")
-		if err != nil {
-			return err
+		var execute func() (string, error)
+		if index < core {
+			proto, err := lua.Compile([]byte(source), "@benchmark")
+			if err != nil {
+				return err
+			}
+			state := lua.NewState(lua.Options{})
+			function := state.Load(proto, nil)
+			execute = func() (string, error) {
+				values, err := state.Call(function)
+				if err != nil {
+					return "", err
+				}
+				if len(values) != 1 {
+					return "", fmt.Errorf("unexpected Go result: %v", values)
+				}
+				return strconv.FormatFloat(values[0].Float(), 'f', -1, 64), nil
+			}
+		} else {
+			engine := redis.NewEngine(redis.Config{})
+			script := []byte(source)
+			execute = func() (string, error) {
+				reply := engine.Eval(script, nil, nil, redis.Run{})
+				if reply.Type != redis.IntegerReply {
+					return "", fmt.Errorf("unexpected Go reply: %+v", reply)
+				}
+				return strconv.FormatInt(reply.Int, 10), nil
+			}
 		}
-		state := lua.NewState(lua.Options{})
-		function := state.Load(proto, nil)
-		if _, err = state.Call(function); err != nil {
+		if _, err = execute(); err != nil {
 			return err
 		}
 		if _, err = client.command("EVAL", source, "0"); err != nil {
@@ -130,18 +155,12 @@ func run(address, output string, rounds int, selected, profile string) error {
 				var before, after runtime.MemStats
 				runtime.ReadMemStats(&before)
 				start := time.Now()
-				values, err := state.Call(function)
+				answer, err := execute()
 				entry.GoNS = time.Since(start).Nanoseconds()
 				runtime.ReadMemStats(&after)
 				entry.Allocations, entry.Bytes = after.Mallocs-before.Mallocs, after.TotalAlloc-before.TotalAlloc
-				if err != nil {
-					return err
-				}
-				if len(values) != 1 {
-					return fmt.Errorf("unexpected Go result: %v", values)
-				}
-				goAnswer = strconv.FormatFloat(values[0].Float(), 'f', -1, 64)
-				return nil
+				goAnswer = answer
+				return err
 			}
 			if round%2 == 0 {
 				if err = redis(); err == nil {

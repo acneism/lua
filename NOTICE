@@ -40,8 +40,17 @@ The state-local random generator follows Redis's rand48 recurrence and seed
 conversion. The Lua string, table, and math libraries adapt the upstream
 implementations listed above.
 
-No cjson, cmsgpack, CRC64, or LZF implementation is included yet. Add notices from
-the exact upstream source headers when porting them.
+No CRC64 or LZF implementation is included yet. Add notices from the exact upstream
+source headers when porting them.
+
+lua-cjson 2.1.0, deps/lua/src/lua_cjson.c in Redis 7.2.16
+Copyright (c) 2010-2012 Mark Pulford.
+License: MIT; full terms in LICENSES/lua-cjson.txt. redis/cjson.go translates it.
+
+lua-cmsgpack 0.4.0, deps/lua/src/lua_cmsgpack.c in Redis 7.2.16
+Copyright (C) 2012 Salvatore Sanfilippo.
+License: MIT; full terms in LICENSES/lua-cmsgpack.txt. redis/cmsgpack.go
+translates it.
 
 Lua BitOp 1.0.2, deps/lua/src/lua_bit.c in Redis 7.2.16
 Copyright (C) 2008-2012 Mike Pall. All rights reserved.

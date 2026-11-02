@@ -105,7 +105,7 @@ func scriptCommand(random *rand.Rand) string {
 	return templates[random.IntN(len(templates))]()
 }
 
-const describeSource = "local function d(x) if type(x) == 'table' then local s = {} for k, v in pairs(x) do s[#s + 1] = tostring(k) .. '=' .. d(v) end return '{' .. table.concat(s, ',') .. '}' end return type(x) .. ':' .. tostring(x) end\n"
+const describeSource = "local function d(x) if type(x) == 'table' then local s = {} for k, v in pairs(x) do s[#s + 1] = (type(k) == 'table' and 'table' or tostring(k)) .. '=' .. d(v) end return '{' .. table.concat(s, ',') .. '}' end return type(x) .. ':' .. tostring(x) end\n"
 
 func scriptCase(random *rand.Rand) redistest.Case {
 	item := redistest.Case{Keys: []string{"k0", "k1"}, Args: []string{fmt.Sprint(random.IntN(200) - 100), "a b"}}
@@ -322,6 +322,132 @@ func libraryCase(random *rand.Rand) string {
 		call = structCall(random)
 	}
 	return describeSource + "local t = {pcall(function() return " + call + " end)} local s = {} for i = 1, 40 do s[i] = d(t[i]) end return s"
+}
+
+func jsonText(random *rand.Rand, depth int) string {
+	if depth > 3 {
+		return pick(random, "1", "true", "null", `"x"`)
+	}
+	switch random.IntN(12) {
+	case 0, 1, 2:
+		parts := make([]string, random.IntN(4))
+		for index := range parts {
+			parts[index] = jsonText(random, depth+1)
+		}
+		return "[" + strings.Join(parts, pick(random, ",", " , ", ",\n")) + "]"
+	case 3, 4, 5:
+		parts := make([]string, random.IntN(4))
+		for index := range parts {
+			parts[index] = `"k` + strconv.Itoa(index) + `":` + jsonText(random, depth+1)
+		}
+		return "{" + strings.Join(parts, ",") + "}"
+	case 6:
+		return strconv.FormatFloat(random.Float64()*1000-500, 'g', -1, 64)
+	}
+	return pick(random, "0", "-0", "1", "-1", "1.5", "1e3", "1E-2", "0.1", "12345678901234567890", "1e400", "-1e400", "1e-400", "true", "false", "null", `""`, `"a"`, `"\n"`, `"\u00e9"`, `"\u20ac"`, `"\ud83d\ude00"`, `"\/"`, `"\\"`, `"\""`, `"\b\f\t\r"`, `"\ud83d"`, `"\ude00"`, `"\ud83dx"`, `"\uZZZZ"`, `"\q"`, `"abc`, "nan", "NaN", "inf", "Inf", "-inf", "infinity", "-Infinity", "0x10", "-0x1p4", "+1", "01", "-01", "1.", ".5", "1e", "1e+", "-", "tru", "nul", "fals", "[", "{", "]", "}", "[1,", `{"a"`, `{"a":`, `{"a":1,`, `{1:2}`, ",", ":", "@", "\t 1 \n", "1 2", `"\u0000"`, "nan(12)", "-nan", "0x", "1_000")
+}
+
+func jsonValue(random *rand.Rand, depth int) string {
+	if depth > 3 {
+		return pick(random, "1", "'x'", "true", "{}")
+	}
+	inner := func() string { return jsonValue(random, depth+1) }
+	switch random.IntN(11) {
+	case 0:
+		return "{" + inner() + "," + inner() + "," + inner() + "}"
+	case 1:
+		return "{a=" + inner() + ",b=" + inner() + "}"
+	case 2:
+		return "{" + inner() + ",x=" + inner() + "}"
+	case 3:
+		return "{[1]=" + inner() + ",[3]=" + inner() + "}"
+	case 4:
+		return "{[1]=1,[" + pick(random, "11", "12", "100", "2^31", "2^53", "1e300", "1/0", "-1/0") + "]=2}"
+	case 5:
+		return "{[" + pick(random, "1.5", "-1", "0", "true", "{}", "print", "'k'", "1e20") + "]=" + inner() + "}"
+	}
+	return pick(random, "nil", "true", "false", "0", "0/-1", "1", "-1", "1.5", "0.1", "1/3", "1e15", "1e16", "1e100", "1e-5", "2^53", "2^63", "-2^63", "0/0", "1/0", "-1/0", "''", "'a'", "'a\"b'", "'a/b'", "'a\\\\b'", "'\\0\\1\\8\\9\\10\\12\\13\\31\\127\\128\\255'", "'é€'", "{}", "print", "coroutine.create(print)", "cjson.null", "string.rep('x',40)")
+}
+
+func jsonCall(random *rand.Rand) string {
+	switch random.IntN(7) {
+	case 0, 1:
+		return "cjson.encode(" + jsonValue(random, 0) + ")"
+	case 2, 3:
+		return "(function(v) return type(v) == 'table' and d(v) or v end)(cjson.decode(" + strconv.Quote(jsonText(random, 0)) + "))"
+	case 4:
+		configure := pick(random, "c.encode_sparse_array(true)", "c.encode_sparse_array(false,1,1)", "c.encode_sparse_array(true,0)", "c.encode_sparse_array('on',3,2)", "c.encode_sparse_array('x')", "c.encode_sparse_array(nil,-1)", "c.encode_sparse_array(nil,nil,'a')", "c.encode_max_depth(1)", "c.encode_max_depth(2)", "c.encode_max_depth(0)", "c.encode_number_precision(1)", "c.encode_number_precision(3)", "c.encode_number_precision(14)", "c.encode_number_precision(15)", "c.encode_number_precision(0)", "c.encode_invalid_numbers(true)", "c.encode_invalid_numbers('null')", "c.encode_invalid_numbers('on')", "c.encode_invalid_numbers('off')", "c.encode_invalid_numbers('bad')", "c.encode_keep_buffer(false)", "c.encode_keep_buffer('on')", "c.decode_max_depth(1)", "c.decode_max_depth(0)", "c.decode_invalid_numbers(false)", "c.decode_invalid_numbers('off')", "c.encode_max_depth(1,2)", "c.encode_sparse_array(1,2,3,4)")
+		return "(function() local c = cjson.new() local r = {pcall(function() return " + configure + " end)} local e = {pcall(c.encode, " + jsonValue(random, 1) + ")} local v = {pcall(c.decode, " + strconv.Quote(jsonText(random, 1)) + ")} return d(r) .. d(e) .. d(v) end)()"
+	case 5:
+		return pick(random, "tostring(cjson.null)", "type(cjson.null)", "cjson.null == cjson.null", "cjson.decode('null') == cjson.null", "cjson.decode('[null]')[1] == cjson.null", "cjson._NAME", "cjson._VERSION", "cjson.encode_sparse_array()", "cjson.encode_max_depth()", "cjson.decode_max_depth()", "cjson.encode_number_precision()", "cjson.encode_keep_buffer()", "cjson.encode_invalid_numbers()", "cjson.decode_invalid_numbers()", "cjson.encode()", "cjson.encode(1,2)", "cjson.decode()", "cjson.decode(1,2)", "cjson.decode(1)", "cjson.decode({})", "cjson.decode('')", "cjson.decode('\\0a')", "cjson.decode('a\\0')", "cjson.decode('1\\0x')", "cjson.encode(cjson.null)", "cjson.encode({cjson.null})", "#cjson.decode('[1,2,3]')")
+	}
+	depth := pick(random, "999", "1000", "1001", "1002")
+	return pick(random, "(function() local t = {} local n = t for i = 1, "+depth+" do n[1] = {} n = n[1] end return #cjson.encode(t) end)()", "(function() local t = {} local n = t for i = 1, "+depth+" do n.a = {} n = n.a end return #cjson.encode(t) end)()", "type(cjson.decode(string.rep('[',"+depth+") .. string.rep(']',"+depth+")))", "type(cjson.decode(string.rep('{\"a\":',"+depth+") .. '1' .. string.rep('}',"+depth+")))", "(function() local c = cjson.new() c.encode_max_depth(100000) local t = {} local n = t for i = 1, 9000 do n[1] = {} n = n[1] end return #c.encode(t) end)()", "(function() local c = cjson.new() c.decode_max_depth(100000) return type(c.decode(string.rep('[',9000) .. string.rep(']',9000))) end)()", "(function() local c = cjson.new() c.encode_max_depth(100000) local t = {} local n = t for i = 1, 5000 do n.a = {} n = n.a end return #c.encode(t) end)()", "(function() local c = cjson.new() c.decode_max_depth(100000) return type(c.decode(string.rep('{\"a\":',5000) .. '1' .. string.rep('}',5000))) end)()")
+}
+
+func msgpackValueText(random *rand.Rand, depth int) string {
+	if depth > 3 {
+		return pick(random, "1", "'x'", "true", "{}")
+	}
+	inner := func() string { return msgpackValueText(random, depth+1) }
+	switch random.IntN(10) {
+	case 0:
+		return "{" + inner() + "," + inner() + "," + inner() + "}"
+	case 1:
+		return "{a=" + inner() + ",[" + pick(random, "1", "2", "1.5", "true") + "]=" + inner() + "}"
+	case 2:
+		return "{[1]=" + inner() + ",[3]=" + inner() + "}"
+	}
+	return pick(random, "nil", "true", "false", "0", "1", "127", "128", "255", "256", "65535", "65536", "4294967295", "4294967296", "-1", "-32", "-33", "-128", "-129", "-32768", "-32769", "-2147483648", "-2147483649", "2^53", "2^63", "-2^63", "2^64", "1.5", "0.1", "1/3", "1e300", "0/0", "1/0", "-1/0", "0/-1", "''", "'a'", "string.rep('s',31)", "string.rep('s',32)", "string.rep('s',255)", "string.rep('s',256)", "string.rep('s',65535)", "string.rep('s',65536)", "print", "cjson.null")
+}
+
+func msgpackBytesText(random *rand.Rand) string {
+	var data strings.Builder
+	for range random.IntN(16) {
+		if random.IntN(2) == 0 {
+			fmt.Fprintf(&data, "\\%d", 0x80+random.IntN(128))
+		} else {
+			fmt.Fprintf(&data, "\\%d", random.IntN(256))
+		}
+	}
+	return "'" + data.String() + "'"
+}
+
+func msgpackCall(random *rand.Rand) string {
+	values := make([]string, 1+random.IntN(3))
+	for index := range values {
+		values[index] = msgpackValueText(random, 0)
+	}
+	joined := strings.Join(values, ",")
+	switch random.IntN(8) {
+	case 0, 1:
+		return luaHex("cmsgpack.pack(" + joined + ")")
+	case 2:
+		return "d({cmsgpack.unpack(cmsgpack.pack(" + joined + "))})"
+	case 3:
+		return "d({cmsgpack.unpack(" + msgpackBytesText(random) + ")})"
+	case 4:
+		return "d({cmsgpack.unpack_one(cmsgpack.pack(" + joined + ")" + pick(random, "", ",0", ",1", ",-1", ",1000", ",nil", ",'1'", ",1.5") + ")})"
+	case 5:
+		return "d({cmsgpack.unpack_limit(cmsgpack.pack(" + joined + ")," + pick(random, "0", "1", "2", "-1", "100", "'1'", "nil", "{}") + pick(random, "", ",0", ",1", ",-1", ",1000", ",nil") + ")})"
+	case 6:
+		return "d({cmsgpack.unpack_one(" + msgpackBytesText(random) + pick(random, "", ",1", ",2") + ")})"
+	}
+	depth := pick(random, "15", "16", "17", "18")
+	return pick(random, "cmsgpack.pack()", "cmsgpack.unpack()", "cmsgpack.unpack({})", "cmsgpack.unpack_limit('a')", "cmsgpack._NAME", "cmsgpack._VERSION", "cmsgpack._COPYRIGHT", "cmsgpack._DESCRIPTION",
+		luaHex("(function() local t = {} local n = t for i = 1, "+depth+" do n[1] = {} n = n[1] end return cmsgpack.pack(t) end)()"),
+		luaHex("(function() local t = {} local n = t for i = 1, "+depth+" do n.a = {} n = n.a end return cmsgpack.pack(t) end)()"),
+		luaHex("(function() local t = {} t[1] = t return cmsgpack.pack(t) end)()"),
+		"select('#', cmsgpack.unpack(string.rep('\\1', 7990)))", "select('#', cmsgpack.unpack(string.rep('\\1', 7999)))", "select('#', cmsgpack.unpack(string.rep('\\1', 8000)))", "select('#', cmsgpack.unpack(string.rep('\\1', 9000)))", "select('#', cmsgpack.unpack_limit(string.rep('\\1', 8000), 8000))", "select('#', cmsgpack.unpack_limit(string.rep('\\1', 7999), 7999))", "select('#', cmsgpack.pack(unpack({}, 1, 4000)))", "select('#', cmsgpack.pack(unpack({}, 1, 4001)))",
+		"type(cmsgpack.unpack(string.rep('\\145', 3000) .. '\\1'))", "type(cmsgpack.unpack(string.rep('\\145', 5000) .. '\\1'))", "type(cmsgpack.unpack(string.rep('\\129\\1', 3000) .. '\\1'))", "type(cmsgpack.unpack(string.rep('\\129\\1', 5000) .. '\\1'))", "d({cmsgpack.unpack('\\129\\192\\1')})", "d({cmsgpack.unpack('\\129\\203\\127\\248\\0\\0\\0\\0\\0\\0\\1')})", "d({cmsgpack.unpack('\\147\\1\\192\\3')})", "d({cmsgpack.unpack('\\130\\1\\192\\2\\1')})")
+}
+
+func extensionCase(random *rand.Rand) string {
+	call := jsonCall(random)
+	if random.IntN(2) == 0 {
+		call = msgpackCall(random)
+	}
+	return describeSource + "local t = {pcall(function() return " + call + " end)} for i = 1, 3 do t[i] = d(t[i]) end return t"
 }
 
 func luaNumber(random *rand.Rand) string {

@@ -76,6 +76,10 @@ func newSession(engine *Engine) *session {
 			value = s.openBit()
 		} else if name == "struct" {
 			value = s.openStruct()
+		} else if name == "cjson" {
+			value = s.openCJSON()
+		} else if name == "cmsgpack" {
+			value = s.openCMsgpack()
 		} else if value.IsNil() {
 			value = s.state.NewTable(0, 0).Value()
 		}
