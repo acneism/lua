@@ -7,17 +7,23 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/acneism/lua"
 )
 
 type session struct {
-	engine  *Engine
-	state   *lua.State
-	globals *lua.Table
-	active  *execution
-	raise   lua.Value
-	handler lua.Value
+	engine       *Engine
+	state        *lua.State
+	globals      *lua.Table
+	active       *execution
+	raise        lua.Value
+	handler      lua.Value
+	functionMeta *lua.Table
+	functionAPI  lua.Value
+	loadAPI      lua.Value
+	loading      *loadContext
+	libraries    map[*library]map[string]lua.Value
 }
 
 const errorHandlerSource = "local dbg = debug\n" +
@@ -37,13 +43,36 @@ const errorHandlerSource = "local dbg = debug\n" +
 	"  return err\n" +
 	"end\n"
 
-var errorHandlerProto = func() *lua.Proto {
-	proto, err := lua.Compile([]byte(errorHandlerSource), "@err_handler_def")
+const functionHandlerSource = "local dbg = debug\n" +
+	"debug = nil\n" +
+	"local error_handler = function (err)\n" +
+	"  local i = dbg.getinfo(2,'nSl')\n" +
+	"  if i and i.what == 'C' then\n" +
+	"    i = dbg.getinfo(3,'nSl')\n" +
+	"  end\n" +
+	"  if type(err) ~= 'table' then\n" +
+	"    err = {err='ERR ' .. tostring(err)}" +
+	"  end" +
+	"  if i then\n" +
+	"    err['source'] = i.source\n" +
+	"    err['line'] = i.currentline\n" +
+	"  end" +
+	"  return err\n" +
+	"end\n" +
+	"return error_handler"
+
+func compileHandler(source string) *lua.Proto {
+	proto, err := lua.Compile([]byte(source), "@err_handler_def")
 	if err != nil {
 		panic(err)
 	}
 	return proto
-}()
+}
+
+var (
+	errorHandlerProto    = compileHandler(errorHandlerSource)
+	functionHandlerProto = compileHandler(functionHandlerSource)
+)
 
 const (
 	luaMaxStack        = 8000
@@ -52,11 +81,18 @@ const (
 	luaReplyStackLimit = luaMaxStack - luaReplyBaseSlots - luaReplySpareSlots + 1
 )
 
-func newSession(engine *Engine) *session {
+func newSession(engine *Engine) *session { return buildSession(engine, false) }
+
+func newFunctionSession(engine *Engine) *session { return buildSession(engine, true) }
+
+func buildSession(engine *Engine, functions bool) *session {
 	s := &session{engine: engine}
 	s.state = lua.NewState(lua.Options{Math: engine.config.Math, HookEvery: engine.config.HookEvery, Memory: lua.NewBudget(engine.config.MemoryLimit), Hook: func() error {
 		if s.active != nil && s.active.killed.Load() {
 			return errors.New("script killed")
+		}
+		if s.loading != nil && !s.loading.deadline.IsZero() && time.Now().After(s.loading.deadline) {
+			return errFunctionLoadTimeout
 		}
 		return nil
 	}})
@@ -85,11 +121,19 @@ func newSession(engine *Engine) *session {
 		}
 		_ = globals.RawSet(lua.Intern(name), value)
 	}
-	s.openRedis()
-	if _, err := s.state.Call(s.state.Load(errorHandlerProto, globals)); err != nil {
-		panic(err)
+	s.openRedis(functions)
+	if functions {
+		values, err := s.state.Call(s.state.Load(functionHandlerProto, globals))
+		if err != nil {
+			panic(err)
+		}
+		s.handler = values[0]
+	} else {
+		if _, err := s.state.Call(s.state.Load(errorHandlerProto, globals)); err != nil {
+			panic(err)
+		}
+		s.handler = globals.RawGet(lua.String("__redis__err__handler"))
 	}
-	s.handler = globals.RawGet(lua.String("__redis__err__handler"))
 	meta := s.state.NewTable(0, 0)
 	_ = meta.RawSet(lua.String("__index"), s.state.Function("__index", func(state *lua.State, args []lua.Value) ([]lua.Value, error) {
 		message := "Second argument to luaProtectedTableError must be a string or number"
@@ -107,7 +151,35 @@ func newSession(engine *Engine) *session {
 	_ = globals.SetMetatable(meta)
 	protect(globals)
 	s.state.SetGlobals(globals)
+	if functions {
+		s.openFunctionGlobals(globals, meta)
+	}
 	return s
+}
+
+func (s *session) openFunctionGlobals(api, meta *lua.Table) {
+	s.functionAPI = api.Value()
+	load := s.state.NewTable(0, 0)
+	loadRedis := s.state.NewTable(0, 0)
+	_ = loadRedis.RawSet(lua.Intern("register_function"), s.state.Function("register_function", s.registerFunction))
+	redisTable := api.RawGet(lua.Intern("redis")).Table()
+	for _, name := range []string{"log", "LOG_DEBUG", "LOG_VERBOSE", "LOG_NOTICE", "LOG_WARNING", "REDIS_VERSION_NUM", "REDIS_VERSION"} {
+		_ = loadRedis.RawSet(lua.Intern(name), redisTable.RawGet(lua.Intern(name)))
+	}
+	_ = loadRedis.SetMetatable(meta)
+	_ = load.RawSet(lua.Intern("redis"), loadRedis.Value())
+	_ = load.SetMetatable(meta)
+	protect(load)
+	s.loadAPI = load.Value()
+	s.functionMeta = s.state.NewTable(0, 0)
+	_ = s.functionMeta.RawSet(lua.Intern("__index"), s.functionAPI)
+	s.functionMeta.SetReadOnly(true)
+	globals := s.state.NewTable(0, 0)
+	_ = globals.SetMetatable(s.functionMeta)
+	globals.SetReadOnly(true)
+	s.globals = globals
+	s.state.SetGlobals(globals)
+	s.libraries = make(map[*library]map[string]lua.Value)
 }
 
 func protect(table *lua.Table) {
@@ -194,21 +266,20 @@ func allowed(name string, value lua.Value) lua.Value {
 	return value
 }
 
+func (s *session) argumentTable(values [][]byte) lua.Value {
+	table := s.state.NewTable(len(values), 0)
+	for index, value := range values {
+		_ = table.RawSet(lua.Number(float64(index+1)), lua.String(string(value)))
+	}
+	return table.Value()
+}
+
 func (s *session) arguments(keys, args [][]byte) {
 	globals := s.globals
 	globals.SetReadOnly(false)
 	defer globals.SetReadOnly(true)
-	for i, values := range [][][]byte{keys, args} {
-		table := s.state.NewTable(len(values), 0)
-		for j, value := range values {
-			_ = table.RawSet(lua.Number(float64(j+1)), lua.String(string(value)))
-		}
-		name := "KEYS"
-		if i == 1 {
-			name = "ARGV"
-		}
-		_ = globals.RawSet(lua.Intern(name), table.Value())
-	}
+	_ = globals.RawSet(lua.Intern("KEYS"), s.argumentTable(keys))
+	_ = globals.RawSet(lua.Intern("ARGV"), s.argumentTable(args))
 }
 
 func (s *session) record(field string, value lua.Value) lua.Value {
@@ -246,7 +317,7 @@ func (s *session) commandFailure(text string) error {
 	return failure
 }
 
-func (s *session) openRedis() {
+func (s *session) openRedis(forFunctions bool) {
 	functions := map[string]lua.GoFunction{
 		"call":          func(_ *lua.State, args []lua.Value) ([]lua.Value, error) { return s.command(args, true, false) },
 		"pcall":         func(_ *lua.State, args []lua.Value) ([]lua.Value, error) { return s.command(args, false, false) },
@@ -312,6 +383,9 @@ func (s *session) openRedis() {
 	table := s.state.NewTable(0, 0)
 	constants := map[string]lua.Value{"LOG_DEBUG": lua.Number(0), "LOG_VERBOSE": lua.Number(1), "LOG_NOTICE": lua.Number(2), "LOG_WARNING": lua.Number(3), "REPL_NONE": lua.Number(0), "REPL_AOF": lua.Number(1), "REPL_SLAVE": lua.Number(2), "REPL_REPLICA": lua.Number(2), "REPL_ALL": lua.Number(3), "REDIS_VERSION_NUM": lua.Number(float64(s.engine.config.VersionNum)), "REDIS_VERSION": lua.String(s.engine.config.Version)}
 	for _, name := range []string{"call", "pcall", "log", "LOG_DEBUG", "LOG_VERBOSE", "LOG_NOTICE", "LOG_WARNING", "REDIS_VERSION_NUM", "REDIS_VERSION", "setresp", "sha1hex", "error_reply", "status_reply", "set_repl", "REPL_NONE", "REPL_AOF", "REPL_SLAVE", "REPL_REPLICA", "REPL_ALL", "acl_check_cmd", "breakpoint", "debug", "replicate_commands"} {
+		if forFunctions && (name == "breakpoint" || name == "debug" || name == "replicate_commands") {
+			continue
+		}
 		value := constants[name]
 		if function := functions[name]; function != nil {
 			value = s.state.Function(name, function)

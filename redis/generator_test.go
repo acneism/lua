@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"math"
 	"math/rand/v2"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/acneism/lua/internal/redistest"
+	"github.com/acneism/lua/redis"
 )
 
 func pick(random *rand.Rand, items ...string) string { return items[random.IntN(len(items))] }
@@ -448,6 +450,63 @@ func extensionCase(random *rand.Rand) string {
 		call = msgpackCall(random)
 	}
 	return describeSource + "local t = {pcall(function() return " + call + " end)} for i = 1, 3 do t[i] = d(t[i]) end return t"
+}
+
+func functionLibraryCode(random *rand.Rand, name string) string {
+	var code strings.Builder
+	fmt.Fprintf(&code, "#!lua name=%s\n", name)
+	if random.IntN(5) == 0 {
+		code.WriteString("local count = 0\n")
+	}
+	for index := range 1 + random.IntN(3) {
+		function := fmt.Sprintf("%s_f%d", name, index)
+		body := pick(random, "return 1", "return args[1]", "return keys[1]", "return {#keys, #args}", "return redis.call('SET', keys[1] or 'k', args[1] or 'v')", "return redis.call('GET', keys[1] or 'k')", "return redis.pcall('INCR', 'h')", "error('boom')", "error({err='MY code'})", "return redis.error_reply('E x')", "return redis.status_reply('S')", "return KEYS", "return ARGV", "return __redis__err__handler", "return nosuch", "x = 1", "return type(_G)", "local n = 0 for k in pairs(_G) do n = n + 1 end return n", "return redis.breakpoint", "return redis.debug", "return redis.replicate_commands", "return type(redis.register_function)", "redis.register_function('later', function() end)", "return getmetatable(_G) ~= nil", "return tostring(rawget(_G, 'redis') ~= nil)", "redis.setresp(3) return {map={a=1}}", "return cjson.encode({1})", "return loadstring('return 1')()", "return loadstring('x = 1')()", "return (select('#', pcall(error)))", "return debug", "local c = 0 for k in pairs(redis) do c = c + 1 end return c")
+		switch random.IntN(4) {
+		case 0:
+			fmt.Fprintf(&code, "redis.register_function('%s', function(keys, args) %s end)\n", function, body)
+		case 1:
+			fmt.Fprintf(&code, "redis.register_function{function_name='%s', callback=function(keys, args) %s end, flags={'no-writes'}}\n", function, body)
+		case 2:
+			fmt.Fprintf(&code, "redis.register_function{function_name='%s', callback=function(keys, args) %s end, description='d%d', flags={%s}}\n", function, body, index, pick(random, "", "'allow-oom'", "'allow-stale','NO-WRITES'", "'no-cluster'", "'allow-cross-slot-keys'"))
+		default:
+			fmt.Fprintf(&code, "local function g(keys, args) %s end\nredis.register_function('%s', g)\n", body, function)
+		}
+	}
+	return code.String()
+}
+
+func functionBadCode(random *rand.Rand) string {
+	return pick(random, "", "return 1", "#!", "#!lua", "#!lua\nreturn 1", "#!lua name=\n", "#!lua name=a-b\n", "#!lua name=bad name\n", "#!lua name=a name=b\n", "#!lua foo=bar\n", "#!js name=x\n", "#!LUA name=bad1\nredis.register_function('badf1', function() end)", "#!lua name=bad\n", "#!lua name=bad\nreturn 1", "#!lua name=bad\n+", "#!lua name=bad\n\n\nerror('x')", "#!lua name=bad\nreturn pairs", "#!lua name=bad\nreturn math", "#!lua name=bad\nreturn redis.call", "#!lua name=bad\nreturn redis.setresp", "#!lua name=bad\nx=1", "#!lua name=bad\nredis.foo=1", "#!lua name=bad\nredis.register_function()", "#!lua name=bad\nredis.register_function(1)", "#!lua name=bad\nredis.register_function({})", "#!lua name=bad\nredis.register_function('a')", "#!lua name=bad\nredis.register_function('a',1)", "#!lua name=bad\nredis.register_function({},function() end)", "#!lua name=bad\nredis.register_function(1,function() end)", "#!lua name=bad\nredis.register_function('a-b',function() end)", "#!lua name=bad\nredis.register_function('',function() end)", "#!lua name=bad\nredis.register_function('a',function() end,3)", "#!lua name=bad\nredis.register_function{function_name=1,callback=function() end}", "#!lua name=bad\nredis.register_function{function_name={},callback=function() end}", "#!lua name=bad\nredis.register_function{callback=function() end}", "#!lua name=bad\nredis.register_function{function_name='a'}", "#!lua name=bad\nredis.register_function{function_name='a',callback=1}", "#!lua name=bad\nredis.register_function{function_name='a',callback=function() end,flags=1}", "#!lua name=bad\nredis.register_function{function_name='a',callback=function() end,flags={'x'}}", "#!lua name=bad\nredis.register_function{function_name='a',callback=function() end,flags={{}}}", "#!lua name=bad\nredis.register_function{function_name='a',callback=function() end,description={}}", "#!lua name=bad\nredis.register_function{function_name='a',callback=function() end,foo=1}", "#!lua name=bad\nredis.register_function{[1]=1}", "#!lua name=bad\nredis.register_function{[{}]=1}", "#!lua name=bad\nredis.register_function('a',function() end) redis.register_function('a',function() end)", "#!lua name=bad\nredis.log(redis.LOG_NOTICE,'x')", "#!lua name=bad\nreturn redis.REDIS_VERSION .. redis.REDIS_VERSION_NUM", "#!lua name=bad\nlocal s = '' for k in redis do end", "#!lua name=bad\nreturn _G", "#!lua name=bad\nrawset({},1,1)", "#!lua name=lib0\nredis.register_function('lib1_f0',function() end)")
+}
+
+func normalizeFunctionList(reply redis.Reply) redis.Reply {
+	if reply.Type != redis.ArrayReply {
+		return reply
+	}
+	name := func(item redis.Reply) string {
+		if item.Type == redis.MapReply && len(item.Pairs) > 0 {
+			return item.Pairs[0].Value.Str
+		}
+		if len(item.Elements) > 1 {
+			return item.Elements[1].Str
+		}
+		return ""
+	}
+	slices.SortFunc(reply.Elements, func(a, b redis.Reply) int { return strings.Compare(name(a), name(b)) })
+	for index := range reply.Elements {
+		library := &reply.Elements[index]
+		for pair := range library.Pairs {
+			if library.Pairs[pair].Key.Str == "functions" {
+				library.Pairs[pair].Value = normalizeFunctionList(library.Pairs[pair].Value)
+			}
+		}
+		for element := 0; element+1 < len(library.Elements); element += 2 {
+			if library.Elements[element].Str == "functions" {
+				library.Elements[element+1] = normalizeFunctionList(library.Elements[element+1])
+			}
+		}
+	}
+	return reply
 }
 
 func luaNumber(random *rand.Rand) string {

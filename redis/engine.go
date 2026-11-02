@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"bytes"
 	"container/list"
 	"crypto/sha1"
 	"encoding/hex"
@@ -59,10 +60,11 @@ type RunInfo struct {
 }
 
 type compiledScript struct {
-	sha   string
-	proto *lua.Proto
-	flags Flags
-	lru   *list.Element
+	sha     string
+	proto   *lua.Proto
+	flags   Flags
+	shebang bool
+	lru     *list.Element
 }
 type execution struct {
 	run             Run
@@ -70,6 +72,7 @@ type execution struct {
 	killed, written atomic.Bool
 	abort           *Reply
 	resp            int
+	caller          [][]byte
 }
 type Engine struct {
 	config  Config
@@ -78,6 +81,8 @@ type Engine struct {
 	lru     list.List
 	free    []*session
 	running map[*execution]struct{}
+
+	functions functionRegistry
 }
 
 func NewEngine(config Config) *Engine {
@@ -90,7 +95,7 @@ func NewEngine(config Config) *Engine {
 	if config.EvalCacheMax == 0 {
 		config.EvalCacheMax = 500
 	}
-	return &Engine{config: config, scripts: make(map[string]*compiledScript), running: make(map[*execution]struct{})}
+	return &Engine{config: config, scripts: make(map[string]*compiledScript), running: make(map[*execution]struct{}), functions: functionRegistry{current: newLibraryContext()}}
 }
 
 func scriptSHA(script []byte) string {
@@ -122,7 +127,7 @@ func (e *Engine) compile(script []byte, pin bool) (*compiledScript, *Reply) {
 		reply := Error("ERR Error compiling script (new function): " + err.Error())
 		return nil, &reply
 	}
-	entry := &compiledScript{sha: sha, proto: proto, flags: flags}
+	entry := &compiledScript{sha: sha, proto: proto, flags: flags, shebang: bytes.HasPrefix(script, []byte("#!"))}
 	e.scripts[sha] = entry
 	if !pin {
 		entry.lru = e.lru.PushFront(entry)
@@ -193,12 +198,28 @@ func (e *Engine) acquire() *session {
 }
 
 func (e *Engine) execute(entry *compiledScript, keys, args [][]byte, run Run) Reply {
+	if run.ReadOnly && entry.shebang && entry.flags&NoWrites == 0 {
+		return Error("ERR Can not execute a script with write flag using *_ro command.")
+	}
+	run.ReadOnly = run.ReadOnly || entry.flags&NoWrites != 0
+	s := e.acquire()
+	defer func() {
+		e.mu.Lock()
+		defer e.mu.Unlock()
+		if e.config.MemoryLimit <= 0 {
+			e.free = append(e.free, s)
+		}
+	}()
+	s.arguments(keys, args)
+	info := RunInfo{Kind: Script, SHA: entry.sha, Started: time.Now(), ReadOnly: run.ReadOnly, Replication: 3}
+	return e.runSession(s, info, run, nil, s.state.Load(entry.proto, s.globals), entry.sha, "@user_script")
+}
+
+func (e *Engine) runSession(s *session, info RunInfo, run Run, caller [][]byte, function lua.Value, name, source string, arguments ...lua.Value) Reply {
 	if run.Proto != 3 {
 		run.Proto = 2
 	}
-	run.ReadOnly = run.ReadOnly || entry.flags&NoWrites != 0
-	x := &execution{run: run, resp: 2, info: RunInfo{Kind: Script, SHA: entry.sha, Started: time.Now(), ReadOnly: run.ReadOnly, Replication: 3}}
-	s := e.acquire()
+	x := &execution{run: run, resp: 2, info: info, caller: caller}
 	s.active = x
 	e.mu.Lock()
 	e.running[x] = struct{}{}
@@ -207,13 +228,9 @@ func (e *Engine) execute(entry *compiledScript, keys, args [][]byte, run Run) Re
 		s.active = nil
 		e.mu.Lock()
 		delete(e.running, x)
-		if e.config.MemoryLimit <= 0 {
-			e.free = append(e.free, s)
-		}
 		e.mu.Unlock()
 	}()
-	s.arguments(keys, args)
-	values, err := s.state.CallWithHandler(s.state.Load(entry.proto, s.globals), s.handler)
+	values, err := s.state.CallWithHandler(function, s.handler, arguments...)
 	if x.abort != nil {
 		return *x.abort
 	}
@@ -221,12 +238,12 @@ func (e *Engine) execute(entry *compiledScript, keys, args [][]byte, run Run) Re
 		var failure *lua.Error
 		if errors.As(err, &failure) {
 			if x.killed.Load() {
-				return scriptError("ERR Script killed by user with SCRIPT KILL...", entry.sha, failure.Line)
+				return scriptError("ERR Script killed by user with SCRIPT KILL...", name, source, failure.Line)
 			}
 			if failure.Abort != nil {
 				return Abort(failure.Abort)
 			}
-			return s.errorReply(failure.Value, entry.sha)
+			return s.errorReply(failure.Value, name)
 		}
 		return Error("ERR " + err.Error())
 	}
@@ -236,8 +253,8 @@ func (e *Engine) execute(entry *compiledScript, keys, args [][]byte, run Run) Re
 	return s.fromLua(values[0], 0)
 }
 
-func scriptError(message, sha string, line int) Reply {
-	return Error(fmt.Sprintf("%s script: %s, on @user_script:%d.", message, sha, max(1, line)))
+func scriptError(message, name, source string, line int) Reply {
+	return Error(fmt.Sprintf("%s script: %s, on %s:%d.", message, name, source, max(1, line)))
 }
 
 func cloneArguments(argv [][]byte) [][]byte {
