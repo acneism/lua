@@ -1,6 +1,6 @@
 # lua
 
-A Go library for Redis Lua scripting, under development.
+A Go library for Redis Lua scripting.
 
 The compatibility target is Redis 7.2.16 and its Lua 5.1 interpreter. The module
 uses the Go standard library only. It requires Go 1.26.1 or later.
