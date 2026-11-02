@@ -33,10 +33,6 @@ const (
 	opForLoop
 	opPoll
 	opForAccumulate
-	opCallDirect
-	opCallDirectUpvalue
-	opCallDirectConstant
-	opCallDirectUpvalueConstant
 	opLoadNil
 	opGetTableK
 	opSetTableRK

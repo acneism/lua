@@ -130,10 +130,9 @@ func (t *thread) pushLua(callee *function, start, base, dest, want int) {
 	t.frames = t.frames[:depth+1]
 	entered := &t.frames[depth]
 	entered.function, entered.proto = callee, callee.proto
-	entered.start, entered.base, entered.pc = int32(start), int32(base), 0
-	entered.returnDest, entered.want = int32(dest), int32(want)
-	entered.metacallTop, entered.tailcalls = 0, 0
-	t.used, t.top = base+callee.proto.maxRegisters, base+callee.proto.parameters
+	entered.start, entered.base, entered.returnDest, entered.want = int32(start), int32(base), int32(dest), int32(want)
+	entered.pc, entered.metacallTop, entered.tailcalls = 0, 0, 0
+	t.used = base + callee.proto.maxRegisters
 }
 
 func (s *State) newClosure() {
@@ -419,32 +418,6 @@ frames:
 					continue frames
 				}
 				continue
-			case opCallDirect, opCallDirectUpvalue, opCallDirectConstant, opCallDirectUpvalueConstant:
-				value := &registers[uint8(word>>16)]
-				if op == opCallDirectUpvalue || op == opCallDirectUpvalueConstant {
-					value = active.f.function.upvalues[uint8(word>>16)].slot
-				}
-				argument := &registers[uint8(word>>24)]
-				if op == opCallDirectConstant || op == opCallDirectUpvalueConstant {
-					argument = &constants[uint16(word>>24)]
-				}
-				call := code[pc+1]
-				active.f.pc = int32(pc + 2)
-				t := active.t
-				start := max(t.used, t.top)
-				if value.luaFunction() && !value.object.function.proto.vararg && len(t.frames) < freshCalls-1 && len(t.frames) < cap(t.frames) && start+256 <= len(t.stack) && s.budget > vmCallWeight {
-					callee := value.object.function
-					s.budget -= vmCallWeight
-					if callee.proto.parameters > 0 {
-						t.stack[start] = *argument
-					}
-					t.pushLua(callee, start, start, active.base+int(uint8(call>>48)), int(int16(call>>32)))
-					clearRegisters(t.stack[start+min(callee.proto.parameters, 1) : start+callee.proto.maxRegisters])
-					continue frames
-				}
-				pc = int(active.f.pc) - 2
-				registers[uint8(code[pc-1]>>8)] = *value
-				continue
 			case opCallArithmetic, opCallArithmeticUpvalue:
 				value := &registers[uint8(word>>16)]
 				if op == opCallArithmeticUpvalue {
@@ -454,7 +427,7 @@ frames:
 				left, right := numericOperands(opcode(packed), packed, registers, constants)
 				active.f.pc = int32(pc + 2)
 				t := active.t
-				start := max(t.used, t.top)
+				start := t.used
 				if value.luaFunction() && left.object == &numberMarker && right.object == &numberMarker && !value.object.function.proto.vararg && len(t.frames) < freshCalls-1 && len(t.frames) < cap(t.frames) && start+256 <= len(t.stack) && s.budget > vmCallWeight {
 					callee := value.object.function
 					x, y := left.number, right.number
@@ -484,11 +457,12 @@ frames:
 					value = active.f.function.upvalues[uint8(word>>16)].slot
 				}
 				count := int(uint8(word >> 24))
-				loads := code[pc : pc+count+1]
+				call := code[pc+count]
 				active.f.pc = int32(pc + count + 1)
+				arguments := code[pc-1] >> 32
 				t := active.t
-				start := max(t.used, t.top)
-				if value.luaFunction() && !value.object.function.proto.needsArgTable() && s.budget > vmCallWeight && len(t.frames) < freshCalls-1 && len(t.frames) < cap(t.frames) {
+				start := t.used
+				if value.luaFunction() && s.budget > vmCallWeight && len(t.frames) < freshCalls-1 && len(t.frames) < cap(t.frames) && !value.object.function.proto.needsArgTable() {
 					callee := value.object.function
 					parameters, frameBase := callee.proto.parameters, start
 					if callee.proto.vararg {
@@ -497,23 +471,22 @@ frames:
 					if frameBase+256 <= len(t.stack) {
 						window := (*[256]Value)(t.stack[frameBase : frameBase+256])
 						provided := min(parameters, count)
-						for argument, load := range loads[:provided] {
-							if opcode(load) == opMove {
-								window[uint8(argument)] = registers[uint8(load>>16)]
+						for argument := 0; argument < provided; argument++ {
+							if index := uint8(arguments); index < fusedConstant {
+								window[uint8(argument)] = registers[index]
 							} else {
-								window[uint8(argument)] = constants[uint32(load>>16)]
+								window[uint8(argument)] = constants[index-fusedConstant]
 							}
+							arguments >>= 8
 						}
-						if frameBase != start {
-							for argument, load := range loads[provided:count] {
-								if opcode(load) == opMove {
-									t.stack[start+argument] = registers[uint8(load>>16)]
-								} else {
-									t.stack[start+argument] = constants[uint32(load>>16)]
-								}
+						for slot := start; slot < frameBase; slot++ {
+							if index := uint8(arguments); index < fusedConstant {
+								t.stack[slot] = registers[index]
+							} else {
+								t.stack[slot] = constants[index-fusedConstant]
 							}
+							arguments >>= 8
 						}
-						call := loads[count]
 						s.budget -= vmCallWeight
 						t.pushLua(callee, start, frameBase, active.base+int(uint8(call>>48)), int(int16(call>>32)))
 						clearRegisters(t.stack[frameBase+provided : frameBase+callee.proto.maxRegisters])
@@ -533,8 +506,10 @@ frames:
 				argStart := active.base + int(a) + 1
 				count := int(int16(word >> 16))
 				t := active.t
+				start := t.used
 				if count < 0 {
 					count = t.top - argStart
+					start = max(start, t.top)
 				}
 				object := registers[a].object
 				if object != nil && object.kind == TypeTable {
@@ -560,7 +535,6 @@ frames:
 					}
 					continue frames
 				}
-				start := max(t.used, t.top)
 				frameBase := start
 				if callee.proto.vararg {
 					frameBase += max(0, count-callee.proto.parameters)
@@ -583,7 +557,7 @@ frames:
 				continue frames
 			case opReturn:
 				t, f := active.t, active.f
-				if want := f.want; want >= 0 && int32(int16(word>>16)) >= want && f.returnDest >= 0 && active.index != active.stop && (t.open == nil || t.open.index < active.base) {
+				if want := f.want; want >= 0 && int32(int16(word>>16)) >= want && (t.open == nil || t.open.index < active.base) {
 					dest := int(f.returnDest)
 					if want == 1 {
 						t.stack[dest] = registers[uint8(word>>8)]
@@ -592,7 +566,7 @@ frames:
 							t.stack[dest+index] = registers[int(uint8(word>>8))+index]
 						}
 					}
-					t.used, t.top = int(f.start), dest+int(want)
+					t.used = int(f.start)
 					if f.metacallTop > 0 {
 						t.top = int(f.metacallTop) - 1
 						t.cDepth--
@@ -616,9 +590,6 @@ frames:
 						continue frames
 					}
 					t.returnValues(active.index, active.base+from, count)
-					if active.index == active.stop {
-						return nil
-					}
 					continue frames
 				}
 			case opConstant:
@@ -690,6 +661,12 @@ frames:
 							var known bool
 							found, known = table.lookup(key.text)
 							hit = known && (!found.IsNil() || table.metatable == nil)
+							if known && !hit {
+								if method, ok := s.cached(eventIndex, table.metatable); ok && method.object != nil && method.object.kind == TypeTable {
+									found, known = method.object.table.lookup(key.text)
+									hit = known && !found.IsNil()
+								}
+							}
 						}
 					} else if method, ok := s.cached(eventIndex, s.stringMeta); ok && value.text != nil && method.object != nil && method.object.kind == TypeTable {
 						var known bool
@@ -814,7 +791,6 @@ frames:
 					index := int(control.number)
 					if items := table.object.table; uint(index) < uint(items.arraySize()) {
 						s.budget--
-						active.t.top = active.base + int(a) + 5
 						value := items.arrayAt(index)
 						if value.IsNil() {
 							registers[a+3], registers[a+4] = Nil(), Nil()
@@ -845,14 +821,14 @@ frames:
 				from, wanted := int(uint8(word>>8)), int(int32(uint32(word>>16)))
 				if wanted < 0 {
 					wanted = active.base - int(active.f.start)
+					active.t.top = active.base + from + wanted
 					if from+wanted > len(registers) {
 						active.f.pc = int32(pc)
 						s.varargsAbove(from)
 						continue frames
 					}
 				}
-				t, base := active.t, active.base
-				varargs := t.stack[int(active.f.start):base]
+				varargs := active.t.stack[int(active.f.start):active.base]
 				for index := 0; index < wanted; index++ {
 					if index < len(varargs) {
 						registers[from+index] = varargs[index]
@@ -860,7 +836,6 @@ frames:
 						registers[from+index] = Nil()
 					}
 				}
-				t.top = base + from + wanted
 				continue
 			case opClose:
 				if active.t.open != nil {
@@ -1016,6 +991,13 @@ func (s *State) indexFrame(value, key *Value) bool {
 	f := t.topFrame()
 	dest := int(f.base) + int(uint8(f.proto.code[f.pc-1]>>8))
 	name := *key
+	if object := value.object; object != nil && object.kind == TypeTable && object.table.metatable != nil {
+		table := object.table
+		if method, ok := s.cached(eventIndex, table.metatable); ok && method.luaFunction() && (name.text != nil && table.getString(name.text).IsNil() || name.text == nil && table.rawMissing(name)) {
+			s.enterPair(method, *value, name, dest, 1)
+			return true
+		}
+	}
 	found, receiver, status := s.indexChain(*value, name)
 	switch status {
 	case indexFound:

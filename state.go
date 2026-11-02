@@ -46,12 +46,12 @@ func (u *upvalue) get() Value { return *u.slot }
 func (u *upvalue) set(value Value) { *u.slot = value }
 
 type frame struct {
-	function                          *function
-	proto                             *Proto
-	site                              *instruction
-	start, base, pc, returnDest, want int32
-	metacallTop                       int32
-	tailcalls                         int64
+	function                      *function
+	proto                         *Proto
+	site                          *instruction
+	start, base, returnDest, want int32
+	pc, metacallTop               int32
+	tailcalls                     int64
 }
 
 type thread struct {

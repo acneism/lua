@@ -184,44 +184,25 @@ func (c *compiler) freeze() {
 		if count := selfArguments(p.code, pc); count > 0 {
 			p.code[pc] |= uint64(count) << 24
 		}
-		if count := fusedArguments(p.code, pc); count > 0 {
+		if count, arguments, ok := fusedArguments(p.code, pc); ok {
 			op := opCallFused
 			if opcode(p.code[pc]) == opGetUpvalue {
 				op = opCallFusedUpvalue
 			}
-			p.code[pc] = p.code[pc]&^255&^(255<<24) | uint64(op) | uint64(count)<<24
+			p.code[pc] = uint64(op) | p.code[pc]&(255<<8|255<<16) | uint64(count)<<24 | arguments<<32
 		}
 	}
 	for pc := 0; pc+2 < len(p.code); pc++ {
 		load, argument, call := p.code[pc], p.code[pc+1], p.code[pc+2]
-		loadOp, argumentOp := opcode(load), opcode(argument)
-		arithmetic := argumentOp.fusedArgument()
-		if (loadOp != opMove && loadOp != opGetUpvalue) || (argumentOp != opMove && argumentOp != opConstant && !arithmetic) || opcode(call) != opCall || uint8(load>>8) != uint8(call>>8) || uint8(argument>>8) != uint8(call>>8)+1 || int16(call>>16) != 1 {
+		loadOp := opcode(load)
+		if (loadOp != opMove && loadOp != opGetUpvalue) || !opcode(argument).fusedArgument() || opcode(call) != opCall || uint8(load>>8) != uint8(call>>8) || uint8(argument>>8) != uint8(call>>8)+1 || int16(call>>16) != 1 {
 			continue
 		}
-		arg := uint32(argument >> 16)
-		if arithmetic {
-			arg = 0
+		op := opCallArithmetic
+		if loadOp == opGetUpvalue {
+			op = opCallArithmeticUpvalue
 		}
-		if arg > 65535 {
-			continue
-		}
-		op := opCallDirect
-		switch {
-		case loadOp == opGetUpvalue && argumentOp == opConstant:
-			op = opCallDirectUpvalueConstant
-		case loadOp == opGetUpvalue:
-			op = opCallDirectUpvalue
-		case argumentOp == opConstant:
-			op = opCallDirectConstant
-		}
-		if arithmetic {
-			op = opCallArithmetic
-			if loadOp == opGetUpvalue {
-				op = opCallArithmeticUpvalue
-			}
-		}
-		p.code[pc] = uint64(op) | uint64(uint8(load>>8))<<8 | uint64(uint8(load>>16))<<16 | uint64(uint16(arg))<<24
+		p.code[pc] = uint64(op) | uint64(uint8(load>>8))<<8 | uint64(uint8(load>>16))<<16
 	}
 	c.code = nil
 }
@@ -247,28 +228,36 @@ func selfArguments(code []uint64, pc int) int {
 	return 0
 }
 
-func fusedArguments(code []uint64, pc int) int {
+const fusedConstant = 128
+
+func fusedArguments(code []uint64, pc int) (int, uint64, bool) {
 	load := code[pc]
 	if opcode(load) != opMove && opcode(load) != opGetUpvalue {
-		return 0
+		return 0, 0, false
 	}
 	function := uint8(load >> 8)
 	if opcode(load) == opMove && uint8(load>>16) >= function {
-		return 0
+		return 0, 0, false
 	}
-	for count := 1; count <= 5 && pc+count < len(code); count++ {
-		word := code[pc+count]
-		if op := opcode(word); op == opCall {
-			if count < 3 || uint8(word>>8) != function || int16(word>>16) != int16(count-1) {
-				return 0
-			}
-			return count - 1
+	var arguments uint64
+	for count := 0; count <= 4 && pc+count+1 < len(code); count++ {
+		word := code[pc+count+1]
+		if opcode(word) == opCall {
+			return count, arguments, uint8(word>>8) == function && int16(word>>16) == int16(count)
 		}
-		if uint8(word>>8) != function+uint8(count) || opcode(word) == opMove && uint8(word>>16) >= function || opcode(word) != opMove && opcode(word) != opConstant {
-			return 0
+		source := uint64(uint32(word >> 16))
+		switch {
+		case uint8(word>>8) != function+uint8(count)+1:
+			return 0, 0, false
+		case opcode(word) == opMove && source < uint64(function) && source < fusedConstant:
+		case opcode(word) == opConstant && source < fusedConstant:
+			source += fusedConstant
+		default:
+			return 0, 0, false
 		}
+		arguments |= source << (8 * count)
 	}
-	return 0
+	return 0, 0, false
 }
 
 func (p *Proto) instruction(pc int) *instruction { return &p.metadata[p.sites[pc]] }
