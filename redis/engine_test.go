@@ -234,7 +234,7 @@ func TestMemoryBudgetDoesNotAccumulateAcrossRuns(t *testing.T) {
 			t.Fatal(reply)
 		}
 	}
-	if reply := e.Eval([]byte("local t={} for i=1,10000 do t[i]={i} end return t"), nil, nil, redis.Run{}); reply.Type != redis.AbortReply || reply.Err == nil {
+	if reply := e.Eval([]byte("local t={} for i=1,10000 do t[i]={i} end return t"), nil, nil, redis.Run{}); reply.Type != redis.ErrorReply || !strings.HasPrefix(reply.Str, "ERR script exceeded the memory limit script: ") || !strings.HasSuffix(reply.Str, ", on @user_script:1.") {
 		t.Fatal(reply)
 	}
 }

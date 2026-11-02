@@ -49,6 +49,8 @@ func Library() []Scenario {
 		{"CJSONRoundTrip", "local t={a=1,b={1,2,3},c='text',d=true,e=1.5} local s for i=1,10000 do s=cjson.encode(cjson.decode(cjson.encode(t))) end return #s"},
 		{"CMsgpackRoundTrip", "local t={a=1,b={1,2,3},c='text',d=true,e=1.5} local s for i=1,10000 do s=cmsgpack.pack(cmsgpack.unpack(cmsgpack.pack(t))) end return #s"},
 		{"BitOps", "local n=0 for i=1,1000000 do n=bit.bxor(n,bit.band(i,255)) end return n"},
+		{"RedisCall", "for i=1,100000 do redis.call('INCR','bench:counter') end return 1"},
+		{"HashFill", "for i=1,100000 do redis.call('HSET','bench:hash',i,i) end return 1"},
 		{"StructRoundTrip", "local n=0 for i=1,200000 do n=n+struct.unpack('>I4',struct.pack('>I4',i)) end return n"},
 	}
 }

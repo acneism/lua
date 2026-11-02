@@ -240,6 +240,9 @@ func (e *Engine) runSession(s *session, info RunInfo, run Run, caller [][]byte, 
 			if x.killed.Load() {
 				return scriptError("ERR Script killed by user with SCRIPT KILL...", name, source, failure.Line)
 			}
+			if errors.Is(failure.Abort, lua.ErrMemoryLimit) {
+				return scriptError("ERR script exceeded the memory limit", name, source, failure.Line)
+			}
 			if failure.Abort != nil {
 				return Abort(failure.Abort)
 			}
@@ -277,20 +280,33 @@ func (e *Engine) Running() []RunInfo {
 	return result
 }
 
+func Busy(kind Kind) Reply {
+	if kind == Function {
+		return Error("BUSY Redis is busy running a script. You can only call FUNCTION KILL or SHUTDOWN NOSAVE.")
+	}
+	return Error("BUSY Redis is busy running a script. You can only call SCRIPT KILL or SHUTDOWN NOSAVE.")
+}
+
 func (e *Engine) Kill(kind Kind) Reply {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	if len(e.running) == 0 {
+		return Error("NOTBUSY No scripts in execution right now.")
+	}
 	found := false
 	for x := range e.running {
+		if x.written.Load() && !e.config.KillWriters {
+			return Error("UNKILLABLE Sorry the script already executed write commands against the dataset. You can either wait the script termination or kill the server in a hard way using the SHUTDOWN NOSAVE command.")
+		}
 		if x.info.Kind == kind {
 			found = true
-			if x.written.Load() && !e.config.KillWriters {
-				return Error("UNKILLABLE Sorry the script already executed write commands against the dataset. You can either wait the script termination or kill the server in a hard way using the SHUTDOWN NOSAVE command.")
-			}
 		}
 	}
 	if !found {
-		return Error("NOTBUSY No scripts in execution right now.")
+		if kind == Script {
+			return Busy(Function)
+		}
+		return Busy(Script)
 	}
 	for x := range e.running {
 		if x.info.Kind == kind {

@@ -37,6 +37,33 @@ type report struct {
 	Results                     []result
 }
 
+type memoryHost struct {
+	counters map[string]int64
+	hashes   map[string]map[string]string
+}
+
+func (h *memoryHost) Lookup(argv [][]byte) (redis.Command, bool) {
+	return redis.Command{Name: string(argv[0]), Arity: -2, Write: true}, true
+}
+
+func (h *memoryHost) Check([][]byte) *redis.Reply { return nil }
+
+func (h *memoryHost) Log(int, string) {}
+
+func (h *memoryHost) Call(argv [][]byte, _ int) redis.Reply {
+	if string(argv[0]) == "INCR" {
+		h.counters[string(argv[1])]++
+		return redis.Integer(h.counters[string(argv[1])])
+	}
+	hash := h.hashes[string(argv[1])]
+	if hash == nil {
+		hash = make(map[string]string)
+		h.hashes[string(argv[1])] = hash
+	}
+	hash[string(argv[2])] = string(argv[3])
+	return redis.Integer(1)
+}
+
 func main() {
 	address := flag.String("addr", "127.0.0.1:6390", "Redis 7.2.16 reference address")
 	output := flag.String("output", "work/bench.json", "JSON report with every raw timing and median")
@@ -122,8 +149,9 @@ func run(address, output string, rounds int, selected, profile string) error {
 		} else {
 			engine := redis.NewEngine(redis.Config{})
 			script := []byte(source)
+			host := &memoryHost{counters: make(map[string]int64), hashes: make(map[string]map[string]string)}
 			execute = func() (string, error) {
-				reply := engine.Eval(script, nil, nil, redis.Run{})
+				reply := engine.Eval(script, nil, nil, redis.Run{Host: host})
 				if reply.Type != redis.IntegerReply {
 					return "", fmt.Errorf("unexpected Go reply: %+v", reply)
 				}

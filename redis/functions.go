@@ -416,6 +416,10 @@ func (e *Engine) FunctionStats() Reply {
 	running := Null()
 	e.mu.Lock()
 	for x := range e.running {
+		if x.info.Kind == Script {
+			e.mu.Unlock()
+			return Busy(Script)
+		}
 		if x.info.Kind == Function {
 			command := Array()
 			for _, arg := range x.caller {

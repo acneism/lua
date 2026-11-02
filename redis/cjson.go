@@ -145,6 +145,7 @@ func (e *cjsonEncoder) appendNumber(value lua.Value) {
 func (e *cjsonEncoder) arrayLength(table *lua.Table, value lua.Value) int32 {
 	highest, items := int32(0), int32(0)
 	for key, _, err := table.Next(lua.Nil()); !key.IsNil() && err == nil; key, _, err = table.Next(key) {
+		e.state.Tick()
 		if key.Type() != lua.TypeNumber {
 			return -1
 		}
@@ -167,6 +168,7 @@ func (e *cjsonEncoder) arrayLength(table *lua.Table, value lua.Value) int32 {
 }
 
 func (e *cjsonEncoder) appendValue(value lua.Value, depth int32, slots int) {
+	e.state.Tick()
 	switch value.Type() {
 	case lua.TypeString:
 		e.appendString(value.Text())
@@ -381,6 +383,7 @@ func (d *cjsonDecoder) stringToken(token *cjsonParsed) {
 		d.at++
 	}
 	d.at++
+	d.state.Reserve(int64(len(d.tmp)))
 	token.kind, token.text = cjsonString, string(d.tmp)
 }
 
@@ -409,7 +412,7 @@ func (d *cjsonDecoder) invalidNumber() bool {
 
 func (d *cjsonDecoder) numberToken(token *cjsonParsed) {
 	token.kind = cjsonNumber
-	number, end := cStrtod(cstring(d.data[d.at:]))
+	number, end := cStrtod(d.data[d.at:])
 	if end == 0 {
 		d.errorToken(token, "invalid number")
 		return
@@ -524,6 +527,7 @@ func cStrtod(text string) (float64, int) {
 }
 
 func (d *cjsonDecoder) next(token *cjsonParsed) {
+	d.state.Tick()
 	var c byte
 	for {
 		c = d.peek(d.at)
@@ -675,6 +679,7 @@ func (s *session) openCJSON() lua.Value {
 			}
 			encoder := cjsonEncoder{state: state, cfg: cfg}
 			encoder.appendValue(args[0], 0, 1)
+			state.Reserve(int64(len(encoder.out)))
 			return state.Result(lua.String(string(encoder.out))), nil
 		}},
 		{"decode", func(state *lua.State, args []lua.Value) ([]lua.Value, error) {

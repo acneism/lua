@@ -70,9 +70,10 @@ func msgpackHeader(dst []byte, count int, fix, wide16, wide32 byte) []byte {
 	return binary.BigEndian.AppendUint32(append(dst, wide32), uint32(count))
 }
 
-func msgpackIsArray(table *lua.Table) bool {
+func msgpackIsArray(state *lua.State, table *lua.Table) bool {
 	highest, count := int32(0), int32(0)
 	for key, _, err := table.Next(lua.Nil()); !key.IsNil() && err == nil; key, _, err = table.Next(key) {
+		state.Tick()
 		if key.Type() != lua.TypeNumber {
 			return false
 		}
@@ -88,7 +89,8 @@ func msgpackIsArray(table *lua.Table) bool {
 	return highest == count
 }
 
-func msgpackValue(dst []byte, value lua.Value, level int) []byte {
+func msgpackValue(state *lua.State, dst []byte, value lua.Value, level int) []byte {
+	state.Tick()
 	switch value.Type() {
 	case lua.TypeString:
 		return msgpackBytes(dst, value.Text())
@@ -108,22 +110,23 @@ func msgpackValue(dst []byte, value lua.Value, level int) []byte {
 			return append(dst, 0xc0)
 		}
 		table := value.Table()
-		if msgpackIsArray(table) {
+		if msgpackIsArray(state, table) {
 			length := table.Len()
 			dst = msgpackHeader(dst, length, 0x90, 0xdc, 0xdd)
 			for index := 1; index <= length; index++ {
-				dst = msgpackValue(dst, table.RawGet(lua.Number(float64(index))), level+1)
+				dst = msgpackValue(state, dst, table.RawGet(lua.Number(float64(index))), level+1)
 			}
 			return dst
 		}
 		count := 0
 		for key, _, err := table.Next(lua.Nil()); !key.IsNil() && err == nil; key, _, err = table.Next(key) {
+			state.Tick()
 			count++
 		}
 		dst = msgpackHeader(dst, count, 0x80, 0xde, 0xdf)
 		for key, item, err := table.Next(lua.Nil()); !key.IsNil() && err == nil; key, item, err = table.Next(key) {
-			dst = msgpackValue(dst, key, level+1)
-			dst = msgpackValue(dst, item, level+1)
+			dst = msgpackValue(state, dst, key, level+1)
+			dst = msgpackValue(state, dst, item, level+1)
 		}
 		return dst
 	}
@@ -139,8 +142,9 @@ func msgpackPack(state *lua.State, args []lua.Value) ([]lua.Value, error) {
 	}
 	var out []byte
 	for _, value := range args {
-		out = msgpackValue(out, value, 0)
+		out = msgpackValue(state, out, value, 0)
 	}
+	state.Reserve(int64(len(out)))
 	return state.Result(lua.String(string(out))), nil
 }
 
@@ -225,6 +229,7 @@ func (c *msgpackCursor) text(header int, length uint64) lua.Value {
 		return lua.Nil()
 	}
 	end := header + int(length)
+	c.state.Reserve(int64(length))
 	value := lua.String(c.data[header:end])
 	c.data = c.data[end:]
 	return value
@@ -236,6 +241,7 @@ func (c *msgpackCursor) number(size int, value float64) lua.Value {
 }
 
 func (c *msgpackCursor) decode(slots int) lua.Value {
+	c.state.Tick()
 	if !c.need(1) {
 		return lua.Nil()
 	}
