@@ -151,4 +151,4 @@ jobs:
         env:
           REDIS_REF_ADDR: 127.0.0.1:6379
           LUA_DIFF_STEPS: '2000'
-        run: go test ./redis -run '^Test(ScriptScenario|ScriptDifferential|RESP3Differential|LuaDifferential)$' -count=1 -timeout=10m
+        run: go test ./redis -run '^Test(ScriptScenario|ScriptDifferential|RESP3Differential|LibraryDifferential|LuaDifferential)$' -count=1 -timeout=10m

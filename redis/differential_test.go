@@ -143,6 +143,19 @@ func TestRESP3Differential(t *testing.T) {
 	}
 }
 
+func TestLibraryDifferential(t *testing.T) {
+	reference, backend := differentialClients(t)
+	host := &redistest.Host{Client: backend}
+	engine := redis.NewEngine(redis.Config{})
+	seeds, steps := differentialSeeds(t)
+	for _, seed := range seeds {
+		random := rand.New(rand.NewPCG(seed, seed^0xa4093822299f31d0))
+		for step := range steps {
+			compareRun(t, redistest.Case{Source: libraryCase(random)}, engine, host, reference, seed, step, false)
+		}
+	}
+}
+
 func TestLuaDifferential(t *testing.T) {
 	reference, backend := differentialClients(t)
 	host := &redistest.Host{Client: backend}

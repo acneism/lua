@@ -250,6 +250,80 @@ func resp3Case(random *rand.Rand) redistest.Case {
 	return item
 }
 
+func luaHex(expression string) string {
+	return "(string.gsub(" + expression + ",'.',function(c) return string.format('%02x',c:byte()) end))"
+}
+
+func bitOperand(random *rand.Rand) string {
+	if random.IntN(3) == 0 {
+		return pick(random, "'7'", "'0x10'", "' 5 '", "'x'", "nil", "true", "{}", "0/0", "1/0", "-1/0", "2^31", "2^32", "2^32+5", "-2^31", "2^52", "2^53", "1e300", "-1e300", "0.5", "1.5", "-0.5", "2.5")
+	}
+	return strconv.FormatInt(int64(random.Uint32())-1<<31, 10)
+}
+
+func bitCall(random *rand.Rand) string {
+	switch random.IntN(5) {
+	case 0:
+		return "bit." + pick(random, "tobit", "bnot", "bswap") + "(" + bitOperand(random) + ")"
+	case 1:
+		operands := make([]string, random.IntN(5))
+		for index := range operands {
+			operands[index] = bitOperand(random)
+		}
+		return "bit." + pick(random, "band", "bor", "bxor") + "(" + strings.Join(operands, ",") + ")"
+	case 2:
+		return "bit." + pick(random, "lshift", "rshift", "arshift", "rol", "ror") + "(" + bitOperand(random) + "," + pick(random, "0", "1", "4", "31", "32", "33", "-1", "'3'", bitOperand(random)) + ")"
+	case 3:
+		return "bit.tohex(" + bitOperand(random) + ")"
+	}
+	return "bit.tohex(" + bitOperand(random) + "," + pick(random, "0", "1", "4", "8", "9", "-1", "-4", "-8", "-9", "-2^31", "'2'", "nil", bitOperand(random)) + ")"
+}
+
+func structFormatText(random *rand.Rand) string {
+	var format strings.Builder
+	for range random.IntN(6) {
+		format.WriteString(pick(random, "b", "B", "h", "H", "l", "L", "T", "i", "I", "f", "d", "x", " ", "<", ">", "!", "!1", "!2", "!4", "!8", "!16", "!3", "!0", "i1", "i2", "i3", "i4", "i7", "i8", "i9", "i16", "i32", "i33", "I1", "I2", "I3", "I8", "I16", "c0", "c1", "c3", "s", "q", "?", "99999999999"))
+	}
+	return format.String()
+}
+
+func structValue(random *rand.Rand) string {
+	return pick(random, "0", "1", "-1", "255", "256", "-129", "65535", "1.5", "-1.5", "2^31", "2^32", "2^53", "2^63", "2^64", "-2^63", "-2^64", "1e300", "0/0", "1/0", "-1/0", "0.1", "'x'", "'abc'", "''", "'a\\0b'", "'12'", "true", "nil", "{}")
+}
+
+func structData(random *rand.Rand) string {
+	var data strings.Builder
+	for range random.IntN(24) {
+		fmt.Fprintf(&data, "\\%d", random.IntN(256))
+	}
+	return "'" + data.String() + "'"
+}
+
+func structCall(random *rand.Rand) string {
+	format := "'" + structFormatText(random) + "'"
+	switch random.IntN(4) {
+	case 0:
+		values := make([]string, 1+random.IntN(5))
+		for index := range values {
+			values[index] = structValue(random)
+		}
+		return "(function(...) local ok, value = pcall(struct.pack, ...) if ok then return " + luaHex("value") + " end return value end)(" + format + "," + strings.Join(values, ",") + ")"
+	case 1:
+		return "struct.size(" + format + ")"
+	case 2:
+		return "struct.unpack(" + format + "," + structData(random) + pick(random, "", ",1", ",2", ",0", ",-1", ",100", ",nil", ",'2'", ",1.5") + ")"
+	}
+	return "struct.unpack(" + format + ",struct.pack(" + format + "," + structValue(random) + "," + structValue(random) + "," + structValue(random) + "))"
+}
+
+func libraryCase(random *rand.Rand) string {
+	call := bitCall(random)
+	if random.IntN(2) == 0 {
+		call = structCall(random)
+	}
+	return describeSource + "local t = {pcall(function() return " + call + " end)} local s = {} for i = 1, 40 do s[i] = d(t[i]) end return s"
+}
+
 func luaNumber(random *rand.Rand) string {
 	return pick(random, "0", "1", "-1", "2", "3", "7", "-7", "10", "255", "1.5", "-2.25", "0.1", "1/3", "2/3", "1e15", "1e16", "1e100", "-1e-5",
 		"2^53", "2^63", "2^31", "3.14159265358979", "123456789012345", "0.5", "-0.0", "1/0", "-1/0", "0/0", "100", "17", "-3.5", "1e-300")

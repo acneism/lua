@@ -72,6 +72,10 @@ func newSession(engine *Engine) *session {
 		value := original.RawGet(lua.String(name))
 		if name == "debug" {
 			value = s.debugLibrary()
+		} else if name == "bit" {
+			value = s.openBit()
+		} else if name == "struct" {
+			value = s.openStruct()
 		} else if value.IsNil() {
 			value = s.state.NewTable(0, 0).Value()
 		}

@@ -25,6 +25,15 @@ func (s *State) library(name string, order []string, functions map[string]GoFunc
 	return table
 }
 
+func (s *State) Raise(message string)                        { s.raise(message, 1) }
+func (s *State) ArgError(index int, message string)          { s.argError(index, message) }
+func (s *State) CheckNumber(args []Value, index int) float64 { return s.checkNumber(args, index) }
+func (s *State) CheckText(args []Value, index int) string    { return s.checkText(args, index) }
+func (s *State) OptionalInteger(args []Value, index, fallback int) int {
+	return s.optionalInt(args, index, fallback)
+}
+func (s *State) Result(value Value) []Value { return s.values1(value) }
+
 func (s *State) checkInt(args []Value, index int) int {
 	return int(int32(luaInteger(s.checkNumber(args, index))))
 }

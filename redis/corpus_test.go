@@ -62,7 +62,7 @@ func (h *replayHost) Call(_ [][]byte, proto int) redis.Reply {
 
 func TestEngineCorpus(t *testing.T) {
 	var entries []redistest.Case
-	for _, file := range []string{"testdata/engine.json", "testdata/handler.json", "testdata/appendix.json", "testdata/resp3.json"} {
+	for _, file := range []string{"testdata/engine.json", "testdata/handler.json", "testdata/appendix.json", "testdata/resp3.json", "testdata/libraries.json"} {
 		data, err := os.ReadFile(file)
 		if err != nil {
 			t.Fatal(err)

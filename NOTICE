@@ -40,8 +40,16 @@ The state-local random generator follows Redis's rand48 recurrence and seed
 conversion. The Lua string, table, and math libraries adapt the upstream
 implementations listed above.
 
-No bit, struct, cjson, cmsgpack, fpconv, CRC64, or LZF implementation is included
-in A2. Add notices from the exact upstream source headers when porting them.
+No cjson, cmsgpack, CRC64, or LZF implementation is included yet. Add notices from
+the exact upstream source headers when porting them.
+
+Lua BitOp 1.0.2, deps/lua/src/lua_bit.c in Redis 7.2.16
+Copyright (C) 2008-2012 Mike Pall. All rights reserved.
+License: MIT; full terms in LICENSES/LuaBitOp.txt. redis/bit.go translates it.
+
+struct library, deps/lua/src/lua_struct.c in Redis 7.2.16
+Copyright (C) 2010-2018 Lua.org, PUC-Rio. All rights reserved.
+License: MIT; full terms in LICENSES/lua_struct.txt. redis/struct.go translates it.
 
 ARM optimized-routines, release v21.02
 Copyright (c) 2018-2020, Arm Limited.

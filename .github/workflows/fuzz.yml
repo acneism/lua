@@ -40,6 +40,8 @@ jobs:
             pkg: .
           - target: FuzzRESP
             pkg: ./redis
+          - target: FuzzStruct
+            pkg: ./redis
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-go@v7.0.0
