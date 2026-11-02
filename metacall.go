@@ -25,14 +25,20 @@ func (s *State) indexChain(value, key Value) (Value, Value, int) {
 		table := value.object.table
 		var result Value
 		if key.text != nil {
-			result = table.getString(key.text)
+			var known bool
+			if result, known = table.lookup(key.text); !known {
+				result = table.getString(key.text)
+			}
 		} else {
 			result = table.RawGet(key)
 		}
 		if !result.IsNil() || table.metatable == nil {
 			return result, Nil(), indexFound
 		}
-		method := s.eventMethod(table.metatable, eventIndex)
+		method, ok := s.cached(eventIndex, table.metatable)
+		if !ok {
+			method = s.eventMethod(table.metatable, eventIndex)
+		}
 		if method.IsNil() {
 			return Nil(), Nil(), indexFound
 		}
