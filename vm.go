@@ -438,7 +438,6 @@ frames:
 					if frameBase+256 <= len(t.stack) {
 						window := (*[256]Value)(t.stack[frameBase : frameBase+256])
 						provided := min(parameters, count)
-						ready := true
 						for argument := 0; argument < provided; argument++ {
 							index := uint8(arguments)
 							arguments >>= 8
@@ -450,8 +449,7 @@ frames:
 								load := code[int(active.f.pc)-count-1+argument]
 								left, right := numericOperands(opcode(load), load, registers, constants)
 								if left.object != &numberMarker || right.object != &numberMarker {
-									ready = false
-									break
+									goto fallback
 								}
 								x, y := left.number, right.number
 								switch opcode(load).numericOperation() {
@@ -464,12 +462,13 @@ frames:
 								}
 							}
 						}
-						for argument := provided; ready && argument < count; argument++ {
+						for argument := provided; argument < count; argument++ {
 							index := uint8(arguments)
 							arguments >>= 8
 							if index == fusedArithmetic {
-								ready = false
-							} else if frameBase != start {
+								goto fallback
+							}
+							if frameBase != start {
 								if index < fusedConstant {
 									t.stack[start+argument-provided] = registers[index]
 								} else {
@@ -477,14 +476,13 @@ frames:
 								}
 							}
 						}
-						if ready {
-							s.budget -= vmCallWeight
-							t.pushLua(callee, start, frameBase, active.base+int(uint8(call>>48)), int(int16(call>>32)))
-							clearRegisters(t.stack[frameBase+provided : frameBase+callee.proto.maxRegisters])
-							continue frames
-						}
+						s.budget -= vmCallWeight
+						t.pushLua(callee, start, frameBase, active.base+int(uint8(call>>48)), int(int16(call>>32)))
+						clearRegisters(t.stack[frameBase+provided : frameBase+callee.proto.maxRegisters])
+						continue frames
 					}
 				}
+			fallback:
 				pc = int(active.f.pc) - count - 1
 				registers[uint8(code[pc-1]>>8)] = *value
 				continue
