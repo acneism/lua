@@ -180,11 +180,14 @@ func run(address, output string, rounds int, selected, profile string) error {
 		if selected != "" && selected != item.Name {
 			continue
 		}
-		calibration := time.Now()
-		if _, err = client.command("EVAL", item.Source, "0"); err != nil {
-			return err
+		duration := time.Hour
+		for range 3 {
+			calibration := time.Now()
+			if _, err = client.command("EVAL", item.Source, "0"); err != nil {
+				return err
+			}
+			duration = min(duration, time.Since(calibration))
 		}
-		duration := time.Since(calibration)
 		repetitions := max(1, int((35*time.Millisecond+duration-1)/duration))
 		source := item.Source
 		if repetitions > 1 {
