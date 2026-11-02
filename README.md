@@ -49,11 +49,12 @@ platform. Binary chunks remain unsupported as input. See the
 
 Each scenario runs as a Go benchmark in process and as EVAL in Redis 7.2.16
 (jemalloc build) on the same machine. The figure is Go time divided by Redis
-time, the median of five alternating runs; below 1 means faster than Redis.
-The limit for every scenario is 1.5.
+time: the median of five alternating runs in a process, then the median of five
+fresh processes; below 1 means faster than Redis. The limit for every scenario
+is 1.5.
 
-Measured on 2026-11-02 at 8e95f84 on GitHub Actions runners: 9 runs, the median
-per processor. The worst figure is 1.39 of 1.5.
+Measured on 2026-11-02 at 8e95f84 on GitHub Actions runners: 9 runs of one
+process each, the median per processor. The worst figure is 1.39 of 1.5.
 
 | Scenario | AMD EPYC 7763 (4 runs) | AMD EPYC 9V74 (3 runs) | AMD EPYC 9V45 (1 run) | Intel Xeon Platinum 8370C (1 run) | Worst run |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -99,10 +100,11 @@ The sources of all scenarios are in
 [internal/scenario/scenario.go](internal/scenario/scenario.go).
 
 The ratio varies with the processor and between runs on the same processor
-type, because Redis and Go react differently to each machine. Fib27 varies most:
-its median is about 1.2, but on a725f66, whose call path is close to the measured
-commit, it reached 1.51 and 1.58 in 2 of 15 runs, with the same binary at 1.17 in
-others. See [benchmarks](docs/benchmarks.md) for the method and history.
+type, because Redis and Go react differently to each machine. A single process
+can also be slower as a whole, which is why the limit applies to the median of
+several processes: on a725f66 Fib27 reached 1.51 and 1.58 in 2 of 15 runs, with
+the same binary at 1.17 in others. See [benchmarks](docs/benchmarks.md) for the
+method, the cause and the history.
 
 ## Interpreter example
 

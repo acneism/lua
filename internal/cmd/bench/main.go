@@ -2,11 +2,14 @@ package main
 
 import (
 	"bufio"
+	"cmp"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"runtime"
 	"runtime/pprof"
 	"slices"
@@ -30,6 +33,7 @@ type result struct {
 	Samples       []sample
 	RedisNS, GoNS int64
 	Ratio         float64
+	Processes     []float64
 }
 type report struct {
 	GoVersion, OS, Architecture string
@@ -70,11 +74,69 @@ func main() {
 	rounds := flag.Int("rounds", 5, "alternating Redis and Go measurements per scenario")
 	selected := flag.String("scenario", "", "single scenario name; empty runs all scenarios")
 	profile := flag.String("cpuprofile", "", "optional Go CPU profile output file")
+	processes := flag.Int("processes", 5, "fresh processes per scenario; the report keeps the median one. A profile uses one process")
 	flag.Parse()
-	if err := run(*address, *output, *rounds, *selected, *profile); err != nil {
+	var err error
+	if *processes > 1 && *profile == "" {
+		err = runProcesses(*address, *output, *rounds, *selected, *processes)
+	} else {
+		err = run(*address, *output, *rounds, *selected, *profile)
+	}
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+func runProcesses(address, output string, rounds int, selected string, count int) error {
+	executable, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	directory, err := os.MkdirTemp("", "bench")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = os.RemoveAll(directory) }()
+	reports := make([]report, count)
+	for index := range reports {
+		path := filepath.Join(directory, strconv.Itoa(index)+".json")
+		command := exec.Command(executable, "-addr", address, "-rounds", strconv.Itoa(rounds), "-scenario", selected, "-processes", "1", "-output", path)
+		command.Stdout, command.Stderr = os.Stdout, os.Stderr
+		if err = command.Run(); err != nil {
+			return err
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if err = json.Unmarshal(data, &reports[index]); err != nil {
+			return err
+		}
+	}
+	merged := reports[0]
+	merged.Results = make([]result, len(reports[0].Results))
+	for index := range merged.Results {
+		candidates := make([]result, count)
+		ratios := make([]float64, count)
+		for process := range reports {
+			candidates[process] = reports[process].Results[index]
+			ratios[process] = candidates[process].Ratio
+		}
+		slices.SortFunc(candidates, func(a, b result) int { return cmp.Compare(a.Ratio, b.Ratio) })
+		merged.Results[index] = candidates[count/2]
+		merged.Results[index].Processes = ratios
+		fmt.Printf("%s median of %d processes ratio %.3f from %.3f\n", merged.Results[index].Name, count, merged.Results[index].Ratio, ratios)
+	}
+	return writeReport(output, merged)
+}
+
+func writeReport(output string, report report) error {
+	data, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(output, append(data, '\n'), 0644)
 }
 
 func run(address, output string, rounds int, selected, profile string) error {
@@ -225,11 +287,7 @@ func run(address, output string, rounds int, selected, profile string) error {
 	if len(report.Results) == 0 {
 		return fmt.Errorf("unknown scenario %q", selected)
 	}
-	data, err := json.MarshalIndent(report, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(output, append(data, '\n'), 0644)
+	return writeReport(output, report)
 }
 
 type reference struct {

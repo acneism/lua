@@ -9,6 +9,19 @@ four on EPYC 7763, three on EPYC 9V74, one on EPYC 9V45, one on Xeon Platinum
 8370C. All 37 scenarios stay at or below 1.39; the table is in the
 [README](../README.md#performance).
 
+Later measurements take the median of five fresh processes for each scenario,
+because rounds in one process are not independent. A store and a load conflict
+when the low bits of their physical addresses match: 16 bits on the EPYC
+processors measured, where a page pair conflicts in about 1 case of 16, and 20
+bits on Xeon 8370C. The operating system assigns the pages once, so every round
+of an unlucky process is slow while Redis stays the same. Moving the Lua stack to
+another physical page at the same virtual address removed the slowdown on EPYC
+7763, EPYC 9V74 and Xeon 8573C (28.62 to 23.46 ms on 7763), and the same physical
+page at another virtual address kept it. Go cannot choose physical pages, so this
+is a property of the measurement and not of one commit. Not every outlier was
+traced to this: CallMetamethod 1.57 and SmallTables 1.52 were not examined, and
+Fib27 1.51 on EPYC 9V45 does not fit, because the effect there stayed under 5%.
+
 The previous layout of the dispatch loop stored the instruction word and the PC
 on the stack for every instruction. Removing those stores changed these scenarios
 in one run on EPYC 9V74 against 3ba27ac: Ipairs 0.64, TableInsert 0.65, WhileLoop
@@ -77,6 +90,9 @@ Reproduce the comparison on an otherwise idle VM:
 mkdir -p work
 go run ./internal/cmd/bench -addr 127.0.0.1:6390 -output work/bench.json
 ```
+
+The command starts five fresh processes and reports the median one for each
+scenario, with every ratio in `Processes`; `-processes 1` measures one process.
 
 Use `go test . -run '^$' -bench . -benchmem` for Go microbenchmarks and
 `-cpuprofile` on the comparison command for an exploratory aggregate profile.
