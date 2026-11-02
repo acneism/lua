@@ -438,26 +438,51 @@ frames:
 					if frameBase+256 <= len(t.stack) {
 						window := (*[256]Value)(t.stack[frameBase : frameBase+256])
 						provided := min(parameters, count)
+						ready := true
 						for argument := 0; argument < provided; argument++ {
-							if index := uint8(arguments); index < fusedConstant {
+							index := uint8(arguments)
+							arguments >>= 8
+							if index < fusedConstant {
 								window[uint8(argument)] = registers[index]
-							} else {
+							} else if index != fusedArithmetic {
 								window[uint8(argument)] = constants[index-fusedConstant]
-							}
-							arguments >>= 8
-						}
-						for slot := start; slot < frameBase; slot++ {
-							if index := uint8(arguments); index < fusedConstant {
-								t.stack[slot] = registers[index]
 							} else {
-								t.stack[slot] = constants[index-fusedConstant]
+								load := code[int(active.f.pc)-count-1+argument]
+								left, right := numericOperands(opcode(load), load, registers, constants)
+								if left.object != &numberMarker || right.object != &numberMarker {
+									ready = false
+									break
+								}
+								x, y := left.number, right.number
+								switch opcode(load).numericOperation() {
+								case operationAdd:
+									window[uint8(argument)] = Number(luaNaN(x+y, x, y))
+								case operationSubtract:
+									window[uint8(argument)] = Number(luaNaN(x-y, x, y))
+								default:
+									window[uint8(argument)] = Number(luaNaN(x*y, x, y))
+								}
 							}
-							arguments >>= 8
 						}
-						s.budget -= vmCallWeight
-						t.pushLua(callee, start, frameBase, active.base+int(uint8(call>>48)), int(int16(call>>32)))
-						clearRegisters(t.stack[frameBase+provided : frameBase+callee.proto.maxRegisters])
-						continue frames
+						for argument := provided; ready && argument < count; argument++ {
+							index := uint8(arguments)
+							arguments >>= 8
+							if index == fusedArithmetic {
+								ready = false
+							} else if frameBase != start {
+								if index < fusedConstant {
+									t.stack[start+argument-provided] = registers[index]
+								} else {
+									t.stack[start+argument-provided] = constants[index-fusedConstant]
+								}
+							}
+						}
+						if ready {
+							s.budget -= vmCallWeight
+							t.pushLua(callee, start, frameBase, active.base+int(uint8(call>>48)), int(int16(call>>32)))
+							clearRegisters(t.stack[frameBase+provided : frameBase+callee.proto.maxRegisters])
+							continue frames
+						}
 					}
 				}
 				pc = int(active.f.pc) - count - 1

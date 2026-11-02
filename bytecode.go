@@ -209,7 +209,10 @@ func selfArguments(code []uint64, pc int) int {
 	return 0
 }
 
-const fusedConstant = 128
+const (
+	fusedConstant   = 128
+	fusedArithmetic = 255
+)
 
 func fusedArguments(code []uint64, pc int) (int, uint64, bool) {
 	load := code[pc]
@@ -231,14 +234,24 @@ func fusedArguments(code []uint64, pc int) (int, uint64, bool) {
 		case uint8(word>>8) != function+uint8(count)+1:
 			return 0, 0, false
 		case opcode(word) == opMove && source < uint64(function) && source < fusedConstant:
-		case opcode(word) == opConstant && source < fusedConstant:
+		case opcode(word) == opConstant && source < fusedArithmetic-fusedConstant:
 			source += fusedConstant
+		case fusedOperation(word, function):
+			source = fusedArithmetic
 		default:
 			return 0, 0, false
 		}
 		arguments |= source << (8 * count)
 	}
 	return 0, 0, false
+}
+
+func fusedOperation(word uint64, function uint8) bool {
+	op := opcode(word)
+	if op < opAdd || op >= opDivide {
+		return false
+	}
+	return (op&leftConstant != 0 || uint16(word>>16) < uint16(function)) && (op&rightConstant != 0 || uint16(word>>32) < uint16(function))
 }
 
 func (p *Proto) instruction(pc int) *instruction { return &p.metadata[p.sites[pc]] }
