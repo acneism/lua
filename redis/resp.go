@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-	"strings"
 )
 
 func ReadReply(reader *bufio.Reader) (Reply, error) { return readReply(reader, 0) }
@@ -73,9 +72,6 @@ func readReply(reader *bufio.Reader, depth int) (Reply, error) {
 		}
 		return Null(), nil
 	case '(':
-		if strings.TrimLeft(text, "-0123456789") != "" || text == "" || text == "-" || strings.Contains(text[1:], "-") {
-			return Reply{}, fmt.Errorf("invalid RESP big number")
-		}
 		return BigNumber(text), nil
 	case '$', '=', '!':
 		length, err := strconv.ParseInt(text, 10, 64)

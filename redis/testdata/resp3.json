@@ -1,0 +1,2394 @@
+[
+  {
+    "name": "resp3_double_client2",
+    "src": "return {double=1.5}",
+    "proto": 2,
+    "want": "JDMNCjEuNQ0K"
+  },
+  {
+    "name": "resp3_map_client2",
+    "src": "return {map={a=1}}",
+    "proto": 2,
+    "want": "KjINCiQxDQphDQo6MQ0K"
+  },
+  {
+    "name": "resp3_set_client2",
+    "src": "return {set={a=true}}",
+    "proto": 2,
+    "want": "KjENCiQxDQphDQo="
+  },
+  {
+    "name": "resp3_big_client2",
+    "src": "return {big_number='123456789012345678901'}",
+    "proto": 2,
+    "want": "JDIxDQoxMjM0NTY3ODkwMTIzNDU2Nzg5MDENCg=="
+  },
+  {
+    "name": "resp3_big_crlf_client2",
+    "src": "return {big_number='1\\r\\n2'}",
+    "proto": 2,
+    "want": "JDQNCjEgIDINCg=="
+  },
+  {
+    "name": "resp3_verbatim_client2",
+    "src": "return {verbatim_string={format='txt',string='v'}}",
+    "proto": 2,
+    "want": "JDENCnYNCg=="
+  },
+  {
+    "name": "resp3_verbatim_short_client2",
+    "src": "return {verbatim_string={format='x',string='v'}}",
+    "proto": 2,
+    "want": "JDENCnYNCg=="
+  },
+  {
+    "name": "resp3_verbatim_long_client2",
+    "src": "return {verbatim_string={format='abcd',string='v'}}",
+    "proto": 2,
+    "want": "JDENCnYNCg=="
+  },
+  {
+    "name": "resp3_true_client2",
+    "src": "return true",
+    "proto": 2,
+    "want": "OjENCg=="
+  },
+  {
+    "name": "resp3_false_client2",
+    "src": "return false",
+    "proto": 2,
+    "want": "JC0xDQo="
+  },
+  {
+    "name": "resp3_nil_client2",
+    "src": "return nil",
+    "proto": 2,
+    "want": "JC0xDQo="
+  },
+  {
+    "name": "resp3_err_client2",
+    "src": "return {err='E x'}",
+    "proto": 2,
+    "want": "LUUgeA0K"
+  },
+  {
+    "name": "resp3_ok_client2",
+    "src": "return {ok='fine'}",
+    "proto": 2,
+    "want": "K2ZpbmUNCg=="
+  },
+  {
+    "name": "resp3_double_million_client2",
+    "src": "return {double=1e6}",
+    "proto": 2,
+    "want": "JDcNCjEwMDAwMDANCg=="
+  },
+  {
+    "name": "resp3_double_nan_client2",
+    "src": "return {double=0/0}",
+    "proto": 2,
+    "want": "JDMNCm5hbg0K"
+  },
+  {
+    "name": "resp3_double_inf_client2",
+    "src": "return {double=1/0}",
+    "proto": 2,
+    "want": "JDMNCmluZg0K"
+  },
+  {
+    "name": "resp3_double_ninf_client2",
+    "src": "return {double=-1/0}",
+    "proto": 2,
+    "want": "JDQNCi1pbmYNCg=="
+  },
+  {
+    "name": "resp3_double_nzero_client2",
+    "src": "return {double=0/-1}",
+    "proto": 2,
+    "want": "JDINCi0wDQo="
+  },
+  {
+    "name": "resp3_double_small_client2",
+    "src": "return {double=1e-300}",
+    "proto": 2,
+    "want": "JDYNCjFlLTMwMA0K"
+  },
+  {
+    "name": "resp3_double_ll_client2",
+    "src": "return {double=2^62}",
+    "proto": 2,
+    "want": "JDE5DQo0NjExNjg2MDE4NDI3Mzg3OTA0DQo="
+  },
+  {
+    "name": "resp3_nested_client2",
+    "src": "return {1,{double=2.5},{map={k={set={x=true}}}},true,false}",
+    "proto": 2,
+    "want": "KjUNCjoxDQokMw0KMi41DQoqMg0KJDENCmsNCioxDQokMQ0KeA0KOjENCiQtMQ0K"
+  },
+  {
+    "name": "resp3_setresp_true_client2",
+    "src": "redis.setresp(3) return true",
+    "proto": 2,
+    "want": "OjENCg=="
+  },
+  {
+    "name": "resp3_setresp_false_client2",
+    "src": "redis.setresp(3) return false",
+    "proto": 2,
+    "want": "OjANCg=="
+  },
+  {
+    "name": "resp3_setresp_nil_client2",
+    "src": "redis.setresp(3) return nil",
+    "proto": 2,
+    "want": "JC0xDQo="
+  },
+  {
+    "name": "resp3_setresp_list_client2",
+    "src": "redis.setresp(3) return {1,true,false,'s'}",
+    "proto": 2,
+    "want": "KjQNCjoxDQo6MQ0KOjANCiQxDQpzDQo="
+  },
+  {
+    "name": "resp3_setresp_error_client2",
+    "src": "redis.setresp(3) return redis.error_reply('E y')",
+    "proto": 2,
+    "want": "LUUgeQ0K"
+  },
+  {
+    "name": "resp3_setresp_raise_client2",
+    "src": "redis.setresp(3) error('boom')",
+    "proto": 2,
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBib29tIHNjcmlwdDogNGI0YjRkM2RjZmJhZjZiNjQwMGY1ODM3NTU0MTI5ZjE3NThmNGU2ZSwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "resp3_setresp_bad_client2",
+    "src": "return redis.setresp(4)",
+    "proto": 2,
+    "want": "LUVSUiBSRVNQIHZlcnNpb24gbXVzdCBiZSAyIG9yIDMuIHNjcmlwdDogOTIxYzBhNDgwMjFkOTdkZmQ1ODg0YWVlYTQxODc1OTcyYzc4MDRkOSwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "resp3_hgetall_script2_client2",
+    "src": "local r=redis.call('HGETALL','h') return {type(r),type(r.map),r.map and r.map.f or r[2]}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "KjMNCiQ1DQp0YWJsZQ0KJDMNCm5pbA0KJDENCnYNCg==",
+    "trace": [
+      {
+        "argv": [
+          "HGETALL",
+          "h"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "hgetall",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "KjINCiQxDQpmDQokMQ0Kdg0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_hgetall_script3_client2",
+    "src": "redis.setresp(3) local r=redis.call('HGETALL','h') return {type(r),type(r.map),r.map and r.map.f or r[2]}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "KjMNCiQ1DQp0YWJsZQ0KJDUNCnRhYmxlDQokMQ0Kdg0K",
+    "trace": [
+      {
+        "argv": [
+          "HGETALL",
+          "h"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "hgetall",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JTENCiQxDQpmDQokMQ0Kdg0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_hgetall_return_script2_client2",
+    "src": "return redis.call('HGETALL','h')",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "KjINCiQxDQpmDQokMQ0Kdg0K",
+    "trace": [
+      {
+        "argv": [
+          "HGETALL",
+          "h"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "hgetall",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "KjINCiQxDQpmDQokMQ0Kdg0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_hgetall_return_script3_client2",
+    "src": "redis.setresp(3) return redis.call('HGETALL','h')",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "KjINCiQxDQpmDQokMQ0Kdg0K",
+    "trace": [
+      {
+        "argv": [
+          "HGETALL",
+          "h"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "hgetall",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JTENCiQxDQpmDQokMQ0Kdg0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_smembers_script2_client2",
+    "src": "local r=redis.call('SMEMBERS','s') return {type(r.set),r.set and tostring(r.set.m) or r[1]}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "KjINCiQzDQpuaWwNCiQxDQptDQo=",
+    "trace": [
+      {
+        "argv": [
+          "SMEMBERS",
+          "s"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "smembers",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "KjENCiQxDQptDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_smembers_script3_client2",
+    "src": "redis.setresp(3) local r=redis.call('SMEMBERS','s') return {type(r.set),r.set and tostring(r.set.m) or r[1]}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "KjINCiQ1DQp0YWJsZQ0KJDQNCnRydWUNCg==",
+    "trace": [
+      {
+        "argv": [
+          "SMEMBERS",
+          "s"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "smembers",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "fjENCiQxDQptDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_smembers_return_script2_client2",
+    "src": "return redis.call('SMEMBERS','s')",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "KjENCiQxDQptDQo=",
+    "trace": [
+      {
+        "argv": [
+          "SMEMBERS",
+          "s"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "smembers",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "KjENCiQxDQptDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_smembers_return_script3_client2",
+    "src": "redis.setresp(3) return redis.call('SMEMBERS','s')",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "KjENCiQxDQptDQo=",
+    "trace": [
+      {
+        "argv": [
+          "SMEMBERS",
+          "s"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "smembers",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "fjENCiQxDQptDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_zscore_script2_client2",
+    "src": "local r=redis.call('ZSCORE','z','m') return {type(r),type(r)=='table' and r.double or r}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "KjINCiQ2DQpzdHJpbmcNCiQzDQoxLjUNCg==",
+    "trace": [
+      {
+        "argv": [
+          "ZSCORE",
+          "z",
+          "m"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "zscore",
+          "Arity": 3,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JDMNCjEuNQ0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_zscore_script3_client2",
+    "src": "redis.setresp(3) local r=redis.call('ZSCORE','z','m') return {type(r),type(r)=='table' and r.double or r}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "KjINCiQ1DQp0YWJsZQ0KOjENCg==",
+    "trace": [
+      {
+        "argv": [
+          "ZSCORE",
+          "z",
+          "m"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "zscore",
+          "Arity": 3,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "LDEuNQ0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_zscore_return_script2_client2",
+    "src": "return redis.call('ZSCORE','z','m')",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "JDMNCjEuNQ0K",
+    "trace": [
+      {
+        "argv": [
+          "ZSCORE",
+          "z",
+          "m"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "zscore",
+          "Arity": 3,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JDMNCjEuNQ0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_zscore_return_script3_client2",
+    "src": "redis.setresp(3) return redis.call('ZSCORE','z','m')",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "JDMNCjEuNQ0K",
+    "trace": [
+      {
+        "argv": [
+          "ZSCORE",
+          "z",
+          "m"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "zscore",
+          "Arity": 3,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "LDEuNQ0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_get_missing_script2_client2",
+    "src": "local r=redis.call('GET','missing') return {type(r),tostring(r)}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "KjINCiQ3DQpib29sZWFuDQokNQ0KZmFsc2UNCg==",
+    "trace": [
+      {
+        "argv": [
+          "GET",
+          "missing"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "get",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JC0xDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_get_missing_script3_client2",
+    "src": "redis.setresp(3) local r=redis.call('GET','missing') return {type(r),tostring(r)}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "KjINCiQzDQpuaWwNCiQzDQpuaWwNCg==",
+    "trace": [
+      {
+        "argv": [
+          "GET",
+          "missing"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "get",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "Xw0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_set_status_script2_client2",
+    "src": "local r=redis.call('SET','k','v') return r",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "K09LDQo=",
+    "trace": [
+      {
+        "argv": [
+          "SET",
+          "k",
+          "v"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "set",
+          "Arity": -3,
+          "Write": true,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "K09LDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_set_status_script3_client2",
+    "src": "redis.setresp(3) local r=redis.call('SET','k','v') return r",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "K09LDQo=",
+    "trace": [
+      {
+        "argv": [
+          "SET",
+          "k",
+          "v"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "set",
+          "Arity": -3,
+          "Write": true,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "K09LDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_hmissing_script2_client2",
+    "src": "return {type(redis.call('HGET','h','x'))}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "KjENCiQ3DQpib29sZWFuDQo=",
+    "trace": [
+      {
+        "argv": [
+          "HGET",
+          "h",
+          "x"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "hget",
+          "Arity": 3,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JC0xDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_hmissing_script3_client2",
+    "src": "redis.setresp(3) return {type(redis.call('HGET','h','x'))}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "KjENCiQzDQpuaWwNCg==",
+    "trace": [
+      {
+        "argv": [
+          "HGET",
+          "h",
+          "x"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "hget",
+          "Arity": 3,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "Xw0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_lrange_script2_client2",
+    "src": "return redis.call('LRANGE','missing',0,-1)",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "KjANCg==",
+    "trace": [
+      {
+        "argv": [
+          "LRANGE",
+          "missing",
+          "0",
+          "-1"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "lrange",
+          "Arity": 4,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "KjANCg=="
+      }
+    ]
+  },
+  {
+    "name": "resp3_lrange_script3_client2",
+    "src": "redis.setresp(3) return redis.call('LRANGE','missing',0,-1)",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "KjANCg==",
+    "trace": [
+      {
+        "argv": [
+          "LRANGE",
+          "missing",
+          "0",
+          "-1"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "lrange",
+          "Arity": 4,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "KjANCg=="
+      }
+    ]
+  },
+  {
+    "name": "resp3_wrongtype_script2_client2",
+    "src": "local r=redis.pcall('LLEN','h') return {type(r),r.err}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "KjINCiQ1DQp0YWJsZQ0KJDY1DQpXUk9OR1RZUEUgT3BlcmF0aW9uIGFnYWluc3QgYSBrZXkgaG9sZGluZyB0aGUgd3Jvbmcga2luZCBvZiB2YWx1ZQ0K",
+    "trace": [
+      {
+        "argv": [
+          "LLEN",
+          "h"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "llen",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "LVdST05HVFlQRSBPcGVyYXRpb24gYWdhaW5zdCBhIGtleSBob2xkaW5nIHRoZSB3cm9uZyBraW5kIG9mIHZhbHVlDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_wrongtype_script3_client2",
+    "src": "redis.setresp(3) local r=redis.pcall('LLEN','h') return {type(r),r.err}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 2,
+    "want": "KjINCiQ1DQp0YWJsZQ0KJDY1DQpXUk9OR1RZUEUgT3BlcmF0aW9uIGFnYWluc3QgYSBrZXkgaG9sZGluZyB0aGUgd3Jvbmcga2luZCBvZiB2YWx1ZQ0K",
+    "trace": [
+      {
+        "argv": [
+          "LLEN",
+          "h"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "llen",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "LVdST05HVFlQRSBPcGVyYXRpb24gYWdhaW5zdCBhIGtleSBob2xkaW5nIHRoZSB3cm9uZyBraW5kIG9mIHZhbHVlDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_double_client3",
+    "src": "return {double=1.5}",
+    "proto": 3,
+    "want": "LDEuNQ0K"
+  },
+  {
+    "name": "resp3_map_client3",
+    "src": "return {map={a=1}}",
+    "proto": 3,
+    "want": "JTENCiQxDQphDQo6MQ0K"
+  },
+  {
+    "name": "resp3_set_client3",
+    "src": "return {set={a=true}}",
+    "proto": 3,
+    "want": "fjENCiQxDQphDQo="
+  },
+  {
+    "name": "resp3_big_client3",
+    "src": "return {big_number='123456789012345678901'}",
+    "proto": 3,
+    "want": "KDEyMzQ1Njc4OTAxMjM0NTY3ODkwMQ0K"
+  },
+  {
+    "name": "resp3_big_crlf_client3",
+    "src": "return {big_number='1\\r\\n2'}",
+    "proto": 3,
+    "want": "KDEgIDINCg=="
+  },
+  {
+    "name": "resp3_verbatim_client3",
+    "src": "return {verbatim_string={format='txt',string='v'}}",
+    "proto": 3,
+    "want": "PTUNCnR4dDp2DQo="
+  },
+  {
+    "name": "resp3_verbatim_short_client3",
+    "src": "return {verbatim_string={format='x',string='v'}}",
+    "proto": 3,
+    "want": "PTUNCnggIDp2DQo="
+  },
+  {
+    "name": "resp3_verbatim_long_client3",
+    "src": "return {verbatim_string={format='abcd',string='v'}}",
+    "proto": 3,
+    "want": "PTUNCmFiYzp2DQo="
+  },
+  {
+    "name": "resp3_true_client3",
+    "src": "return true",
+    "proto": 3,
+    "want": "OjENCg=="
+  },
+  {
+    "name": "resp3_false_client3",
+    "src": "return false",
+    "proto": 3,
+    "want": "Xw0K"
+  },
+  {
+    "name": "resp3_nil_client3",
+    "src": "return nil",
+    "proto": 3,
+    "want": "Xw0K"
+  },
+  {
+    "name": "resp3_err_client3",
+    "src": "return {err='E x'}",
+    "proto": 3,
+    "want": "LUUgeA0K"
+  },
+  {
+    "name": "resp3_ok_client3",
+    "src": "return {ok='fine'}",
+    "proto": 3,
+    "want": "K2ZpbmUNCg=="
+  },
+  {
+    "name": "resp3_double_million_client3",
+    "src": "return {double=1e6}",
+    "proto": 3,
+    "want": "LDEwMDAwMDANCg=="
+  },
+  {
+    "name": "resp3_double_nan_client3",
+    "src": "return {double=0/0}",
+    "proto": 3,
+    "want": "LG5hbg0K"
+  },
+  {
+    "name": "resp3_double_inf_client3",
+    "src": "return {double=1/0}",
+    "proto": 3,
+    "want": "LGluZg0K"
+  },
+  {
+    "name": "resp3_double_ninf_client3",
+    "src": "return {double=-1/0}",
+    "proto": 3,
+    "want": "LC1pbmYNCg=="
+  },
+  {
+    "name": "resp3_double_nzero_client3",
+    "src": "return {double=0/-1}",
+    "proto": 3,
+    "want": "LC0wDQo="
+  },
+  {
+    "name": "resp3_double_small_client3",
+    "src": "return {double=1e-300}",
+    "proto": 3,
+    "want": "LDFlLTMwMA0K"
+  },
+  {
+    "name": "resp3_double_ll_client3",
+    "src": "return {double=2^62}",
+    "proto": 3,
+    "want": "LDQ2MTE2ODYwMTg0MjczODc5MDQNCg=="
+  },
+  {
+    "name": "resp3_nested_client3",
+    "src": "return {1,{double=2.5},{map={k={set={x=true}}}},true,false}",
+    "proto": 3,
+    "want": "KjUNCjoxDQosMi41DQolMQ0KJDENCmsNCn4xDQokMQ0KeA0KOjENCl8NCg=="
+  },
+  {
+    "name": "resp3_setresp_true_client3",
+    "src": "redis.setresp(3) return true",
+    "proto": 3,
+    "want": "I3QNCg=="
+  },
+  {
+    "name": "resp3_setresp_false_client3",
+    "src": "redis.setresp(3) return false",
+    "proto": 3,
+    "want": "I2YNCg=="
+  },
+  {
+    "name": "resp3_setresp_nil_client3",
+    "src": "redis.setresp(3) return nil",
+    "proto": 3,
+    "want": "Xw0K"
+  },
+  {
+    "name": "resp3_setresp_list_client3",
+    "src": "redis.setresp(3) return {1,true,false,'s'}",
+    "proto": 3,
+    "want": "KjQNCjoxDQojdA0KI2YNCiQxDQpzDQo="
+  },
+  {
+    "name": "resp3_setresp_error_client3",
+    "src": "redis.setresp(3) return redis.error_reply('E y')",
+    "proto": 3,
+    "want": "LUUgeQ0K"
+  },
+  {
+    "name": "resp3_setresp_raise_client3",
+    "src": "redis.setresp(3) error('boom')",
+    "proto": 3,
+    "want": "LUVSUiB1c2VyX3NjcmlwdDoxOiBib29tIHNjcmlwdDogNGI0YjRkM2RjZmJhZjZiNjQwMGY1ODM3NTU0MTI5ZjE3NThmNGU2ZSwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "resp3_setresp_bad_client3",
+    "src": "return redis.setresp(4)",
+    "proto": 3,
+    "want": "LUVSUiBSRVNQIHZlcnNpb24gbXVzdCBiZSAyIG9yIDMuIHNjcmlwdDogOTIxYzBhNDgwMjFkOTdkZmQ1ODg0YWVlYTQxODc1OTcyYzc4MDRkOSwgb24gQHVzZXJfc2NyaXB0OjEuDQo="
+  },
+  {
+    "name": "resp3_hgetall_script2_client3",
+    "src": "local r=redis.call('HGETALL','h') return {type(r),type(r.map),r.map and r.map.f or r[2]}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "KjMNCiQ1DQp0YWJsZQ0KJDMNCm5pbA0KJDENCnYNCg==",
+    "trace": [
+      {
+        "argv": [
+          "HGETALL",
+          "h"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "hgetall",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "KjINCiQxDQpmDQokMQ0Kdg0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_hgetall_script3_client3",
+    "src": "redis.setresp(3) local r=redis.call('HGETALL','h') return {type(r),type(r.map),r.map and r.map.f or r[2]}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "KjMNCiQ1DQp0YWJsZQ0KJDUNCnRhYmxlDQokMQ0Kdg0K",
+    "trace": [
+      {
+        "argv": [
+          "HGETALL",
+          "h"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "hgetall",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JTENCiQxDQpmDQokMQ0Kdg0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_hgetall_return_script2_client3",
+    "src": "return redis.call('HGETALL','h')",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "KjINCiQxDQpmDQokMQ0Kdg0K",
+    "trace": [
+      {
+        "argv": [
+          "HGETALL",
+          "h"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "hgetall",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "KjINCiQxDQpmDQokMQ0Kdg0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_hgetall_return_script3_client3",
+    "src": "redis.setresp(3) return redis.call('HGETALL','h')",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "JTENCiQxDQpmDQokMQ0Kdg0K",
+    "trace": [
+      {
+        "argv": [
+          "HGETALL",
+          "h"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "hgetall",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JTENCiQxDQpmDQokMQ0Kdg0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_smembers_script2_client3",
+    "src": "local r=redis.call('SMEMBERS','s') return {type(r.set),r.set and tostring(r.set.m) or r[1]}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "KjINCiQzDQpuaWwNCiQxDQptDQo=",
+    "trace": [
+      {
+        "argv": [
+          "SMEMBERS",
+          "s"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "smembers",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "KjENCiQxDQptDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_smembers_script3_client3",
+    "src": "redis.setresp(3) local r=redis.call('SMEMBERS','s') return {type(r.set),r.set and tostring(r.set.m) or r[1]}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "KjINCiQ1DQp0YWJsZQ0KJDQNCnRydWUNCg==",
+    "trace": [
+      {
+        "argv": [
+          "SMEMBERS",
+          "s"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "smembers",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "fjENCiQxDQptDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_smembers_return_script2_client3",
+    "src": "return redis.call('SMEMBERS','s')",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "KjENCiQxDQptDQo=",
+    "trace": [
+      {
+        "argv": [
+          "SMEMBERS",
+          "s"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "smembers",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "KjENCiQxDQptDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_smembers_return_script3_client3",
+    "src": "redis.setresp(3) return redis.call('SMEMBERS','s')",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "fjENCiQxDQptDQo=",
+    "trace": [
+      {
+        "argv": [
+          "SMEMBERS",
+          "s"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "smembers",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "fjENCiQxDQptDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_zscore_script2_client3",
+    "src": "local r=redis.call('ZSCORE','z','m') return {type(r),type(r)=='table' and r.double or r}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "KjINCiQ2DQpzdHJpbmcNCiQzDQoxLjUNCg==",
+    "trace": [
+      {
+        "argv": [
+          "ZSCORE",
+          "z",
+          "m"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "zscore",
+          "Arity": 3,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JDMNCjEuNQ0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_zscore_script3_client3",
+    "src": "redis.setresp(3) local r=redis.call('ZSCORE','z','m') return {type(r),type(r)=='table' and r.double or r}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "KjINCiQ1DQp0YWJsZQ0KOjENCg==",
+    "trace": [
+      {
+        "argv": [
+          "ZSCORE",
+          "z",
+          "m"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "zscore",
+          "Arity": 3,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "LDEuNQ0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_zscore_return_script2_client3",
+    "src": "return redis.call('ZSCORE','z','m')",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "JDMNCjEuNQ0K",
+    "trace": [
+      {
+        "argv": [
+          "ZSCORE",
+          "z",
+          "m"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "zscore",
+          "Arity": 3,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JDMNCjEuNQ0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_zscore_return_script3_client3",
+    "src": "redis.setresp(3) return redis.call('ZSCORE','z','m')",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "LDEuNQ0K",
+    "trace": [
+      {
+        "argv": [
+          "ZSCORE",
+          "z",
+          "m"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "zscore",
+          "Arity": 3,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "LDEuNQ0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_get_missing_script2_client3",
+    "src": "local r=redis.call('GET','missing') return {type(r),tostring(r)}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "KjINCiQ3DQpib29sZWFuDQokNQ0KZmFsc2UNCg==",
+    "trace": [
+      {
+        "argv": [
+          "GET",
+          "missing"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "get",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JC0xDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_get_missing_script3_client3",
+    "src": "redis.setresp(3) local r=redis.call('GET','missing') return {type(r),tostring(r)}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "KjINCiQzDQpuaWwNCiQzDQpuaWwNCg==",
+    "trace": [
+      {
+        "argv": [
+          "GET",
+          "missing"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "get",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "Xw0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_set_status_script2_client3",
+    "src": "local r=redis.call('SET','k','v') return r",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "K09LDQo=",
+    "trace": [
+      {
+        "argv": [
+          "SET",
+          "k",
+          "v"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "set",
+          "Arity": -3,
+          "Write": true,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "K09LDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_set_status_script3_client3",
+    "src": "redis.setresp(3) local r=redis.call('SET','k','v') return r",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "K09LDQo=",
+    "trace": [
+      {
+        "argv": [
+          "SET",
+          "k",
+          "v"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "set",
+          "Arity": -3,
+          "Write": true,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "K09LDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_hmissing_script2_client3",
+    "src": "return {type(redis.call('HGET','h','x'))}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "KjENCiQ3DQpib29sZWFuDQo=",
+    "trace": [
+      {
+        "argv": [
+          "HGET",
+          "h",
+          "x"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "hget",
+          "Arity": 3,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "JC0xDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_hmissing_script3_client3",
+    "src": "redis.setresp(3) return {type(redis.call('HGET','h','x'))}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "KjENCiQzDQpuaWwNCg==",
+    "trace": [
+      {
+        "argv": [
+          "HGET",
+          "h",
+          "x"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "hget",
+          "Arity": 3,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "Xw0K"
+      }
+    ]
+  },
+  {
+    "name": "resp3_lrange_script2_client3",
+    "src": "return redis.call('LRANGE','missing',0,-1)",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "KjANCg==",
+    "trace": [
+      {
+        "argv": [
+          "LRANGE",
+          "missing",
+          "0",
+          "-1"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "lrange",
+          "Arity": 4,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "KjANCg=="
+      }
+    ]
+  },
+  {
+    "name": "resp3_lrange_script3_client3",
+    "src": "redis.setresp(3) return redis.call('LRANGE','missing',0,-1)",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "KjANCg==",
+    "trace": [
+      {
+        "argv": [
+          "LRANGE",
+          "missing",
+          "0",
+          "-1"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "lrange",
+          "Arity": 4,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "KjANCg=="
+      }
+    ]
+  },
+  {
+    "name": "resp3_wrongtype_script2_client3",
+    "src": "local r=redis.pcall('LLEN','h') return {type(r),r.err}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "KjINCiQ1DQp0YWJsZQ0KJDY1DQpXUk9OR1RZUEUgT3BlcmF0aW9uIGFnYWluc3QgYSBrZXkgaG9sZGluZyB0aGUgd3Jvbmcga2luZCBvZiB2YWx1ZQ0K",
+    "trace": [
+      {
+        "argv": [
+          "LLEN",
+          "h"
+        ],
+        "call": true,
+        "proto": 2,
+        "command": {
+          "Name": "llen",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "LVdST05HVFlQRSBPcGVyYXRpb24gYWdhaW5zdCBhIGtleSBob2xkaW5nIHRoZSB3cm9uZyBraW5kIG9mIHZhbHVlDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_wrongtype_script3_client3",
+    "src": "redis.setresp(3) local r=redis.pcall('LLEN','h') return {type(r),r.err}",
+    "setup": [
+      [
+        "HSET",
+        "h",
+        "f",
+        "v"
+      ],
+      [
+        "SADD",
+        "s",
+        "m"
+      ],
+      [
+        "ZADD",
+        "z",
+        "1.5",
+        "m"
+      ]
+    ],
+    "proto": 3,
+    "want": "KjINCiQ1DQp0YWJsZQ0KJDY1DQpXUk9OR1RZUEUgT3BlcmF0aW9uIGFnYWluc3QgYSBrZXkgaG9sZGluZyB0aGUgd3Jvbmcga2luZCBvZiB2YWx1ZQ0K",
+    "trace": [
+      {
+        "argv": [
+          "LLEN",
+          "h"
+        ],
+        "call": true,
+        "proto": 3,
+        "command": {
+          "Name": "llen",
+          "Arity": 2,
+          "Write": false,
+          "MayReplicate": false,
+          "NoScript": false
+        },
+        "found": true,
+        "reply": "LVdST05HVFlQRSBPcGVyYXRpb24gYWdhaW5zdCBhIGtleSBob2xkaW5nIHRoZSB3cm9uZyBraW5kIG9mIHZhbHVlDQo="
+      }
+    ]
+  },
+  {
+    "name": "resp3_grisu1_client2",
+    "src": "return {double=5.463664222329792e+17}",
+    "proto": 2,
+    "want": "JDE4DQo1NDYzNjY0MjIyMzI5NzkyMDANCg=="
+  },
+  {
+    "name": "resp3_grisu1_client3",
+    "src": "return {double=5.463664222329792e+17}",
+    "proto": 3,
+    "want": "LDU0NjM2NjQyMjIzMjk3OTIwMA0K"
+  },
+  {
+    "name": "resp3_grisu2_client2",
+    "src": "return {double=-0.029174292713665877}",
+    "proto": 2,
+    "want": "JDIxDQotMC4wMjkxNzQyOTI3MTM2NjU4NzcNCg=="
+  },
+  {
+    "name": "resp3_grisu2_client3",
+    "src": "return {double=-0.029174292713665877}",
+    "proto": 3,
+    "want": "LC0wLjAyOTE3NDI5MjcxMzY2NTg3Nw0K"
+  },
+  {
+    "name": "resp3_grisu3_client2",
+    "src": "return {double=-0.015310456303345136}",
+    "proto": 2,
+    "want": "JDIxDQotMC4wMTUzMTA0NTYzMDMzNDUxMzYNCg=="
+  },
+  {
+    "name": "resp3_grisu3_client3",
+    "src": "return {double=-0.015310456303345136}",
+    "proto": 3,
+    "want": "LC0wLjAxNTMxMDQ1NjMwMzM0NTEzNg0K"
+  },
+  {
+    "name": "resp3_grisu4_client2",
+    "src": "return {double=3.5551244442032026e+20}",
+    "proto": 2,
+    "want": "JDIxDQozNTU1MTI0NDQ0MjAzMjAyNjAwMDANCg=="
+  },
+  {
+    "name": "resp3_grisu4_client3",
+    "src": "return {double=3.5551244442032026e+20}",
+    "proto": 3,
+    "want": "LDM1NTUxMjQ0NDQyMDMyMDI2MDAwMA0K"
+  },
+  {
+    "name": "resp3_grisu5_client2",
+    "src": "return {double=7.6132164959679805e+18}",
+    "proto": 2,
+    "want": "JDE5DQo3NjEzMjE2NDk1OTY3OTgxMDAwDQo="
+  },
+  {
+    "name": "resp3_grisu5_client3",
+    "src": "return {double=7.6132164959679805e+18}",
+    "proto": 3,
+    "want": "LDc2MTMyMTY0OTU5Njc5ODEwMDANCg=="
+  },
+  {
+    "name": "resp3_grisu6_client2",
+    "src": "return {double=-1.0150895515924425e+22}",
+    "proto": 2,
+    "want": "JDI0DQotMTAxNTA4OTU1MTU5MjQ0MjUwMDAwMDANCg=="
+  },
+  {
+    "name": "resp3_grisu6_client3",
+    "src": "return {double=-1.0150895515924425e+22}",
+    "proto": 3,
+    "want": "LC0xMDE1MDg5NTUxNTkyNDQyNTAwMDAwMA0K"
+  },
+  {
+    "name": "resp3_grisu7_client2",
+    "src": "return {double=0.0034155129005843401}",
+    "proto": 2,
+    "want": "JDE5DQowLjAwMzQxNTUxMjkwMDU4NDM0DQo="
+  },
+  {
+    "name": "resp3_grisu7_client3",
+    "src": "return {double=0.0034155129005843401}",
+    "proto": 3,
+    "want": "LDAuMDAzNDE1NTEyOTAwNTg0MzQNCg=="
+  },
+  {
+    "name": "resp3_grisu8_client2",
+    "src": "return {double=0.99864236673685569}",
+    "proto": 2,
+    "want": "JDE4DQowLjk5ODY0MjM2NjczNjg1NTcNCg=="
+  },
+  {
+    "name": "resp3_grisu8_client3",
+    "src": "return {double=0.99864236673685569}",
+    "proto": 3,
+    "want": "LDAuOTk4NjQyMzY2NzM2ODU1Nw0K"
+  }
+]

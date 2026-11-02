@@ -2,7 +2,9 @@ package redis_test
 
 import (
 	"fmt"
+	"math"
 	"math/rand/v2"
+	"strconv"
 	"strings"
 
 	"github.com/acneism/lua/internal/redistest"
@@ -112,11 +114,15 @@ func scriptCase(random *rand.Rand) redistest.Case {
 		item.Setup = append(item.Setup, scriptSetup(random, fmt.Sprintf("k%d", index)))
 	}
 	item.ReadOnly = random.IntN(10) == 0
+	item.Proto = 2 + random.IntN(2)
 	var source strings.Builder
 	if random.IntN(12) == 0 {
 		source.WriteString("#!lua flags=no-writes\n")
 	}
 	source.WriteString(describeSource)
+	if random.IntN(2) == 0 {
+		source.WriteString("redis.setresp(3)\n")
+	}
 	count := 1 + random.IntN(5)
 	for i := 1; i <= count; i++ {
 		call := scriptCommand(random)
@@ -159,6 +165,86 @@ func scriptCase(random *rand.Rand) redistest.Case {
 		fmt.Fprintf(&source, "return {err = 'E ' .. d(%s)}", last)
 	default:
 		fmt.Fprintf(&source, "return {%s, {%s}, d(%s)}", last, last, last)
+	}
+	item.Source = source.String()
+	return item
+}
+
+func luaDouble(random *rand.Rand) string {
+	if random.IntN(2) == 0 {
+		return pick(random, "0", "0/-1", "1", "-1", "1.5", "0.1", "1/3", "1e6", "1e15", "1e16", "1e17", "1e21", "1e22", "1e100", "1e300", "1e-5", "1e-7", "1e-300", "2^53", "2^63", "-2^63", "2^62", "2^62+1024", "0/0", "1/0", "-1/0", "123456.789", "5e-324", "1.7976931348623157e308")
+	}
+	switch random.IntN(3) {
+	case 0:
+		return strconv.FormatFloat(math.Float64frombits(random.Uint64()), 'g', 17, 64)
+	case 1:
+		return strconv.FormatFloat(random.Float64(), 'g', 17, 64)
+	}
+	return strconv.FormatFloat(random.Float64()*math.Pow(10, float64(random.IntN(40)-20)), 'g', -1, 64)
+}
+
+func resp3Value(random *rand.Rand, depth int) string {
+	if depth > 2 {
+		return pick(random, "1", "'x'", "true", "false", "{}", "2.5")
+	}
+	inner := func() string { return resp3Value(random, depth+1) }
+	switch random.IntN(19) {
+	case 0:
+		return "{double=" + luaDouble(random) + "}"
+	case 1:
+		return "{double=" + pick(random, "'1.5'", "true", "{}") + "}"
+	case 2:
+		return "{map={a=" + inner() + ",b=" + inner() + ",[1]=" + inner() + ",[2.5]=" + inner() + "}}"
+	case 3:
+		return "{map={}}"
+	case 4:
+		return "{map=" + pick(random, "1", "'m'", "true") + "}"
+	case 5:
+		return "{set={a=true,b=false,[1]=true,[2.5]=1,[true]=1}}"
+	case 6:
+		return "{set={}}"
+	case 7:
+		return "{set=" + pick(random, "1", "'s'", "true") + "}"
+	case 8:
+		return "{big_number=" + pick(random, "'123456789012345678901234567890'", "'-1'", "'a\\r\\nb'", "''", "1", "{}") + "}"
+	case 9:
+		return "{verbatim_string={format=" + pick(random, "'txt'", "'mkd'", "'x'", "''", "'abcd'", "1") + ",string=" + pick(random, "'hello'", "''", "'a\\r\\nb'", "1") + "}}"
+	case 10:
+		return "{verbatim_string=" + pick(random, "1", "'v'", "{}", "{format='txt'}", "{string='s'}") + "}"
+	case 11:
+		return pick(random, "true", "false", "nil", "1", "1.9", "-1.9", "'text'", "''", "1e300", "0/0")
+	case 12:
+		return "{ok=" + pick(random, "'fine'", "'a\\r\\nb'", "''", "1") + "}"
+	case 13:
+		return "{err=" + pick(random, "'ERR bad'", "'a\\r\\nb'", "''", "1") + "}"
+	case 14:
+		return "{ok='o',err='e',double=1.5}"
+	case 15:
+		return "{double=1.5,map={a=1},set={b=true},big_number='1'}"
+	case 16:
+		return "{" + inner() + "," + inner() + "," + inner() + "}"
+	case 17:
+		return "{true,false,nil,1}"
+	}
+	return pick(random, "redis.status_reply('S')", "redis.error_reply('E')", "redis.error_reply('-E x')", "redis.call('HGETALL','h')", "redis.call('SMEMBERS','s')", "redis.call('ZSCORE','z','a')", "redis.call('ZRANGE','z',0,-1,'WITHSCORES')", "redis.call('GET','missing')", "redis.call('LRANGE','missing',0,-1)", "redis.call('HGET','h','missing')", "redis.call('EXISTS','h')", "redis.call('PING')", "redis.call('TYPE','h')", "redis.call('ZINCRBY','z',1.5,'a')", "redis.call('INCRBYFLOAT','f',0.1)", "redis.pcall('INCR','h')", "redis.call('HRANDFIELD','one',1,'WITHVALUES')", "redis.call('ZPOPMIN','z2')", "redis.call('ZADD','z',2.5,'a')", "redis.call('SPOP','none')")
+}
+
+func resp3Case(random *rand.Rand) redistest.Case {
+	item := redistest.Case{Proto: 2 + random.IntN(2), Setup: [][]string{{"HSET", "one", "a", "1"}, {"HSET", "h", "a", "1", "b", "2"}, {"SADD", "s", "x", "y"}, {"ZADD", "z", "1.5", "a", "2", "b"}, {"ZADD", "z2", "0.1", "m"}}}
+	var source strings.Builder
+	source.WriteString(describeSource)
+	if random.IntN(2) == 0 {
+		source.WriteString("redis.setresp(3)\n")
+	}
+	switch random.IntN(4) {
+	case 0:
+		fmt.Fprintf(&source, "local v = %s\nreturn d(v)", resp3Value(random, 0))
+	case 1:
+		fmt.Fprintf(&source, "redis.call('SET','n',%s) return redis.call('GET','n')", luaDouble(random))
+	case 2:
+		fmt.Fprintf(&source, "local v = %s\nredis.setresp(%d)\nreturn v", resp3Value(random, 0), 2+random.IntN(2))
+	default:
+		fmt.Fprintf(&source, "return %s", resp3Value(random, 0))
 	}
 	item.Source = source.String()
 	return item

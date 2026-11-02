@@ -397,58 +397,6 @@ func (s *session) log(_ *lua.State, args []lua.Value) ([]lua.Value, error) {
 	return nil, nil
 }
 
-func commandNumber(number float64) string {
-	if math.IsNaN(number) {
-		if math.Signbit(number) {
-			return "-nan"
-		}
-		return "nan"
-	}
-	if math.IsInf(number, 1) {
-		return "inf"
-	}
-	if math.IsInf(number, -1) {
-		return "-inf"
-	}
-	if number >= -0x1p62 && number <= 0x1p62 && math.Trunc(number) == number {
-		return strconv.FormatInt(int64(number), 10)
-	}
-	negative := math.Signbit(number)
-	number = math.Abs(number)
-	text := strconv.FormatFloat(number, 'e', -1, 64)
-	index := strings.IndexByte(text, 'e')
-	digits := strings.ReplaceAll(text[:index], ".", "")
-	exponent, _ := strconv.Atoi(text[index+1:])
-	k := exponent - len(digits) + 1
-	sign := ""
-	if negative {
-		sign = "-"
-	}
-	absolute := exponent
-	if absolute < 0 {
-		absolute = -absolute
-	}
-	if k >= 0 && absolute < len(digits)+7 {
-		return sign + digits + strings.Repeat("0", k)
-	}
-	if k < 0 && (k > -7 || absolute < 4) {
-		point := len(digits) + k
-		if point <= 0 {
-			return sign + "0." + strings.Repeat("0", -point) + digits
-		}
-		return sign + digits[:point] + "." + digits[point:]
-	}
-	result := sign + digits[:1]
-	if len(digits) > 1 {
-		result += "." + digits[1:]
-	}
-	result += "e"
-	if exponent >= 0 {
-		result += "+"
-	}
-	return result + strconv.Itoa(exponent)
-}
-
 func (s *session) command(args []lua.Value, raise, acl bool) ([]lua.Value, error) {
 	result := func(failure error) ([]lua.Value, error) {
 		if raise || acl {
@@ -565,7 +513,7 @@ func (s *session) fromLua(value lua.Value, depth int) Reply {
 			case field == "double" && item.Type() == lua.TypeNumber:
 				return Double(item.Float())
 			case field == "big_number" && item.Type() == lua.TypeString:
-				return BigNumber(item.Text())
+				return BigNumber(safeText(item.Text()))
 			}
 		}
 		if object := table.RawGet(lua.String("verbatim_string")).Table(); object != nil {
@@ -632,7 +580,7 @@ func (s *session) toLua(reply Reply, depth int) lua.Value {
 		if s.active.resp == 3 {
 			return s.record("double", lua.Number(reply.Float))
 		}
-		return lua.String(doubleText(reply.Float))
+		return lua.String(d2string(reply.Float))
 	case BigNumberReply:
 		if s.active.resp == 3 {
 			return s.record("big_number", lua.String(reply.Str))

@@ -21,10 +21,11 @@ trigonometric functions through `Options.Math`. Without it, Go math provides
 them; acos uses asin near the endpoints. The 36 exact trigonometric probes in
 `testdata/libm.json` are reserved for the separate lua-libm module.
 
-The redis package provides host callbacks, RESP2 replies, the EVAL sandbox,
-EVAL/EVALSHA, and SCRIPT methods. It runs Redis's error handler verbatim, so
-error replies match Redis's. RESP3 replies, FUNCTION, and the Redis extension
-libraries belong to later stages.
+The redis package provides host callbacks, RESP2 and RESP3 replies, `redis.setresp`,
+the EVAL sandbox, EVAL/EVALSHA, and SCRIPT methods. It runs Redis's error handler
+verbatim, so error replies match Redis's. Numbers in commands and double replies
+use a port of Redis's fpconv, whose Grisu2 output is not always the shortest form.
+FUNCTION and the Redis extension libraries belong to later stages.
 
 `State.Frame` exposes Lua, native, and lost tail-call levels. `CallWithHandler`
 runs an error handler at the original failure point before unwinding; xpcall

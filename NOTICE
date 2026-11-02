@@ -75,3 +75,9 @@ The redis package follows script caching, shebang parsing, and EVAL behavior
 from src/eval.c, and command validation and execution behavior from
 src/script_lua.c and src/script.c. The latter retain the Redis Ltd. notice
 and BSD-3-Clause terms listed above.
+
+fpconv, deps/fpconv in Redis 7.2.16
+Copyright (c) 2013-2019, night-shift
+Copyright (c) 2009, Florian Loitsch
+License: Boost Software License 1.0; full terms in LICENSES/fpconv.txt.
+redis/fpconv.go translates fpconv_dtoa.c and its table of powers of ten.

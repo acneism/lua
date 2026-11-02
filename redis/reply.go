@@ -1,7 +1,6 @@
 package redis
 
 import (
-	"math"
 	"strconv"
 	"strings"
 )
@@ -57,19 +56,6 @@ func Verbatim(format, text string) Reply {
 	return Reply{Type: VerbatimReply, Format: format, Str: text}
 }
 func Abort(err error) Reply { return Reply{Type: AbortReply, Err: err} }
-
-func doubleText(value float64) string {
-	if math.IsInf(value, 1) {
-		return "inf"
-	}
-	if math.IsInf(value, -1) {
-		return "-inf"
-	}
-	if math.IsNaN(value) {
-		return "nan"
-	}
-	return strconv.FormatFloat(value, 'g', -1, 64)
-}
 
 func appendLine(dst []byte, prefix byte, text string) []byte {
 	dst = append(dst, prefix)
@@ -136,9 +122,9 @@ func (r Reply) appendRESP(dst []byte, proto, depth int) []byte {
 		return dst
 	case DoubleReply:
 		if proto == 3 {
-			return appendLine(dst, ',', doubleText(r.Float))
+			return appendLine(dst, ',', d2string(r.Float))
 		}
-		return appendBulk(dst, doubleText(r.Float))
+		return appendBulk(dst, d2string(r.Float))
 	case BooleanReply:
 		if proto == 3 {
 			if r.Bool {
@@ -157,12 +143,8 @@ func (r Reply) appendRESP(dst []byte, proto, depth int) []byte {
 		return appendBulk(dst, r.Str)
 	case VerbatimReply:
 		if proto == 3 {
-			format := r.Format
-			if len(format) != 3 {
-				format = "txt"
-			}
 			dst = appendCount(dst, '=', int64(len(r.Str)+4))
-			dst = append(dst, format...)
+			dst = append(dst, (cstring(r.Format) + "   ")[:3]...)
 			dst = append(dst, ':')
 			dst = append(dst, r.Str...)
 			return append(dst, '\r', '\n')

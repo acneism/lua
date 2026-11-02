@@ -34,12 +34,15 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 - Architecture decisions, compatibility notes, and interpreter benchmarks.
 
 - A reusable test-only luatest.RunCorpus API for external math integrations.
+- RESP3 differential tests with HELLO 3 and redis.setresp, and 116 RESP3 fixtures captured from Redis.
 - lua.Intern, which returns the shared value of a library or Redis global name so scripts reach it by pointer.
 - A Go command to compare nine core workloads against Redis with alternating samples.
 - Hook reentry, straight-block interruption, and loop allocation regressions.
 
 ### Changed
 
+- Format numbers in redis.call arguments and double replies with a port of Redis's fpconv. Go's shortest form differed from it for 1.7% of random doubles.
+- Pad or cut a verbatim reply's format to three bytes and replace line breaks in big numbers in RESP2, as Redis does; accept any big number text in the RESP parser.
 - Speed up the interpreter for the 37 benchmark scenarios: dense opcodes with a jump-table dispatch, no stack spills per instruction in the dispatch loop, fused calls of up to four arguments, and metamethod continuations for __index, __newindex, __call, __eq, __lt and __le.
 - Raise string length overflow for an over-long constant when a chunk is loaded, not when the constant is first used.
 - Keep array parts of numbers as plain floats, return Go function results without allocation, and reserve table memory by the actual element sizes.
