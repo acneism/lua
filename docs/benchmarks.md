@@ -20,6 +20,24 @@ Compare commits only on the same runner. Timings differ between runs by up to
 restored superinstruction sped up Fib27 by 10–18% and slowed MultiReturn by up to
 43% on the same runner type.
 
+## Redis libraries and redis.call
+
+The same command measures these scenarios through the engine, at 658b3d1. RedisCall and
+HashFill use a host that answers from memory without a network, so they give the lower
+bound of the engine's overhead. Each value is the median of five alternating samples in
+one run.
+
+| Scenario | EPYC 9V45 | EPYC 9V74 | EPYC 7763 |
+| --- | ---: | ---: | ---: |
+| CJSONRoundTrip | 1.03 | 1.03 | 1.02 |
+| CMsgpackRoundTrip | 1.10 | 1.15 | 1.14 |
+| BitOps | 1.00 | 1.12 | 0.92 |
+| StructRoundTrip | 0.87 | 0.96 | 1.03 |
+| RedisCall | 0.92 | 0.90 | 0.84 |
+| HashFill | 0.98 | 1.02 | 0.94 |
+
+The three script runs measured every Appendix G scenario at or below 1.35.
+
 ## P interpreter
 
 Machine: Azure Standard_B4as_v2, AMD EPYC 7763, four vCPUs, 16 GiB RAM.

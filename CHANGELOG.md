@@ -46,6 +46,8 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 
 ### Changed
 
+- Report the memory limit as `ERR script exceeded the memory limit` with the location suffix, and interrupt cjson and cmsgpack through the hook.
+- Answer BUSY from Kill and FunctionStats when the other kind of script runs, and build redis.call arguments in one buffer.
 - Reject EVAL_RO of a script with a shebang and no no-writes flag, as Redis does.
 - Format numbers in redis.call arguments and double replies with a port of Redis's fpconv. Go's shortest form differed from it for 1.7% of random doubles.
 - Pad or cut a verbatim reply's format to three bytes and replace line breaks in big numbers in RESP2, as Redis does; accept any big number text in the RESP parser.

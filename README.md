@@ -25,8 +25,8 @@ The redis package provides host callbacks, RESP2 and RESP3 replies, `redis.setre
 the EVAL sandbox, EVAL/EVALSHA, and SCRIPT methods. It runs Redis's error handler
 verbatim, so error replies match Redis's. Numbers in commands and double replies
 use a port of Redis's fpconv, whose Grisu2 output is not always the shortest form.
-It includes the bit, struct, cjson and cmsgpack libraries, FUNCTION and FCALL, and
-DUMP and RESTORE payloads that Redis accepts in both directions.
+It includes the bit, struct, cjson and cmsgpack libraries, FUNCTION and FCALL, DUMP and
+RESTORE payloads that Redis accepts in both directions, KILL, BUSY and a memory limit.
 
 `State.Frame` exposes Lua, native, and lost tail-call levels. `CallWithHandler`
 runs an error handler at the original failure point before unwinding; xpcall
