@@ -57,8 +57,10 @@ func TestKillInterruptsEveryLongOperation(t *testing.T) {
 			if len(engine.Running()) != 0 {
 				t.Fatal("a run was left behind")
 			}
-			if after := runtime.NumGoroutine(); after > before {
-				t.Fatalf("goroutines %d, before %d", after, before)
+			for deadline := time.Now().Add(5 * time.Second); runtime.NumGoroutine() > before; time.Sleep(time.Millisecond) {
+				if time.Now().After(deadline) {
+					t.Fatalf("goroutines %d, before %d", runtime.NumGoroutine(), before)
+				}
 			}
 		})
 	}
