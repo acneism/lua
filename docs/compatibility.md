@@ -92,7 +92,7 @@ checks all recorded answers against Redis, including pending entries.
 
 Budget provides approximate accounting for new script tables, strings, and
 closures. It is not an engine memory limit or a replacement for Go's allocator.
-Engine accounting, reset policy, KILL, and BUSY remain part of E.
+See [Redis engine](#redis-engine) for Config.MemoryLimit, KILL, and BUSY.
 
 ## Permitted differences
 

@@ -6,8 +6,8 @@ Measured on 2026-11-02 at 8e95f84 on GitHub Actions runners by the Performance
 workflow: Go benchmark in process against EVAL in Redis 7.2.16 with jemalloc on
 the same machine, median of five alternating samples in each run. Nine runs:
 four on EPYC 7763, three on EPYC 9V74, one on EPYC 9V45, one on Xeon Platinum
-8370C. All 37 scenarios stay at or below 1.39; the table is in the
-[README](../README.md#performance).
+8370C. All 37 scenarios stayed at or below 1.39. The
+[README](../README.md#performance) has the later v0.1.0 figures.
 
 Later measurements take the median of five fresh processes for each scenario,
 because rounds in one process are not independent. A store and a load conflict
@@ -21,6 +21,25 @@ page at another virtual address kept it. Go cannot choose physical pages, so thi
 is a property of the measurement and not of one commit. Not every outlier was
 traced to this: CallMetamethod 1.57 and SmallTables 1.52 were not examined, and
 Fib27 1.51 on EPYC 9V45 does not fit, because the effect there stayed under 5%.
+
+At v0.1.0 (3255aed), 24 runners with five processes each gave 1032 medians, one of
+them over 1.5, and 5160 single-process values, 13 of them over 1.5. The median does
+not remove every outlier:
+
+- HashFill was 1.54 to 1.62 in all five processes of one Xeon 6973P runner and 1.23
+  to 1.38 on another. A difference that stays across processes belongs to the machine,
+  not to the page lottery. The cause was not examined. Its Go side also includes the
+  benchmark's in-memory host.
+- ArithConst is bimodal within one runner: 0.75 0.74 1.46 1.46 1.50 on EPYC 7763,
+  0.85 and 1.87 on EPYC 9V74, 0.97 and 2.23 on Xeon 8370C. When most processes draw
+  the slow mode, the median is slow too, as with 1.46 on that 7763 runner. The size
+  and the split between processes fit the page lottery, but this scenario was not
+  tested for it.
+
+KILL at e37bf18, 2240 measurements of 14 long operations without the race detector:
+7 over 10 ms, at most 19 ms, in cjson and table.concat on tables of a million
+elements. At 63fc556 with the collector off: none of 2240, at most 4.86 ms. The
+limit does not count collector pauses.
 
 The previous layout of the dispatch loop stored the instruction word and the PC
 on the stack for every instruction. Removing those stores changed these scenarios

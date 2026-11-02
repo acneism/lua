@@ -10,6 +10,22 @@ Uncatchable host aborts retain their original Reply. The environment uses the
 existing interpreter API and read-only library tables. See
 [decision 8](adr/0008-redis-engine.md).
 
+Replies follow the protocol selected with `redis.setresp`. Numbers in commands and
+double replies go through a port of Redis's fpconv, because its Grisu2 output is not
+always the shortest form that Go would print. The bit, struct, cjson and cmsgpack
+libraries are ports of their C sources; cjson, cmsgpack and struct count the slots
+that the C versions would use, so they fail at the same Lua stack limit.
+
+FUNCTION runs in separate sessions. A library's code sees an empty read-only globals
+table whose `__index` switches between the load API and the real globals, and its
+variables live in the session of the pool, so a library variable is per session.
+DUMP and RESTORE use Redis's payload format: RDB strings, LZF and CRC64.
+
+The interpreter hook reads the kill flag, and long library loops poll the same
+hook. Config.MemoryLimit is a lua.Budget that aborts the script when exceeded. The
+hook cannot stop a pause of the Go collector, so KILL's 10 ms limit is checked with
+the collector off.
+
 ## Interpreter
 
 The Redis Lua 5.1 parser emits the canonical register program directly. A second
@@ -24,11 +40,12 @@ A `State` owns globals, identities, hook counters, and execution stacks.
 Values occupy 24 bytes: a float64, an object pointer, and an immutable string
 header pointer. Private read-only objects identify numbers and booleans.
 Numbers are not boxed. Numeric opcodes encode register/constant modes. The
-dispatch loop caches its PC, code, constants, frame, and 256-register window;
-host callbacks and frame changes reload that state. Slow paths handle coercion,
-metatables, and errors.
+dispatch loop keeps its PC, code, constants, and 256-register window in machine
+registers and rare frame state in a struct on the stack; host callbacks and frame
+changes reload them. Slow paths handle coercion, metatables, and errors. See
+[decision 12](adr/0012-dispatch-loop.md).
 
-Lua calls push 48-byte frames into reusable slices and return in the same
+Lua calls push 56-byte frames into reusable slices and return in the same
 dispatch loop. Function entry clears registers beyond supplied parameters.
 Varargs precede registers
 in the value stack so expanding argument lists cannot overwrite saved varargs.
@@ -103,8 +120,8 @@ use LUA_IDSIZE, 60 bytes. Both apply Redis's luaO_chunkid rules.
 ## Reference infrastructure
 
 The capture command verifies the Redis version and captures or compares answers.
-Its small RESP2 client is private to that command. The public reply parser is
-part of B.
+Its small RESP2 client is private to that command. The public reply parser is in
+the redis package.
 
 The test-only luatest.RunCorpus runner executes the original wrapper. A separate, test-only
 outer environment supplies its table.concat helper. Snippets do not inherit it.
@@ -118,10 +135,7 @@ arguments, and State.Retain registrations. It clears weak table entries after
 marking and leaves physical reclamation to Go. It never requests Go GC.
 See [decision 10](adr/0010-weak-tables.md).
 
-## Remaining stages
+## lua-libm
 
-L supplies exact glibc trigonometry through Options.Math in the separate
-lua-libm module. No production dependency is added to lua.
-B adds Redis environments, hosts,
-replies, EVAL, and SCRIPT. C adds extension libraries. D adds FUNCTION, FCALL,
-and DUMP/RESTORE. E completes engine resource controls and final measurements.
+The separate lua-libm module supplies exact glibc trigonometry through
+Options.Math. No production dependency is added to lua.

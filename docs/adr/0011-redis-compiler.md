@@ -1,6 +1,6 @@
 # 11. Redis Lua compiler and binary dumps
 
-Status: implemented; P2a validation is in progress.
+Status: implemented.
 
 ## Decision
 

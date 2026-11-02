@@ -5,6 +5,10 @@ The format follows Keep a Changelog. Releases use Semantic Versioning.
 
 ## [Unreleased]
 
+### Changed
+
+- The README publishes v0.1.0 figures for 43 scenarios on seven processors, and the architecture and contributing guides cover all stages.
+
 ## [0.1.0] - 2026-11-03
 
 ### Added

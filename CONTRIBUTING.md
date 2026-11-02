@@ -25,22 +25,49 @@ as a later-stage library feature. Each pending entry must name its source,
 stage, and missing feature. Remove entries when their implementation lands.
 
 The table model test reads `LUA_DIFF_SEED` and reports it on failure.
-Redis differential tests remain part of B and will also use `REDIS_REF_ADDR`
-and `LUA_DIFF_STEPS`.
 
-Run the current fuzz targets with bounded resources:
+Differential tests require `REDIS_REF_ADDR`; `REDIS_REF_DB` selects a database
+for parallel runs. `LUA_DIFF_SEED` selects a seed and `LUA_DIFF_STEPS` selects the
+number of scenarios. With no seed override they run five fixed seeds; CI uses
+2,000 steps and acceptance uses 50,000.
+
+`TestKillLatency` needs `LUA_KILL_LIMIT`, which CI sets to 10ms. It turns the Go
+collector off, because the limit does not count collector pauses. Do not run it
+under the race detector.
+
+Run a fuzz target with bounded resources:
 
 ```sh
 go test . -run '^$' -fuzz '^FuzzCompile$' -fuzztime=30s -parallel=2
-go test . -run '^$' -fuzz '^FuzzRun$' -fuzztime=30s -parallel=2
+go test ./redis -run '^$' -fuzz '^FuzzRestore$' -fuzztime=30s -parallel=2
 ```
 
-Compile fuzzing accepts arbitrary input up to 64 KiB. Run fuzzing generates
-small programs with a step hook and checks deterministic execution in fresh
-states. The fuzz workflow runs each target for 30 seconds per PR and ten
-minutes nightly. Heavy fuzzing and performance measurements run on the
-designated Azure machine, which must be deallocated and lose its public IP
-after the run.
+The root package has FuzzCompile, FuzzRun, FuzzPattern, and FuzzFormat; the redis
+package has FuzzRESP, FuzzStruct, FuzzExtensions, and FuzzRestore. Compile fuzzing
+accepts arbitrary input up to 64 KiB. Run fuzzing generates small programs with a
+step hook and checks deterministic execution in fresh states. The fuzz workflow
+runs each target for 30 seconds per PR and ten minutes nightly.
+
+The fuzz workflow uses Go 1.27.0, not the go.mod version. Go 1.26 can report
+`context deadline exceeded` when `-fuzztime` ends, with no failing input
+([golang/go#75804](https://github.com/golang/go/issues/75804)). Use Go 1.27 for
+fuzzing too. Move the workflow back to `go-version-file` once go.mod reaches 1.27.
+
+## Performance
+
+The limit is 1.5 times Redis for every scenario, on the median of five fresh
+processes. Rounds inside one process are not independent, see
+[benchmarks](docs/benchmarks.md).
+
+```sh
+go run ./internal/cmd/bench -addr 127.0.0.1:6390 -output work/bench.json
+```
+
+The reference must be Redis 7.2.16 with jemalloc. `-processes 1` measures one
+process, and `-cpuprofile` always uses one. The Performance workflow runs this on
+every PR. Decide from cloud runs: a laptop's timings vary too much to show these
+effects. After changing `execute`, follow the checks in
+[decision 12](docs/adr/0012-dispatch-loop.md).
 
 ## Reference corpus
 
@@ -79,20 +106,20 @@ Generate the deterministic math grid inputs with `python scripts/math-grids.py`.
 It writes work/a2-math-grid-input.json without expected answers. Capture them
 on the reference VM and preserve every previous source and answer.
 
-## Pull requests
+## Engine fixtures
 
 Engine fixtures preserve raw RESP bytes as JSON base64 byte fields. Capture
 them with `go run ./internal/cmd/redis-capture -addr 127.0.0.1:6393 -out
-work/engine.json work/inputs.json`. Verify committed engine and protocol
-fixtures with `-verify redis/testdata/engine.json redis/testdata/protocol.json`.
-Use a dedicated reference Redis: the command clears its selected database.
-Command traces are captured within transactions so blocking commands retain
-their nonblocking script behavior.
+work/engine.json work/inputs.json`. Use a dedicated reference Redis: the command
+clears its selected database. Command traces are captured within transactions so
+blocking commands retain their nonblocking script behavior.
 
-Differential tests require REDIS_REF_ADDR. LUA_DIFF_SEED selects a seed and
-LUA_DIFF_STEPS selects the number of scenarios. With no seed override they run
-five fixed seeds; CI uses 2,000 steps and acceptance uses 50,000. Run long
-comparisons and fuzzing on the reference VM.
+The reference job verifies `engine.json`, `protocol.json`, `handler.json`, and
+`appendix.json` in `redis/testdata` with `-verify`. Tests replay those and the
+`resp3.json`, `libraries.json`, `extensions.json`, and `functions.json` fixtures
+without a server.
+
+## Pull requests
 
 Branch from current `main`, update README, docs, and the Unreleased changelog,
 and include test results and mutation evidence in the PR report. The reviewer
