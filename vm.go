@@ -513,8 +513,9 @@ frames:
 				}
 				parameters := callee.proto.parameters
 				provided := min(parameters, count)
-				for argument := 0; argument < provided; argument++ {
-					t.stack[frameBase+argument] = t.stack[argStart+argument]
+				window := (*[256]Value)(t.stack[frameBase : frameBase+256])
+				for argument, value := range t.stack[argStart : argStart+provided] {
+					window[uint8(argument)] = value
 				}
 				for argument := 0; argument < frameBase-start; argument++ {
 					t.stack[start+argument] = t.stack[argStart+parameters+argument]
@@ -625,14 +626,21 @@ frames:
 					if object := value.object; object != nil {
 						if object.kind == TypeTable {
 							table := object.table
-							var known bool
-							found, known = table.lookup(key.text)
-							hit = known && (!found.IsNil() || table.metatable == nil)
-							if known && !hit {
-								if method, ok := s.cached(eventIndex, table.metatable); ok && method.object != nil && method.object.kind == TypeTable {
-									found, known = method.object.table.lookup(key.text)
-									hit = known && !found.IsNil()
+							for range 100 {
+								var known bool
+								found, known = table.lookup(key.text)
+								if !known {
+									break
 								}
+								if !found.IsNil() || table.metatable == nil {
+									hit = true
+									break
+								}
+								method, ok := s.cached(eventIndex, table.metatable)
+								if !ok || method.object == nil || method.object.kind != TypeTable {
+									break
+								}
+								table = method.object.table
 							}
 						}
 					} else if method, ok := s.cached(eventIndex, s.stringMeta); ok && value.text != nil && method.object != nil && method.object.kind == TypeTable {
