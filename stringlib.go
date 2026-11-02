@@ -99,8 +99,8 @@ func (s *State) openString() {
 		"gmatch": stringGMatch, "gsub": stringGSub, "format": stringFormat,
 		"dump": stringDump,
 	})
-	table.set(sharedString("gfind"), table.RawGet(String("gmatch")))
-	s.stringMeta.set(sharedString("__index"), table.Value())
+	table.set(Intern("gfind"), table.RawGet(String("gmatch")))
+	s.stringMeta.set(Intern("__index"), table.Value())
 }
 
 func stringCase(s *State, args []Value, upper bool) ([]Value, error) {

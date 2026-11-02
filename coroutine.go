@@ -62,9 +62,9 @@ func (s *State) openCoroutine() {
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		table.set(sharedString(name), s.Function(name, functions[name]))
+		table.set(Intern(name), s.Function(name, functions[name]))
 	}
-	s.globals.set(sharedString("coroutine"), table.Value())
+	s.globals.set(Intern("coroutine"), table.Value())
 }
 
 func (o *object) threadValue() Value { return Value{object: o} }

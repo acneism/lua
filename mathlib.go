@@ -123,9 +123,9 @@ func (s *State) openMath() {
 		return nil, nil
 	}
 	table := s.library("math", []string{"abs", "acos", "asin", "atan2", "atan", "ceil", "cosh", "cos", "deg", "exp", "floor", "fmod", "frexp", "ldexp", "log10", "log", "max", "min", "modf", "pow", "rad", "random", "randomseed", "sinh", "sin", "sqrt", "tanh", "tan"}, functions)
-	table.set(sharedString("pi"), Number(math.Pi))
-	table.set(sharedString("huge"), Number(math.Inf(1)))
-	table.set(sharedString("mod"), table.RawGet(String("fmod")))
+	table.set(Intern("pi"), Number(math.Pi))
+	table.set(Intern("huge"), Number(math.Inf(1)))
+	table.set(Intern("mod"), table.RawGet(String("fmod")))
 }
 
 func defaultAcos(x float64) float64 {

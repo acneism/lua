@@ -23,9 +23,9 @@ const (
 )
 
 var eventNames = [eventCount]Value{
-	sharedString("__add"), sharedString("__sub"), sharedString("__mul"), sharedString("__div"), sharedString("__mod"), sharedString("__pow"),
-	sharedString("__index"), sharedString("__newindex"), sharedString("__call"), sharedString("__eq"), sharedString("__lt"), sharedString("__le"),
-	sharedString("__concat"), sharedString("__unm"), sharedString("__len"), sharedString("__tostring"),
+	Intern("__add"), Intern("__sub"), Intern("__mul"), Intern("__div"), Intern("__mod"), Intern("__pow"),
+	Intern("__index"), Intern("__newindex"), Intern("__call"), Intern("__eq"), Intern("__lt"), Intern("__le"),
+	Intern("__concat"), Intern("__unm"), Intern("__len"), Intern("__tostring"),
 }
 
 const methodWays = 4

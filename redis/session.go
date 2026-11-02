@@ -64,9 +64,9 @@ func newSession(engine *Engine) *session {
 	globals := s.state.NewTable(0, 2)
 	s.globals = globals
 	s.raise = original.RawGet(lua.String("error"))
-	_ = globals.RawSet(lua.String("_G"), globals.Value())
+	_ = globals.RawSet(lua.Intern("_G"), globals.Value())
 	for _, name := range []string{"assert", "collectgarbage", "dofile", "error", "gcinfo", "getfenv", "getmetatable", "loadfile", "load", "loadstring", "next", "pcall", "print", "rawequal", "rawget", "rawset", "select", "setfenv", "setmetatable", "tonumber", "tostring", "type", "unpack", "xpcall", "_VERSION", "ipairs", "pairs", "newproxy", "coroutine"} {
-		_ = globals.RawSet(lua.String(name), allowed(name, original.RawGet(lua.String(name))))
+		_ = globals.RawSet(lua.Intern(name), allowed(name, original.RawGet(lua.String(name))))
 	}
 	for _, name := range []string{"table", "string", "math", "debug", "cjson", "struct", "cmsgpack", "bit"} {
 		value := original.RawGet(lua.String(name))
@@ -75,7 +75,7 @@ func newSession(engine *Engine) *session {
 		} else if value.IsNil() {
 			value = s.state.NewTable(0, 0).Value()
 		}
-		_ = globals.RawSet(lua.String(name), value)
+		_ = globals.RawSet(lua.Intern(name), value)
 	}
 	s.openRedis()
 	if _, err := s.state.Call(s.state.Load(errorHandlerProto, globals)); err != nil {
@@ -199,7 +199,7 @@ func (s *session) arguments(keys, args [][]byte) {
 		if i == 1 {
 			name = "ARGV"
 		}
-		_ = globals.RawSet(lua.String(name), table.Value())
+		_ = globals.RawSet(lua.Intern(name), table.Value())
 	}
 }
 
@@ -308,9 +308,9 @@ func (s *session) openRedis() {
 		if function := functions[name]; function != nil {
 			value = s.state.Function(name, function)
 		}
-		_ = table.RawSet(lua.String(name), value)
+		_ = table.RawSet(lua.Intern(name), value)
 	}
-	_ = s.globals.RawSet(lua.String("redis"), table.Value())
+	_ = s.globals.RawSet(lua.Intern("redis"), table.Value())
 }
 
 func numeric(value lua.Value) (float64, bool) {

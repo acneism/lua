@@ -116,7 +116,7 @@ func (s *State) openBase() {
 		return s.values2(Number(float64(index)), value), nil
 	})
 	s.ipairsStep = ipairs.object.function
-	s.globals.set(sharedString("next"), next)
+	s.globals.set(Intern("next"), next)
 	functions := map[string]GoFunction{
 		"assert": baseAssert, "error": baseError, "tonumber": baseToNumber,
 		"tostring": baseToString, "select": baseSelect, "unpack": baseUnpack,
@@ -192,12 +192,12 @@ func (s *State) openBase() {
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		s.globals.set(sharedString(name), s.Function(name, functions[name]))
+		s.globals.set(Intern(name), s.Function(name, functions[name]))
 	}
 	s.globals.RawGet(String("pairs")).object.function.upvalues = []*upvalue{closedUpvalue(next)}
 	s.globals.RawGet(String("ipairs")).object.function.upvalues = []*upvalue{closedUpvalue(ipairs)}
-	s.globals.set(sharedString("_G"), s.globals.Value())
-	s.globals.set(sharedString("_VERSION"), String("Lua 5.1"))
+	s.globals.set(Intern("_G"), s.globals.Value())
+	s.globals.set(Intern("_VERSION"), String("Lua 5.1"))
 }
 
 func baseAssert(s *State, args []Value) ([]Value, error) {

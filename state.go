@@ -137,7 +137,7 @@ func NewState(options Options) *State {
 	s.current = s.main
 	s.globals = s.NewTable(0, 32)
 	s.stringMeta = s.NewTable(0, 1)
-	s.stringMeta.set(sharedString("__index"), s.NewTable(0, 0).Value())
+	s.stringMeta.set(Intern("__index"), s.NewTable(0, 0).Value())
 	s.stringMeta.readonly = true
 	s.openBase()
 	s.openCoroutine()
@@ -149,7 +149,7 @@ func NewState(options Options) *State {
 
 func (s *State) Globals() *Table { return s.globals }
 
-var typeNames = [...]Value{sharedString("nil"), sharedString("boolean"), sharedString("number"), sharedString("string"), sharedString("table"), sharedString("function"), sharedString("thread"), sharedString("userdata")}
+var typeNames = [...]Value{Intern("nil"), Intern("boolean"), Intern("number"), Intern("string"), Intern("table"), Intern("function"), Intern("thread"), Intern("userdata")}
 
 func (s *State) prepend(first Value, values []Value) []Value {
 	if len(values) >= len(s.results) {
