@@ -39,12 +39,14 @@ The format follows Keep a Changelog. Releases will use Semantic Versioning.
 - lua.NullUserdata, the light userdata behind cjson.null.
 - Library scenarios in the benchmark command, measured through the engine.
 - State.Raise, ArgError, CheckNumber, CheckText, OptionalInteger and Result for libraries written outside the lua package.
+- FUNCTION and FCALL with Redis's load and call environments, the function registry, LIST, STATS, DUMP and RESTORE, with differential tests and cross restores against Redis.
 - lua.Intern, which returns the shared value of a library or Redis global name so scripts reach it by pointer.
 - A Go command to compare nine core workloads against Redis with alternating samples.
 - Hook reentry, straight-block interruption, and loop allocation regressions.
 
 ### Changed
 
+- Reject EVAL_RO of a script with a shebang and no no-writes flag, as Redis does.
 - Format numbers in redis.call arguments and double replies with a port of Redis's fpconv. Go's shortest form differed from it for 1.7% of random doubles.
 - Pad or cut a verbatim reply's format to three bytes and replace line breaks in big numbers in RESP2, as Redis does; accept any big number text in the RESP parser.
 - Speed up the interpreter for the 37 benchmark scenarios: dense opcodes with a jump-table dispatch, no stack spills per instruction in the dispatch loop, fused calls of up to four arguments, and metamethod continuations for __index, __newindex, __call, __eq, __lt and __le.

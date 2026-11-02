@@ -44,6 +44,8 @@ jobs:
             pkg: ./redis
           - target: FuzzExtensions
             pkg: ./redis
+          - target: FuzzRestore
+            pkg: ./redis
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-go@v7.0.0

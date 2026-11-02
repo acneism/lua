@@ -73,3 +73,19 @@ func FuzzExtensions(f *testing.F) {
 		}
 	})
 }
+
+func FuzzRestore(f *testing.F) {
+	seedEngine := redis.NewEngine(redis.Config{})
+	seedEngine.FunctionLoad([]byte("#!lua name=seed\nredis.register_function('seed_f', function() return 1 end)"), false)
+	f.Add(seedEngine.FunctionDump(), "APPEND")
+	f.Add([]byte("\xf5\xc3\x05\x05abc\x00\x00\x0b\x00"), "FLUSH")
+	f.Add([]byte{}, "")
+	f.Fuzz(func(t *testing.T, payload []byte, policy string) {
+		engine := redis.NewEngine(redis.Config{})
+		reply := engine.FunctionRestore(payload, policy)
+		if reply.Type == redis.ErrorReply && strings.Contains(reply.Str, "internal") {
+			t.Fatalf("internal error: %s", reply.Str)
+		}
+		engine.FunctionDump()
+	})
+}

@@ -138,6 +138,15 @@ collectgarbage and gcinfo expose plausible Go memory statistics rather than the
 Redis Lua allocator's exact figures. Lua controls do not stop Go's process-wide
 collector.
 
-## Planned engine differences
+## Engine differences
 
-Pooled FUNCTION upvalues will be documented with FUNCTION.
+Redis keeps one Lua state for all functions, so a library-level variable such as a
+counter grows from call to call. The engine pools states, and each state has its own
+copy of a library's variables. Sequential calls reuse the same state, so the values
+diverge from Redis only when calls run concurrently or after a state is dropped.
+
+FUNCTION DUMP writes library code uncompressed, while Redis compresses it with LZF.
+Both forms restore in both directions. FUNCTION LIST keeps registration order, while
+Redis's order follows a randomly seeded hash and differs between processes.
+
+FUNCTION HELP is not implemented; hosts answer it themselves.
