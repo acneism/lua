@@ -69,6 +69,7 @@ func (s *State) openString() {
 			}
 			s.checkString(len(text) * count)
 			var out strings.Builder
+			out.Grow(len(text) * count)
 			block := text
 			if len(text) < 16384 {
 				block = strings.Repeat(text, min(count, 16384/len(text)))
