@@ -4,46 +4,74 @@ Status: implemented in PR P2.
 
 ## Opcode encoding
 
-The compiler keeps the canonical Redis program; `freeze` translates every
-instruction into one uint64 word, so VM PCs equal Lua PCs. Byte zero holds the
-opcode and byte one register A. The remaining bytes depend on the opcode:
+The compiler keeps the canonical Redis program; `translateRedis` and `freeze`
+turn every instruction into one uint64 word. VM PCs differ from Lua PCs:
+translation inserts `opPoll` and expands `LOADBOOL`, and `rawPC` maps back. Byte
+zero holds the opcode and byte one register A. The remaining bytes depend on the
+opcode:
 
 | Opcodes | Layout |
 | --- | --- |
 | generic | B at bits 16–47 (`uint32`, RK constants as `-1-k`), C at bits 48–63 (`int16`) |
 | `opCall`, `opReturn` | B at 16, C at 32, D (result base) at 48 |
-| arithmetic and numeric comparison | left operand at 16, right operand at 32 (`uint16` each) |
+| arithmetic | left operand at 16, right operand at 32 (`uint16` each) |
 | `opCompare` family | left operand at 8, right operand at 16 |
+| `opForIterator` | exit target at 16, result count at 48 |
+| `opSelf` | key at 48, number of fused arguments at 24 |
+| `opCallFused`, `opCallFusedUpvalue` | function at 16, argument count at 24, one byte per argument from 32 |
+
+A fused call replaces the `MOVE` or `GETUPVAL` that loads the function. Its
+arguments are registers below `fusedConstant` or constants above it. The loads
+and the `CALL` stay in the code: when the fast path does not apply, the word acts
+as the load it replaced and execution continues through them.
 
 Named constants describe the numbering in `bytecode.go`. The plain opcodes run
-from zero to `opLength`. Arithmetic and numeric comparison opcodes start at
-`numericBase`, which is aligned to `operandModes`. Each operation (`operationAdd`
-… `operationNotEqual`) occupies four opcodes, one per combination of
-`leftConstant` and `rightConstant`. `numericOpcode`, `numericOperation`,
-`arithmetic` and `numericCompare` encode and decode them. A numeric comparison
-that writes the register tested by the next conditional jump becomes the same
-comparison at `numericJumpBase` (`withJump`/`withoutJump`) and consumes that
-jump. The `opCompare` family at `comparisonBase` packs `compareEqual`,
-`compareLess` or `compareLessEqual`, the two constant flags and `expectTrue`
-(the A operand of EQ/LT/LE) through `comparisonOpcode` and `comparisonKind`.
+from zero to `opLength`. Arithmetic opcodes start at `numericBase`, which is
+aligned to `operandModes`. Each operation (`operationAdd` … `operationPower`)
+occupies four opcodes, one per combination of `leftConstant` and `rightConstant`.
+`numericOpcode` and `numericOperation` encode and decode them. The `opCompare`
+family at `comparisonBase` packs `compareEqual`, `compareLess` or
+`compareLessEqual`, the two constant flags and `expectTrue` (the A operand of
+EQ/LT/LE) through `comparisonOpcode` and `comparisonKind`.
 
-The numbering is dense: the largest opcode is 139. Go builds a jump table for a
-switch only when the case range is at most four times the number of merged
+The numbering is dense: the largest opcode is below 100. Go builds a jump table
+for a switch only when the case range is at most four times the number of merged
 case ranges. The earlier layout reached 215 and compiled to a binary search of
 five to eight compares per instruction.
 
 ## Dispatch loop
 
-`execute` keeps the frame state (`frameIndex`, `f`, `base`, `code`, `constants`,
-`registers`) constant inside the inner loop. Every path that enters or leaves a
-frame, polls the hook or may move the stack writes the frame PC and `s.steps`
-and continues the outer loop, which reloads the state from the top frame.
-Go has no callee-saved registers. A value that changes inside the loop and is
-needed after a call in more than one case is spilled at the dispatch point on
-every instruction. Before this change each instruction stored about thirteen
-values. Now only the PC and the step budget change per instruction. On the
-EPYC 7763 runner ArithConst fell from 1.52× to 1.13× Redis, WhileLoop from
-1.47× to 1.06× and Loop to 0.63×.
+Go has no callee-saved registers, and its register allocator spills a value at
+the closest block that dominates all its restores. A value defined by the
+dispatch (`word`, `pc`) and restored in two switch cases is therefore stored on
+every instruction, and a restore can come from a call or from plain register
+pressure: with no free register a shift clobbers its input. Thirteen such stores
+per instruction were cut to four, and this design removes the rest. The dispatch
+block now only checks the bound, loads the word, increments the PC and jumps.
+
+Three rules keep it that way:
+
+- Rare frame state lives in the `activation` struct. It has five fields, so the
+  compiler keeps it in stack memory and does not assign it registers. A case
+  loads what it needs, at the cost of the restore it replaces. The registers of
+  the loop hold only `s`, `pc`, `code`, `constants` and `registers`, which leaves
+  room for temporaries.
+- Nothing decoded from `word` and no `pc` is used after a call. Before a call a
+  case stores the PC in the frame. Afterwards it reloads the PC from the frame or
+  continues the outer loop. Helpers read their operands from the frame through
+  `proto.code[pc-1]`.
+- In heavy cases, late uses read the instruction stream again (`code[pc+count]`,
+  `code[pc-1]` after a store) instead of keeping `word` alive.
+
+Any edit can bring a spill back, so check `go tool objdump` of `execute` after
+changing it. The first block after `word := code[pc]` must contain no store to
+the stack.
+
+Calls and returns do not maintain `t.top` on fast paths. It is meaningful only
+between an instruction with open results and its consumer, and calls with a fixed
+argument count start the new frame at `t.used`. A return with `want >= 0` needs
+no check for the bottom frame of `execute`, because the outer loop exits by
+itself when the frame count falls below `stop`.
 
 `execute` must stay under the inliner's 5000-node limit for big functions.
 Above it Go inlines only callees of cost 20 or less, and helpers such as
@@ -90,7 +118,7 @@ counted. Fib27 and GSub have no loop in the main chunk.
 
 | Scenario | luac | VM |
 | --- | --- | --- |
-| Loop | 2 | 1 |
+| Loop | 2 | 2 |
 | Fib27 | - | - |
 | LuaCalls | 5 | 3 |
 | TableInsert | 4 | 4 |
@@ -101,15 +129,15 @@ counted. Fib27 and GSub have no loop in the main chunk.
 | Metamethod | 2 | 2 |
 | ArithConst | 3 | 3 |
 | TwoAccumulators | 3 | 3 |
-| WhileLoop | 5 | 4 |
-| Branches | 12 | 10 |
-| CallTwoArgs | 6 | 6 |
+| WhileLoop | 5 | 5 |
+| Branches | 12 | 12 |
+| CallTwoArgs | 6 | 3 |
 | Upvalues | 4 | 2 |
-| MethodCall | 4 | 4 |
+| MethodCall | 4 | 2 |
 | MultiReturn | 6 | 4 |
-| Varargs | 7 | 7 |
-| NativeCalls | 12 | 11 |
-| ClosureCreate | 6 | 6 |
+| Varargs | 7 | 3 |
+| NativeCalls | 12 | 12 |
+| ClosureCreate | 7 | 5 |
 | ArrayReadWrite | 3 | 3 |
 | FieldAccess | 5 | 5 |
 | TableLibInsert | 6 | 6 |
@@ -117,13 +145,13 @@ counted. Fib27 and GSub have no loop in the main chunk.
 | SmallTables | 9 | 9 |
 | StringKeys | 3 | 3 |
 | KeyBuild | 7 | 7 |
-| StringMethods | 11 | 11 |
+| StringMethods | 11 | 6 |
 | StringFormat | 10 | 10 |
-| Match | 10 | 10 |
-| IndexInheritance | 4 | 4 |
+| Match | 10 | 8 |
+| IndexInheritance | 4 | 3 |
 | IndexFunction | 3 | 3 |
 | NewIndexFunction | 2 | 2 |
-| CompareMetamethod | 4 | 3 |
+| CompareMetamethod | 4 | 4 |
 | CallMetamethod | 5 | 3 |
 | PCall | 8 | 8 |
-| Coroutine | 4 | 4 |
+| Coroutine | 4 | 3 |
