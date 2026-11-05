@@ -55,57 +55,59 @@ time: the median of five alternating runs in a process, then the median of five
 fresh processes; below 1 means faster than Redis. The limit for every scenario
 is 1.5.
 
-Measured on 2026-11-03 at v0.1.0 (3255aed) on GitHub Actions runners: 24 runs of
-five fresh processes each, the median per processor. The last column is the worst
-run of any processor. One value is over the limit: HashFill 1.57 on one Xeon
-6973P runner, in all five of its processes, against 1.31 on another runner of that
-type. Next come ArithConst 1.46 and SmallTables 1.41.
+Measured on 2026-11-05 at 4efd6e0 on GitHub Actions runners: 24 runs of five
+fresh processes each, the median per processor. The last column is the worst run
+of any processor. No value is over the limit; the highest is CallMetamethod 1.34
+on Xeon Platinum 8573C. Two of the 5160 single processes were over 1.5:
+IndexFunction 1.60 and 1.72, each the first of five processes on an EPYC 9V74
+runner. This run drew no Xeon 6973P or 6975P runners. At v0.1.0 HashFill was 1.57
+on one 6973P runner.
 
-| Scenario | AMD EPYC 7763 (9 runs) | AMD EPYC 9V74 (7 runs) | AMD EPYC 9V45 (3 runs) | Intel Xeon 6973P-C (2 runs) | Intel Xeon 6975P-C (1 run) | Intel Xeon Platinum 8370C (1 run) | Intel Xeon Platinum 8573C (1 run) | Worst run |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Loop | 0.75 | 0.85 | 0.97 | 1.00 | 0.99 | 1.05 | 0.95 | 1.05 |
-| Fib27 | 1.08 | 1.14 | 1.16 | 1.13 | 1.13 | 1.18 | 1.11 | 1.18 |
-| LuaCalls | 1.00 | 1.14 | 1.02 | 1.10 | 1.09 | 1.16 | 1.06 | 1.16 |
-| TableInsert | 0.23 | 0.17 | 0.23 | 0.22 | 0.22 | 0.23 | 0.22 | 0.24 |
-| TableHash | 0.77 | 0.74 | 0.69 | 0.69 | 0.67 | 0.69 | 0.69 | 0.80 |
-| Sort | 0.93 | 0.95 | 0.89 | 1.08 | 1.08 | 1.18 | 1.07 | 1.18 |
-| GSub | 0.81 | 0.70 | 0.75 | 0.83 | 0.82 | 0.79 | 0.81 | 0.83 |
-| StringConcat | 0.58 | 0.62 | 0.61 | 0.60 | 0.59 | 0.60 | 0.56 | 0.64 |
-| Metamethod | 1.19 | 1.30 | 1.17 | 1.17 | 1.19 | 1.20 | 1.16 | 1.31 |
-| ArithConst | 0.75 | 0.85 | 1.14 | 1.01 | 1.01 | 0.98 | 0.98 | 1.46 |
-| TwoAccumulators | 0.74 | 0.87 | 0.99 | 0.92 | 0.92 | 0.95 | 0.92 | 1.00 |
-| WhileLoop | 0.69 | 0.71 | 0.90 | 0.85 | 0.84 | 0.83 | 0.82 | 0.90 |
-| Branches | 0.90 | 0.85 | 0.82 | 0.99 | 0.99 | 0.92 | 0.98 | 1.00 |
-| CallTwoArgs | 0.92 | 1.01 | 1.00 | 1.00 | 0.99 | 1.11 | 0.94 | 1.11 |
-| Upvalues | 0.86 | 0.95 | 0.99 | 1.07 | 1.07 | 1.10 | 1.06 | 1.10 |
-| MethodCall | 1.07 | 1.17 | 1.15 | 1.12 | 1.11 | 1.21 | 1.08 | 1.22 |
-| MultiReturn | 0.96 | 1.02 | 1.10 | 1.01 | 1.01 | 1.25 | 1.00 | 1.25 |
-| Varargs | 1.12 | 1.16 | 1.29 | 1.10 | 1.09 | 1.27 | 1.03 | 1.30 |
-| NativeCalls | 0.85 | 0.83 | 0.90 | 0.94 | 0.95 | 0.88 | 0.88 | 0.95 |
-| ClosureCreate | 1.05 | 1.04 | 0.99 | 0.93 | 0.92 | 1.08 | 0.79 | 1.10 |
-| ArrayReadWrite | 1.00 | 0.86 | 0.83 | 0.84 | 0.90 | 0.85 | 0.81 | 1.05 |
-| FieldAccess | 0.66 | 0.70 | 0.84 | 0.83 | 0.82 | 0.82 | 0.79 | 0.84 |
-| TableLibInsert | 0.47 | 0.41 | 0.43 | 0.37 | 0.37 | 0.48 | 0.38 | 0.49 |
-| Ipairs | 0.33 | 0.32 | 0.34 | 0.40 | 0.39 | 0.39 | 0.36 | 0.40 |
-| SmallTables | 1.17 | 1.13 | 1.14 | 1.21 | 1.15 | 1.41 | 1.13 | 1.41 |
-| StringKeys | 0.71 | 0.75 | 0.83 | 0.81 | 0.80 | 0.76 | 0.83 | 0.83 |
-| KeyBuild | 0.61 | 0.58 | 0.54 | 0.54 | 0.52 | 0.64 | 0.52 | 0.64 |
-| StringMethods | 0.98 | 1.04 | 1.06 | 1.09 | 1.08 | 1.10 | 1.03 | 1.10 |
-| StringFormat | 1.04 | 0.96 | 1.01 | 0.99 | 0.97 | 0.99 | 0.98 | 1.06 |
-| Match | 1.09 | 1.02 | 1.07 | 1.11 | 1.07 | 1.26 | 1.09 | 1.26 |
-| IndexInheritance | 1.01 | 1.27 | 1.19 | 1.16 | 1.16 | 1.20 | 1.09 | 1.33 |
-| IndexFunction | 1.10 | 1.17 | 1.12 | 1.15 | 1.14 | 1.16 | 1.13 | 1.19 |
-| NewIndexFunction | 1.03 | 1.17 | 1.07 | 1.15 | 1.15 | 1.18 | 1.08 | 1.18 |
-| CompareMetamethod | 0.87 | 1.08 | 1.05 | 1.06 | 1.06 | 1.10 | 0.96 | 1.10 |
-| CallMetamethod | 0.91 | 1.23 | 1.14 | 1.33 | 1.32 | 1.30 | 1.34 | 1.34 |
-| PCall | 1.03 | 0.93 | 1.01 | 0.97 | 0.97 | 1.10 | 0.95 | 1.10 |
-| Coroutine | 0.94 | 1.02 | 1.02 | 1.01 | 1.02 | 1.20 | 0.93 | 1.20 |
-| CJSONRoundTrip | 1.06 | 1.03 | 1.10 | 1.03 | 1.02 | 1.08 | 1.08 | 1.11 |
-| CMsgpackRoundTrip | 1.15 | 1.19 | 1.17 | 1.20 | 1.19 | 1.25 | 1.19 | 1.25 |
-| BitOps | 0.90 | 1.06 | 1.00 | 0.99 | 0.98 | 1.18 | 0.92 | 1.18 |
-| RedisCall | 0.93 | 0.89 | 1.00 | 1.02 | 0.99 | 0.98 | 0.95 | 1.03 |
-| HashFill | 1.01 | 0.96 | 0.94 | 1.44 | 1.21 | 1.14 | 1.27 | 1.57 |
-| StructRoundTrip | 0.97 | 0.96 | 0.90 | 1.08 | 1.05 | 1.17 | 1.10 | 1.17 |
+| Scenario | AMD EPYC 7763 (8 runs) | AMD EPYC 9V74 (5 runs) | AMD EPYC 9V45 (5 runs) | Intel Xeon Platinum 8370C (2 runs) | Intel Xeon Platinum 8573C (4 runs) | Worst run |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Loop | 0.75 | 0.85 | 0.92 | 1.07 | 0.96 | 1.07 |
+| Fib27 | 1.09 | 1.15 | 1.15 | 1.15 | 1.11 | 1.18 |
+| LuaCalls | 1.01 | 1.15 | 1.05 | 1.18 | 1.06 | 1.22 |
+| TableInsert | 0.23 | 0.17 | 0.21 | 0.23 | 0.21 | 0.24 |
+| TableHash | 0.76 | 0.70 | 0.73 | 0.67 | 0.70 | 0.79 |
+| Sort | 0.93 | 0.95 | 0.89 | 1.18 | 1.07 | 1.18 |
+| GSub | 0.83 | 0.72 | 0.76 | 0.78 | 0.83 | 0.85 |
+| StringConcat | 0.56 | 0.62 | 0.62 | 0.56 | 0.56 | 0.65 |
+| Metamethod | 1.19 | 1.30 | 1.20 | 1.19 | 1.16 | 1.30 |
+| ArithConst | 0.75 | 0.84 | 1.03 | 0.96 | 0.98 | 1.04 |
+| TwoAccumulators | 0.75 | 0.88 | 0.99 | 0.97 | 0.91 | 0.99 |
+| WhileLoop | 0.66 | 0.69 | 0.88 | 0.85 | 0.83 | 0.90 |
+| Branches | 0.89 | 0.85 | 0.81 | 0.92 | 0.99 | 0.99 |
+| CallTwoArgs | 0.92 | 1.01 | 0.97 | 1.09 | 0.93 | 1.09 |
+| Upvalues | 0.87 | 0.95 | 1.00 | 1.10 | 1.04 | 1.11 |
+| MethodCall | 1.07 | 1.14 | 1.15 | 1.18 | 1.07 | 1.19 |
+| MultiReturn | 0.96 | 1.02 | 1.09 | 1.26 | 1.00 | 1.26 |
+| Varargs | 1.11 | 1.16 | 1.19 | 1.30 | 1.03 | 1.30 |
+| NativeCalls | 0.84 | 0.82 | 0.91 | 0.89 | 0.88 | 0.91 |
+| ClosureCreate | 1.07 | 1.03 | 0.99 | 1.00 | 0.88 | 1.16 |
+| ArrayReadWrite | 1.01 | 0.87 | 0.84 | 0.85 | 0.82 | 1.04 |
+| FieldAccess | 0.66 | 0.70 | 0.77 | 0.79 | 0.77 | 0.80 |
+| TableLibInsert | 0.48 | 0.42 | 0.44 | 0.49 | 0.38 | 0.49 |
+| Ipairs | 0.33 | 0.32 | 0.34 | 0.38 | 0.36 | 0.38 |
+| SmallTables | 1.15 | 1.13 | 1.12 | 1.21 | 1.16 | 1.27 |
+| StringKeys | 0.72 | 0.76 | 0.83 | 0.80 | 0.83 | 0.84 |
+| KeyBuild | 0.59 | 0.59 | 0.53 | 0.61 | 0.51 | 0.61 |
+| StringMethods | 0.98 | 1.03 | 1.05 | 1.10 | 1.01 | 1.10 |
+| StringFormat | 1.04 | 0.94 | 0.95 | 0.98 | 1.00 | 1.07 |
+| Match | 1.11 | 1.03 | 1.10 | 1.25 | 1.08 | 1.26 |
+| IndexInheritance | 1.02 | 1.27 | 1.19 | 1.23 | 1.08 | 1.27 |
+| IndexFunction | 1.11 | 1.18 | 1.13 | 1.20 | 1.12 | 1.22 |
+| NewIndexFunction | 1.03 | 1.17 | 1.08 | 1.19 | 1.07 | 1.19 |
+| CompareMetamethod | 0.87 | 1.07 | 1.05 | 1.06 | 0.96 | 1.08 |
+| CallMetamethod | 0.92 | 1.22 | 1.19 | 1.32 | 1.33 | 1.34 |
+| PCall | 0.96 | 0.93 | 1.00 | 1.10 | 0.96 | 1.10 |
+| Coroutine | 0.94 | 1.00 | 1.04 | 1.19 | 0.93 | 1.20 |
+| CJSONRoundTrip | 1.05 | 1.06 | 1.06 | 1.07 | 1.07 | 1.13 |
+| CMsgpackRoundTrip | 1.15 | 1.19 | 1.13 | 1.24 | 1.20 | 1.25 |
+| BitOps | 0.91 | 1.06 | 0.99 | 1.17 | 0.92 | 1.18 |
+| RedisCall | 0.85 | 0.87 | 0.94 | 1.00 | 0.92 | 1.02 |
+| HashFill | 1.01 | 0.95 | 0.95 | 1.16 | 1.25 | 1.26 |
+| StructRoundTrip | 1.10 | 0.96 | 0.90 | 1.14 | 1.09 | 1.15 |
 
 The sources of all scenarios are in
 [internal/scenario/scenario.go](internal/scenario/scenario.go).
@@ -113,10 +115,10 @@ The sources of all scenarios are in
 The ratio varies with the processor and between runs on the same processor
 type, because Redis and Go react differently to each machine. A single process
 can also be slower as a whole, which is why the limit applies to the median of
-several processes: on a725f66 Fib27 reached 1.51 and 1.58 in 2 of 15 runs, with
-the same binary at 1.17 in others. The median does not remove this completely.
-At v0.1.0 ArithConst was usually 0.75 on EPYC 7763, but single processes reached
-1.5, and up to 2.23 on other processors. Later commits removed that slow mode. See
+several processes. At v0.1.0 ArithConst had such a slow mode, up to 2.23 in a
+single process, because a register and a code word shared their low address bits.
+Registers and code now stay apart, see
+[ADR 13](docs/adr/0013-register-and-code-placement.md). See
 [benchmarks](docs/benchmarks.md) for the method, the cause and the history.
 
 ## Interpreter example

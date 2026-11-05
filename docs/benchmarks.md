@@ -7,7 +7,7 @@ workflow: Go benchmark in process against EVAL in Redis 7.2.16 with jemalloc on
 the same machine, median of five alternating samples in each run. Nine runs:
 four on EPYC 7763, three on EPYC 9V74, one on EPYC 9V45, one on Xeon Platinum
 8370C. All 37 scenarios stayed at or below 1.39. The
-[README](../README.md#performance) has the later v0.1.0 figures.
+[README](../README.md#performance) has later figures.
 
 Later measurements take the median of five fresh processes for each scenario,
 because rounds in one process are not independent. A store and a load conflict
@@ -37,6 +37,10 @@ not remove every outlier:
   now stay apart: 21 of 288 processes were over 1.3 before and none after. See
   [ADR 13](adr/0013-register-and-code-placement.md). Other pairs of loads and stores
   are not covered, so outliers in other scenarios remain.
+
+At 4efd6e0, with registers and code apart, 24 runners gave no median over 1.5 and
+two single-process values over it: IndexFunction 1.60 and 1.72, each in one process
+of an EPYC 9V74 runner. The [README](../README.md#performance) has that table.
 
 KILL at e37bf18, 2240 measurements of 14 long operations without the race detector:
 7 over 10 ms, at most 19 ms, in cjson and table.concat on tables of a million
@@ -172,8 +176,8 @@ removed those costs while preserving the captured C-depth boundaries.
 
 Before the A2 review fixes, a three-round alternating comparison of earlier A1
 source 73da2d8 and A2 dacf508 on the same VM measured Fibonacci medians of
-86.623 ms and 90.790 ms: that A2 version was 4.81% slower. The individual ranges were 84.027вЂ“95.615 ms and
-89.405вЂ“94.966 ms. These short runs overlap and cannot isolate a compiler
+86.623 ms and 90.790 ms: that A2 version was 4.81% slower. The individual ranges were 84.027–95.615 ms and
+89.405–94.966 ms. These short runs overlap and cannot isolate a compiler
 regression from scheduling noise. Both versions allocated five objects and
 232 bytes. The profile identifies dispatch and frame setup as the main costs;
 the metamethod optimization does not address them.
