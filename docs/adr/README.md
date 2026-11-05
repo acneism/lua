@@ -12,3 +12,4 @@
 - [Explicit Lua collection and host roots](0010-weak-tables.md)
 - [Redis compiler and binary dumps](0011-redis-compiler.md)
 - [Dispatch loop and P2 execution paths](0012-dispatch-loop.md)
+- [Registers and code in separate halves of a page](0013-register-and-code-placement.md)

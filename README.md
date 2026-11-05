@@ -115,9 +115,9 @@ type, because Redis and Go react differently to each machine. A single process
 can also be slower as a whole, which is why the limit applies to the median of
 several processes: on a725f66 Fib27 reached 1.51 and 1.58 in 2 of 15 runs, with
 the same binary at 1.17 in others. The median does not remove this completely.
-ArithConst is usually 0.75 on EPYC 7763, but single processes reach 1.5, and up to
-2.23 on other processors. See [benchmarks](docs/benchmarks.md) for the method, the
-cause and the history.
+At v0.1.0 ArithConst was usually 0.75 on EPYC 7763, but single processes reached
+1.5, and up to 2.23 on other processors. Later commits removed that slow mode. See
+[benchmarks](docs/benchmarks.md) for the method, the cause and the history.
 
 ## Interpreter example
 

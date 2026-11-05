@@ -8,6 +8,7 @@ The format follows Keep a Changelog. Releases use Semantic Versioning.
 ### Changed
 
 - The README publishes v0.1.0 figures for 43 scenarios on seven processors, and the architecture and contributing guides cover all stages.
+- Lua registers and compiled code stay in separate halves of a page, which removes the slow mode of ArithConst. A small compiled script retains about 4 KB more, and creating and finishing a coroutine takes 5.9 µs instead of 4.4 µs.
 
 ## [0.1.0] - 2026-11-03
 

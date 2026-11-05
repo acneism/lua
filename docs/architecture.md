@@ -43,7 +43,9 @@ Numbers are not boxed. Numeric opcodes encode register/constant modes. The
 dispatch loop keeps its PC, code, constants, and 256-register window in machine
 registers and rare frame state in a struct on the stack; host callbacks and frame
 changes reload them. Slow paths handle coercion, metatables, and errors. See
-[decision 12](adr/0012-dispatch-loop.md).
+[decision 12](adr/0012-dispatch-loop.md). Registers and code stay in separate halves
+of a page, so that reading code does not wait for a register store. See
+[decision 13](adr/0013-register-and-code-placement.md).
 
 Lua calls push 56-byte frames into reusable slices and return in the same
 dispatch loop. Function entry clears registers beyond supplied parameters.

@@ -30,11 +30,13 @@ not remove every outlier:
   to 1.38 on another. A difference that stays across processes belongs to the machine,
   not to the page lottery. The cause was not examined. Its Go side also includes the
   benchmark's in-memory host.
-- ArithConst is bimodal within one runner: 0.75 0.74 1.46 1.46 1.50 on EPYC 7763,
+- ArithConst was bimodal within one runner: 0.75 0.74 1.46 1.46 1.50 on EPYC 7763,
   0.85 and 1.87 on EPYC 9V74, 0.97 and 2.23 on Xeon 8370C. When most processes draw
-  the slow mode, the median is slow too, as with 1.46 on that 7763 runner. The size
-  and the split between processes fit the page lottery, but this scenario was not
-  tested for it.
+  the slow mode, the median is slow too, as with 1.46 on that 7763 runner. The cause
+  was a register sharing its low 12 address bits with a code word. Registers and code
+  now stay apart: 21 of 288 processes were over 1.3 before and none after. See
+  [ADR 13](adr/0013-register-and-code-placement.md). Other pairs of loads and stores
+  are not covered, so outliers in other scenarios remain.
 
 KILL at e37bf18, 2240 measurements of 14 long operations without the race detector:
 7 over 10 ms, at most 19 ms, in cjson and table.concat on tables of a million
