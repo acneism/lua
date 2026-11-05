@@ -1,68 +1,58 @@
 # lua
 
-A Go library for Redis Lua scripting.
+A Go library that runs Redis Lua scripts as Redis 7.2.16 does: the same Lua 5.1
+interpreter, sandbox and libraries (`cjson`, `cmsgpack`, `struct`, `bit`), with
+the same replies and error texts. It uses only the Go standard library and needs
+Go 1.26.1 or later.
 
-The compatibility target is Redis 7.2.16 and its Lua 5.1 interpreter. The module
-uses the Go standard library only. It requires Go 1.26.1 or later.
+- Package `lua` is the interpreter. Its compiler ports Redis's Lua parser and code
+  generator, and `string.dump` produces Redis's x86-64 binary chunks.
+- Package `redis` gives a host EVAL, EVALSHA, SCRIPT, FUNCTION and FCALL with RESP2
+  and RESP3 replies, KILL and a memory limit. The host runs `redis.call` through
+  the `Host` interface.
+- [lua-libm](https://github.com/acneism/lua-libm) supplies the seven trigonometric
+  functions bit for bit through `Options.Math`. Without it they come from Go's
+  `math`.
 
-## Status
+## Example
 
-Version 0.1.0 covers the interpreter and the Redis scripting environment.
+```go
+package main
 
-A3 completes reference compatibility for the interpreter core, base, coroutine, string, table, and math
-libraries, immutable prototypes, Lua tables, metatables, closures, varargs,
-tail calls, error locations, read-only tables, and an interruption hook.
+import (
+    "fmt"
 
-The corpus has 4395 snippets. All execute through the original capture wrapper.
-`testdata/pending.json` is empty. The reference verifier checks every recorded
-answer against Redis.
+    "github.com/acneism/lua"
+)
 
-The exp, log, pow, log10, sinh, cosh, and tanh implementations reproduce the
-x86-64 FMA reference, including the power operator. Hosts can supply the seven
-trigonometric functions through `Options.Math`. Without it, Go math provides
-them; acos uses asin near the endpoints. The 36 exact trigonometric probes in
-`testdata/libm.json` are reserved for the separate lua-libm module.
+func main() {
+    proto, err := lua.Compile([]byte("return ... + 1"), "@example")
+    if err != nil {
+        panic(err)
+    }
+    state := lua.NewState(lua.Options{})
+    values, err := state.Call(state.Load(proto, nil), lua.Number(41))
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(values[0].Float())
+}
+```
 
-The redis package provides host callbacks, RESP2 and RESP3 replies, `redis.setresp`,
-the EVAL sandbox, EVAL/EVALSHA, and SCRIPT methods. It runs Redis's error handler
-verbatim, so error replies match Redis's. Numbers in commands and double replies
-use a port of Redis's fpconv, whose Grisu2 output is not always the shortest form.
-It includes the bit, struct, cjson and cmsgpack libraries, FUNCTION and FCALL, DUMP and
-RESTORE payloads that Redis accepts in both directions, KILL, BUSY and a memory limit.
-
-`State.Frame` exposes Lua, native, and lost tail-call levels. `CallWithHandler`
-runs an error handler at the original failure point before unwinding; xpcall
-uses the same behavior. See [error handling](docs/adr/0009-error-handlers.md).
-
-Explicit collectgarbage calls clear weak tables using Lua object reachability.
-Hosts register external roots with `State.Retain` and call its release function
-when finished. See [weak tables](docs/adr/0010-weak-tables.md).
-
-The interpreter uses 24-byte values, packed instructions, cached register
-windows, and reusable Lua call frames. See the [performance decision](docs/adr/0007-vm-performance.md)
-for the implementation and its Redis comparisons.
-
-The compiler ports Redis's Lua 5.1 parser and code generator. `string.dump`
-reproduces its x86-64 binary format, including debug information, on every
-platform. Binary chunks remain unsupported as input. See the
-[compiler decision](docs/adr/0011-redis-compiler.md).
+Compile once and load the prototype into separate states. A state can be reused
+between calls and must not be called concurrently.
 
 ## Performance
 
-Each scenario runs as a Go benchmark in process and as EVAL in Redis 7.2.16
-(jemalloc build) on the same machine. The figure is Go time divided by Redis
-time: the median of five alternating runs in a process, then the median of five
-fresh processes; below 1 means faster than Redis. The limit for every scenario
-is 1.5.
+Each scenario runs in Go and as EVAL in Redis 7.2.16 (jemalloc build) on the same
+machine. The figure is Go time divided by Redis time: the median of five
+alternating runs in a process, then the median of five fresh processes. Below 1
+means faster than Redis.
 
-Measured on 2026-11-05 at 4efd6e0 on GitHub Actions runners: 24 runs of five
-fresh processes each, the median per processor. The last column is the worst run
-of any processor. No value is over the limit; the highest is CallMetamethod 1.34
-on Xeon Platinum 8573C. Two of the 5160 single processes were over 1.5:
-IndexFunction 1.60 and 1.72, each the first of five processes on an EPYC 9V74
-runner. This run drew no Xeon 6973P or 6975P runners. At v0.1.0 HashFill was 1.57
-on one 6973P runner.
-
+Measured on 2026-11-05 at 4efd6e0 on 24 GitHub Actions runners, the median per
+processor; the last column is the worst runner. The scenarios are in
+[internal/scenario/scenario.go](internal/scenario/scenario.go), the method and
+the history in [benchmarks](docs/benchmarks.md).
 | Scenario | AMD EPYC 7763 (8 runs) | AMD EPYC 9V74 (5 runs) | AMD EPYC 9V45 (5 runs) | Intel Xeon Platinum 8370C (2 runs) | Intel Xeon Platinum 8573C (4 runs) | Worst run |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Loop | 0.75 | 0.85 | 0.92 | 1.07 | 0.96 | 1.07 |
@@ -109,47 +99,6 @@ on one 6973P runner.
 | HashFill | 1.01 | 0.95 | 0.95 | 1.16 | 1.25 | 1.26 |
 | StructRoundTrip | 1.10 | 0.96 | 0.90 | 1.14 | 1.09 | 1.15 |
 
-The sources of all scenarios are in
-[internal/scenario/scenario.go](internal/scenario/scenario.go).
-
-The ratio varies with the processor and between runs on the same processor
-type, because Redis and Go react differently to each machine. A single process
-can also be slower as a whole, which is why the limit applies to the median of
-several processes. At v0.1.0 ArithConst had such a slow mode, up to 2.23 in a
-single process, because a register and a code word shared their low address bits.
-Registers and code now stay apart, see
-[ADR 13](docs/adr/0013-register-and-code-placement.md). See
-[benchmarks](docs/benchmarks.md) for the method, the cause and the history.
-
-## Interpreter example
-
-```go
-package main
-
-import (
-    "fmt"
-
-    "github.com/acneism/lua"
-)
-
-func main() {
-    proto, err := lua.Compile([]byte("return ... + 1"), "@example")
-    if err != nil {
-        panic(err)
-    }
-    state := lua.NewState(lua.Options{})
-    values, err := state.Call(state.Load(proto, nil), lua.Number(41))
-    if err != nil {
-        panic(err)
-    }
-    fmt.Println(values[0].Float())
-}
-```
-
-Compile once and load the prototype into separate states. A state can be reused
-between calls and must not be called concurrently. Allocate host tables and
-functions through the state to give objects stable identities.
-
 ## Development
 
 ```sh
@@ -159,15 +108,11 @@ go test -race ./...
 go run ./internal/cmd/capture -addr 127.0.0.1:6390 -verify testdata/snippets.json
 ```
 
-External math modules can run this corpus through the test-only
-`github.com/acneism/lua/luatest` package. Pass fixture paths and host options to
-`luatest.RunCorpus(t, files, options)`. See [reference tests](docs/reference.md).
-
 See [CONTRIBUTING.md](CONTRIBUTING.md), [architecture](docs/architecture.md),
-[decisions](docs/adr/README.md), [compatibility](docs/compatibility.md), and
+[decisions](docs/adr/README.md), [compatibility](docs/compatibility.md) and
 [benchmarks](docs/benchmarks.md).
 
 ## License
 
-Apache-2.0, with upstream notices for ported Lua and Redis behavior.
-See [LICENSE](LICENSE), [NOTICE](NOTICE), and [LICENSES](LICENSES).
+Apache-2.0, with upstream notices for ported Lua and Redis behavior. See
+[LICENSE](LICENSE), [NOTICE](NOTICE) and [LICENSES](LICENSES).
