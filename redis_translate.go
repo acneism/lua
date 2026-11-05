@@ -7,15 +7,15 @@ func redisOperand(reg int) int {
 	return reg
 }
 
-func translateRedis(raw *redisProto) *Proto {
+func translateRedis(raw *redisProto, blocks *codeBlocks) *Proto {
 	p := &Proto{canonical: raw, chunk: raw.source, constants: append([]Value(nil), raw.constants...), parameters: raw.parameters, maxRegisters: raw.maxStack, vararg: raw.vararg&2 != 0, usesVararg: raw.vararg&4 == 0, argRegister: -1, line: raw.line, needsArg: raw.vararg&4 != 0}
 	if raw.vararg&1 != 0 {
 		p.argRegister = raw.parameters
 	}
 	for _, child := range raw.children {
-		p.children = append(p.children, translateRedis(child))
+		p.children = append(p.children, translateRedis(child, blocks))
 	}
-	c := &compiler{proto: p}
+	c := &compiler{proto: p, blocks: blocks}
 	mapping := make([]int, len(raw.code)+1)
 	targets := make(map[int]int)
 	sincePoll := 0

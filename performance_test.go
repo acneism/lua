@@ -2,6 +2,8 @@ package lua
 
 import (
 	"errors"
+	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -55,6 +57,35 @@ func TestHookReentryGrowsRegisterStack(t *testing.T) {
 	values, err := state.Call(fn)
 	if err != nil || !reentered || len(values) != 1 || values[0].Float() != 10000*10001/2 {
 		t.Fatalf("reentrant hook lost running registers: %v %v", values, err)
+	}
+}
+
+func pageOffset(t *testing.T, pointer any) uint64 {
+	t.Helper()
+	address, err := strconv.ParseUint(fmt.Sprintf("%p", pointer), 0, 64)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return address % 4096
+}
+
+func TestRegistersAndCodeUseSeparatePageHalves(t *testing.T) {
+	proto := compileTest(t, strings.Repeat("do local function f(x) return x+1 end end ", 200))
+	for index, child := range proto.children {
+		start := pageOffset(t, &child.code[0])
+		if start < 2048 || start+8*uint64(len(child.code)) > 4096 {
+			t.Fatalf("function %d has %d words of code from page offset %d", index, len(child.code), start)
+		}
+	}
+	s := NewState(Options{})
+	if _, err := s.Call(s.Load(proto, nil)); err != nil {
+		t.Fatal(err)
+	}
+	for range 6 {
+		if offset := pageOffset(t, &s.main.stack[0]); offset > 8 {
+			t.Fatalf("stack of %d values starts at page offset %d", len(s.main.stack), offset)
+		}
+		s.main.ensure(len(s.main.stack) + 1)
 	}
 }
 

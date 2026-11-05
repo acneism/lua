@@ -90,8 +90,9 @@ type Proto struct {
 }
 
 type compiler struct {
-	code  []instruction
-	proto *Proto
+	code   []instruction
+	proto  *Proto
+	blocks *codeBlocks
 }
 
 func Compile(source []byte, chunk string) (*Proto, error) {
@@ -113,5 +114,5 @@ func compile(source []byte, chunk string, depth int) (proto *Proto, err error) {
 		chunk = string(source)
 	}
 	chunk, _, _ = strings.Cut(chunk, "\x00")
-	return translateRedis(parseRedis(source, chunk, depth)), nil
+	return translateRedis(parseRedis(source, chunk, depth), &codeBlocks{}), nil
 }

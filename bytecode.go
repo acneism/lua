@@ -88,6 +88,22 @@ func numericOperation(operator string) int {
 	return -1
 }
 
+const codeWindowWords = 256
+
+type codeBlocks struct{ free []uint64 }
+
+func (b *codeBlocks) words(count int) []uint64 {
+	if count > codeWindowWords {
+		return make([]uint64, count)
+	}
+	if count > len(b.free) {
+		b.free = make([]uint64, 2*codeWindowWords)[codeWindowWords:]
+	}
+	words := b.free[:count:count]
+	b.free = b.free[count:]
+	return words
+}
+
 func (c *compiler) freeze() {
 	p := c.proto
 	for _, constant := range p.constants {
@@ -98,7 +114,7 @@ func (c *compiler) freeze() {
 	for _, child := range p.children {
 		p.longest = max(p.longest, child.longest)
 	}
-	p.code = make([]uint64, len(c.code))
+	p.code = c.blocks.words(len(c.code))
 	p.sites = make([]uint32, len(c.code))
 	p.lines = make([]int32, len(c.code))
 	sites := make(map[instruction]uint32)

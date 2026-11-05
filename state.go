@@ -83,8 +83,9 @@ type thread struct {
 }
 
 const (
-	freshCalls = 16384
-	maxCalls   = 20000
+	freshCalls       = 16384
+	maxCalls         = 20000
+	firstStackValues = 341
 )
 
 func (s *State) growFrames() {
@@ -474,7 +475,9 @@ func (t *thread) growStack(size int) {
 			f.pc = 1
 		}
 	}
-	t.stack = append(t.stack, make([]Value, size-len(t.stack))...)
+	stack := make([]Value, max(size, 2*len(t.stack), firstStackValues))
+	copy(stack, t.stack)
+	t.stack = stack
 	for open := t.open; open != nil; open = open.next {
 		open.slot = &t.stack[open.index]
 	}
